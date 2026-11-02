@@ -14,7 +14,7 @@ Read `ideas.txt` (why), `ARCHITECTURE.md` (how), `development-plan.md` (what, in
   `skills/yeraz-import/convert.mjs` is the standalone copy (no clone needed: Logseq, Bear, OneNote HTML/MHT too, an emoji on every title), tested by `test/yeraz-import.test.ts`
 - `npm run yeraz -- <command>` (or `yeraz` after `npm link`): a Family from the command line, a folder or `--repo owner/name`:
   `tree`, `stats`, `show`, `links`, `find`, `check` (exit 1 on errors, for CI), `templates`, `new`, `mv` (rewrites links), `rm`, `write` (stdin), `init`;
-  `--json`, `--dry-run`. `src/cli/` (commands on `sync/structure.ts`, saved through `sync/folder.ts` or `push.ts`), entry `scripts/yeraz.ts`
+  `--json`, `--dry-run`. `yeraz mcp` serves the same commands as MCP tools over stdio (`src/cli/mcp.ts`, hand-rolled JSON-RPC); `src/cli/` (commands on `sync/structure.ts`, saved through `sync/folder.ts` or `push.ts`), entry `scripts/yeraz.ts`
 - `npm run perf` — budget tests on the 1,000-leaf fixture, laptop and 4× throttled phone (§7.4)
 - `npm run visual` — the app in the states of `design/screens/01–07` and every view of `design/views/`, with the design's Trees, into `visual-review/`
 - Visual snapshots (`e2e/visual.spec.ts`) run on demand in Playwright's Linux image: `gh workflow run snapshots.yml`

@@ -166,3 +166,33 @@ describe('on GitHub', () => {
     expect(fake.repo('you/eng').read('identity/keycloak.md')).toBeUndefined()
   })
 })
+
+describe('mcp', () => {
+  it('lists the tools, runs one, and writes through save', async () => {
+    const { handle } = await import('./mcp')
+    const fs = memoryFolder(FILES)
+    const open = () => reopen(fs)
+    expect(await handle({ method: 'notifications/initialized' }, open)).toBeUndefined()
+    const list = (await handle({ id: 1, method: 'tools/list' }, open)) as any
+    expect(list.result.tools.map((t: any) => t.name)).toContain('show')
+    const shown = (await handle(
+      { id: 2, method: 'tools/call', params: { name: 'show', arguments: { node: 'keycloak' } } },
+      open,
+    )) as any
+    expect(shown.result.content[0].text).toContain('# 🔐 Keycloak')
+    const bad = (await handle(
+      { id: 3, method: 'tools/call', params: { name: 'show', arguments: { node: 'nope' } } },
+      open,
+    )) as any
+    expect(bad.result.isError).toBe(true)
+    await handle(
+      {
+        id: 4,
+        method: 'tools/call',
+        params: { name: 'new', arguments: { parent: 'ops', title: 'Vault' } },
+      },
+      open,
+    )
+    expect((await open()).files.has('ops/vault.md')).toBe(true)
+  })
+})
