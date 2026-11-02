@@ -18,6 +18,8 @@ import { createGitHubClient } from '../src/github/client'
 import { visible, type FolderFile, type FolderFs } from '../src/local/folder'
 import * as cmd from '../src/cli/commands'
 import { openFolder, openRepo, type Family } from '../src/cli/family'
+import { handle } from '../src/cli/mcp'
+import { createInterface } from 'node:readline'
 
 const HELP = `yeraz — your Yeraz notes from the command line
 
@@ -38,6 +40,9 @@ Write (one commit each; --dry-run shows the files instead)
   rm <node> [--force]           refuses while other leaves link to it, unless --force
   write <node> [--append]       the text from stdin
   init [folder] [--name n] [--root notes]   start a Family in a folder
+
+Agents
+  mcp                           serve these commands to an AI agent (MCP over stdio)
 
 A node is its path (identity/keycloak.md, identity/keycloak, a folder; / is the root) or its title.
 
@@ -142,29 +147,7 @@ function need(n: number, usage: string) {
   if (args.length < n) throw new cmd.UsageError(`Usage: yeraz ${usage}`)
 }
 
-async function save(fam: Family, plan: cmd.Plan): Promise<cmd.Result> {
-  const files = plan.changes.map((c) => ({ path: c.path, deleted: c.text === null }))
-  // - deleted, ~ changed, + new
-  const lines = plan.changes.map(
-    (c) => `${c.text === null ? '-' : fam.files.has(c.path) ? '~' : '+'} ${c.path}`,
-  )
-  if (!plan.changes.length) return { data: { files }, text: 'Nothing to change.' }
-  if (opt['dry-run'])
-    return {
-      data: { dryRun: true, id: plan.id, files },
-      text: [...lines, ...(plan.notes ?? [])].join('\n'),
-    }
-  const pushed = await fam.save(plan.changes)
-  return {
-    data: { id: plan.id, ...pushed },
-    text: [
-      ...lines,
-      ...(plan.notes ?? []),
-      ...pushed.conflicts.map((c) => `! changed elsewhere too: both kept, see ${c}`),
-      ...(plan.id ? [`→ ${plan.id}`] : []),
-    ].join('\n'),
-  }
-}
+const save = (fam: Family, plan: cmd.Plan) => cmd.save(fam, plan, opt['dry-run'])
 
 async function run(): Promise<cmd.Result> {
   if (opt.help || !command || command === 'help') return { data: null, text: HELP }
@@ -229,14 +212,29 @@ async function run(): Promise<cmd.Result> {
   }
 }
 
-try {
-  const result = await run()
-  console.log(opt.json ? JSON.stringify(result.data, null, 2) : result.text)
-  process.exitCode = result.code ?? 0
-} catch (e) {
-  const known = e instanceof cmd.UsageError || e instanceof cmd.StructureError
-  console.error(
-    known || !(e instanceof Error) ? String(e instanceof Error ? e.message : e) : e.stack,
-  )
-  process.exitCode = known ? 2 : 1
-}
+if (command === 'mcp') {
+  // stdout is the protocol: one JSON-RPC message per line.
+  for await (const line of createInterface({ input: process.stdin })) {
+    if (!line.trim()) continue
+    let out: object | undefined
+    try {
+      out = await handle(JSON.parse(line), open)
+    } catch {
+      out = { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }
+    }
+    if (out)
+      process.stdout.write(`${JSON.stringify(out)}
+`)
+  }
+} else
+  try {
+    const result = await run()
+    console.log(opt.json ? JSON.stringify(result.data, null, 2) : result.text)
+    process.exitCode = result.code ?? 0
+  } catch (e) {
+    const known = e instanceof cmd.UsageError || e instanceof cmd.StructureError
+    console.error(
+      known || !(e instanceof Error) ? String(e instanceof Error ? e.message : e) : e.stack,
+    )
+    process.exitCode = known ? 2 : 1
+  }

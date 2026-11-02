@@ -348,3 +348,28 @@ export function planInit(name: string, root?: string): FileChange[] {
 }
 
 export { StructureError }
+
+/** Saves a plan in one commit (or, with dryRun, only lists its files). */
+export async function save(fam: Family, plan: Plan, dryRun = false): Promise<Result> {
+  const files = plan.changes.map((c) => ({ path: c.path, deleted: c.text === null }))
+  // - deleted, ~ changed, + new
+  const lines = plan.changes.map(
+    (c) => `${c.text === null ? '-' : fam.files.has(c.path) ? '~' : '+'} ${c.path}`,
+  )
+  if (!plan.changes.length) return { data: { files }, text: 'Nothing to change.' }
+  if (dryRun)
+    return {
+      data: { dryRun: true, id: plan.id, files },
+      text: [...lines, ...(plan.notes ?? [])].join('\n'),
+    }
+  const pushed = await fam.save(plan.changes)
+  return {
+    data: { id: plan.id, ...pushed },
+    text: [
+      ...lines,
+      ...(plan.notes ?? []),
+      ...pushed.conflicts.map((c) => `! changed elsewhere too: both kept, see ${c}`),
+      ...(plan.id ? [`→ ${plan.id}`] : []),
+    ].join('\n'),
+  }
+}
