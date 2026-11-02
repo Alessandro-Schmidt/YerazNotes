@@ -144,7 +144,10 @@ function need(n: number, usage: string) {
 
 async function save(fam: Family, plan: cmd.Plan): Promise<cmd.Result> {
   const files = plan.changes.map((c) => ({ path: c.path, deleted: c.text === null }))
-  const lines = plan.changes.map((c) => `${c.text === null ? '-' : '+'} ${c.path}`)
+  // - deleted, ~ changed, + new
+  const lines = plan.changes.map(
+    (c) => `${c.text === null ? '-' : fam.files.has(c.path) ? '~' : '+'} ${c.path}`,
+  )
   if (!plan.changes.length) return { data: { files }, text: 'Nothing to change.' }
   if (opt['dry-run'])
     return {
