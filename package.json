@@ -5,6 +5,9 @@
   "description": "A note-taking app whose notes live as Markdown in your own GitHub repositories, shown as a map of how they connect.",
   "license": "MIT",
   "type": "module",
+  "bin": {
+    "yeraz": "bin/yeraz.mjs"
+  },
   "engines": {
     "node": ">=22.12"
   },
@@ -22,6 +25,7 @@
     "size": "size-limit",
     "fixture": "tsx scripts/make-fixture.ts",
     "import": "tsx scripts/import-notes.ts",
+    "yeraz": "tsx scripts/yeraz.ts",
     "perf": "playwright test -c playwright.perf.config.ts",
     "visual": "playwright test -c playwright.visual.config.ts",
     "contract": "playwright test -c playwright.contract.config.ts",
