@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   clampWidth,
   PANELS,
+  PIN_SIDE_KEY,
+  savePinSide,
+  savedPinSide,
   saveWidth,
   savedWidths,
   widthStore,
@@ -47,5 +50,15 @@ describe('panel widths (issue #80)', () => {
       '--peek-w': '400px',
       '--dock-w': '700px',
     })
+  })
+})
+
+describe('pinned side', () => {
+  it('is left unless right was saved', () => {
+    const store = memory()
+    expect(savedPinSide(store)).toBe('left')
+    savePinSide('right', store)
+    expect(savedPinSide(store)).toBe('right')
+    expect(store.getItem(PIN_SIDE_KEY)).toBe('right')
   })
 })

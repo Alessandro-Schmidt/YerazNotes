@@ -67,6 +67,8 @@ export interface PeekProps {
   onPin?(id: string): void
   /** This node is pinned: the pin shows pressed, and a click unpins it. */
   kept?: boolean
+  /** Moves the pinned notes to the other side of the new one; the head shows the button. */
+  onSwap?(): void
   href(id: string): string
   onSelect(id: string): void
   onExpand(expanded: boolean): void
@@ -87,6 +89,7 @@ export function Peek({
   pinned,
   onPin,
   kept,
+  onSwap,
   href,
   onSelect,
   onExpand,
@@ -198,7 +201,7 @@ export function Peek({
         <ResizeHandle panel={docked ? 'dock' : 'peek'} edge="left" label="Leaf panel width" />
       )}
       <PeekHead
-        {...{ kind, crumb, away, href, onSelect, expanded, onClose, sheet, kept }}
+        {...{ kind, crumb, away, href, onSelect, expanded, onClose, sheet, kept, onSwap }}
         onPin={onPin && node.kind !== 'root' && !expanded && !docked ? () => onPin(id) : undefined}
         onExpand={motion.expand}
       />
@@ -550,6 +553,7 @@ function PeekHead({
   away = null,
   onPin,
   kept,
+  onSwap,
   href,
   onSelect,
   expanded,
@@ -564,6 +568,7 @@ function PeekHead({
   /** Keeps the node open beside the next selection; no button without it. */
   onPin?: (() => void) | undefined
   kept?: boolean | undefined
+  onSwap?: (() => void) | undefined
   sheet: RefObject<HTMLElement | null>
 } & Pick<PeekProps, 'href' | 'onSelect' | 'expanded' | 'onExpand' | 'onClose'>) {
   // On a touch screen the handle and head are a grip: swipe up to open the full page,
@@ -629,13 +634,24 @@ function PeekHead({
             ))
           )}
         </nav>
+        {onSwap && (
+          <button
+            type="button"
+            className={controls.iconButton}
+            aria-label="Pin on the other side"
+            title="Move pinned notes to the other side"
+            onClick={onSwap}
+          >
+            <Icon name="swap" size={16} />
+          </button>
+        )}
         {onPin && (
           <button
             type="button"
             className={`${controls.iconButton} ${styles.pin}`}
             aria-label="Keep open"
             aria-pressed={!!kept}
-            title={kept ? 'Pinned: click to unpin' : 'Keep this open beside the next leaf you pick'}
+            title={kept ? 'Pinned: click to unpin' : 'Keep this open beside the next note you pick'}
             onClick={onPin}
           >
             <Icon name="pin" size={16} />

@@ -44,7 +44,7 @@ import { useDeleteKey } from './deleteKey'
 import { colorVar } from './theme'
 import { ProjectTabs } from './ProjectTabs'
 import { Divider, TopBar } from './TopBar'
-import { SHEET_HEIGHT, widthStore, widthVars } from './panels'
+import { SHEET_HEIGHT, savePinSide, savedPinSide, widthStore, widthVars } from './panels'
 import { PHONE, useMedia } from './useMedia'
 
 const TITLE = 'All projects'
@@ -87,6 +87,12 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
   const [found, setFound] = useState<Matches | null>(null)
   /** Nodes kept open beside the selection, by merged id: any Family's (as in FamilyView). */
   const [pinned, setPinned] = useState<string[]>([])
+  const [pinSide, setPinSide] = useState(savedPinSide)
+  const swapPinSide = () => {
+    const side = pinSide === 'left' ? 'right' : 'left'
+    savePinSide(side)
+    setPinSide(side)
+  }
   const unpin = (id: string) => setPinned((p) => p.filter((x) => x !== id))
 
   useEffect(() => {
@@ -310,7 +316,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           )}
           <Presence show={peekShown || stackShown}>
             {(peekShown || stackShown) && (
-              <div className={stackShown ? styles.stack : undefined}>
+              <div className={stackShown ? styles.stack : undefined} data-side={pinSide}>
                 {stack.map(({ id, family: f, path: p }) => (
                   <Peek
                     key={id}
@@ -320,6 +326,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
                     expanded={false}
                     pinned
                     kept
+                    onSwap={swapPinSide}
                     href={(id) => `#${allHref(f.ref.repo, id)}`}
                     onSelect={(id) => select(f.ref, id)}
                     onExpand={() => {

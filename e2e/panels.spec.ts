@@ -108,6 +108,12 @@ test('Keep open holds a leaf beside the next one picked; both are edited at once
   await expect.poll(() => fake.repo('you/engineering').read(first.id)).toContain('Kept.')
   await expect.poll(() => fake.repo('you/engineering').read(second.id)).toContain('Picked.')
 
+  // The kept one can move to the right of the new one; the side is saved on this device.
+  await peeks.nth(0).getByRole('button', { name: 'Pin on the other side' }).click()
+  const box = async (i: number) => (await peeks.nth(i).boundingBox())!
+  expect((await box(1)).x + (await box(1)).width).toBeLessThanOrEqual((await box(0)).x)
+  expect(await page.evaluate(() => localStorage.getItem('yeraz-pin-side'))).toBe('right')
+
   // Closing the kept one leaves the selection alone.
   await peeks.nth(0).getByRole('button', { name: 'Dismiss' }).click()
   await expect(peeks).toHaveCount(1)
