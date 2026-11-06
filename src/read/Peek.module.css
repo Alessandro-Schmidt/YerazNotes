@@ -205,7 +205,7 @@
 .content {
   font-size: 14.5px;
   line-height: 1.65;
-  color: var(--leaf-text, var(--text-body));
+  color: var(--text-body);
   overflow-wrap: anywhere;
 }
 .content > :first-child {
@@ -225,7 +225,7 @@
   font-family: var(--font-ui);
   font-size: 15px;
   font-weight: 600;
-  color: var(--leaf-heading, var(--tree, var(--accent)));
+  color: var(--tree, var(--accent));
 }
 .content h3 {
   font-size: 17px;
@@ -283,7 +283,7 @@
 .content :global(.callout) {
   --callout: var(--c-blue);
   border-left-color: var(--callout);
-  color: var(--leaf-text, var(--text-body));
+  color: var(--text-body);
 }
 .content :global(.callout-tip) {
   --callout: var(--c-green);

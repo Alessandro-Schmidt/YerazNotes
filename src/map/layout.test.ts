@@ -186,6 +186,27 @@ describe('labels', () => {
     }
   })
 
+  it('never overlap when Rearrange shuffles the Tree, and keep each depth on its ring', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const layout = layoutTree(graphOf(randomTree(seed, true), `Shuffled ${seed}`), {
+        seed: seed * 7919,
+      })
+      expect(overlaps(layout), `seed ${seed}`).toEqual([])
+      for (const n of layout.nodes)
+        expect(Math.hypot(n.x, n.y)).toBeCloseTo(layout.rings[n.depth - 1]!, -1)
+    }
+  })
+
+  it('Rearrange: the same seed gives the same map, another another, 0 the map as named', () => {
+    const graph = fixtureGraph(120)
+    const plain = layoutTree(graph)
+    expect(layoutTree(graph, { seed: 0 })).toEqual(plain)
+    const a = layoutTree(graph, { seed: 42 })
+    expect(layoutTree(graph, { seed: 42 })).toEqual(a)
+    expect(a.nodes.map((n) => n.angle)).not.toEqual(plain.nodes.map((n) => n.angle))
+    expect(layoutTree(graph, { seed: 43 }).nodes).not.toEqual(a.nodes)
+  })
+
   it('stay horizontal on small Trees where they fit, and follow the radius on large ones', () => {
     const big = layoutTree(graphs[0]![1])
     expect(big.nodes.some((n) => n.kind === 'leaf' && n.labelRotate !== 0)).toBe(true)

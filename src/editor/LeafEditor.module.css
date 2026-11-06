@@ -272,31 +272,6 @@
   padding: 0 12px;
   color: var(--text-body);
 }
-/* A colour's button shows the colour it sets: the heading's or the text's, as chosen. */
-.swatch {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-}
-.swatch[data-part='heading'] {
-  color: var(--leaf-heading, var(--tree, var(--accent)));
-}
-.swatch[data-part='text'] {
-  color: var(--leaf-text, var(--text-body));
-}
-.dot {
-  width: 12px;
-  height: 12px;
-  margin-right: 8px;
-  border-radius: 50%;
-}
 /* A phone: the buttons are their icons, so the four fit in one row. */
 @media (max-width: 640px) {
   .look .lookButton {

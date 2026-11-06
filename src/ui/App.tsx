@@ -9,7 +9,7 @@ import { TokenScreen, WelcomeRoute } from './TokenScreen'
 import { AllView } from './AllView'
 import { FamilyView } from './FamilyView'
 import { Start } from './Start'
-import { TreeColours } from './TreeColours'
+import { FamilyColours } from './FamilyColours'
 import { Hidden } from './Hidden'
 import { Templates } from './Templates'
 import { InsertMenuSettings } from './InsertMenuSettings'
@@ -23,7 +23,7 @@ import { ViewsSettings } from './ViewsSettings'
 //   #/all[/:owner/:name/path]            every Family on one map, optionally with a node selected
 //   #/settings/appearance                 Settings › Appearance (system colours, fonts)
 //   #/settings/views                      Settings › Views (how a Family is shown)
-//   #/settings/colours                    Settings › Tree colours (in .yeraz.json)
+//   #/settings/colours                    Settings › Family colours (in .yeraz.json)
 //   #/settings/hidden                     Settings › Hidden (leaves and branches hidden from the map)
 //   #/settings/templates[/owner/name/path] Settings › Templates (for new leaves), one open to edit
 //   #/settings/menu                       Settings › Insert menu (its items, their order, own blocks)
@@ -100,7 +100,7 @@ export function App() {
         </Route>
         <Route path="/settings/appearance" component={Appearance} />
         <Route path="/settings/views" component={ViewsSettings} />
-        <Route path="/settings/colours" component={TreeColours} />
+        <Route path="/settings/colours" component={FamilyColours} />
         <Route path="/settings/hidden" component={Hidden} />
         <Route path="/settings/menu" component={InsertMenuSettings} />
         <Route path="/settings/templates">

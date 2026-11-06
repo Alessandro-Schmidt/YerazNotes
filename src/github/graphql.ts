@@ -18,7 +18,9 @@ export interface TreeRef {
   title: string
   /** A named colour from `.yeraz.json`, or null for the theme accent. */
   color: string | null
-  /** Each Tree's own named colour, by its id (top-level folder or leaf), from `.yeraz.json`. */
+  /** The named colour of the threads between notes, from `.yeraz.json`; none: as before. */
+  linkColor?: string | null
+  /** Only for every Family shown together (`allRef`): each Tree's Family colour, by merged id. */
   trees?: Record<string, string>
   /** A Family kept in a folder on this device (issue #64): the folder's name. */
   folder?: string
@@ -48,24 +50,24 @@ export function inFamily(ref: Pick<TreeRef, 'root'>, path: string): string | nul
 /** A colour name the theme has (`"amber"`): a shared marker's other values never reach a style. */
 const named = (c: unknown): c is string => typeof c === 'string' && Object.hasOwn(themes.accents, c)
 
-/** The name, colour and Tree colours a `.yeraz.json` text gives; malformed parts are left out. */
+/**
+ * The name, colour and link colour a `.yeraz.json` text gives; malformed parts are left out.
+ * An older `trees` (each Tree's colour) stays in the file but is ignored.
+ */
 export function markerFields(
   text: unknown,
-): Partial<Pick<TreeRef, 'title' | 'color' | 'trees' | 'root'>> {
-  let marker: { name?: unknown; color?: unknown; trees?: unknown; root?: unknown } = {}
+): Partial<Pick<TreeRef, 'title' | 'color' | 'linkColor' | 'root'>> {
+  let marker: { name?: unknown; color?: unknown; linkColor?: unknown; root?: unknown } = {}
   try {
     const parsed: unknown = typeof text === 'string' ? JSON.parse(text) : null
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) marker = parsed
   } catch {
     // A malformed marker still marks a Tree; it just has no name or colour.
   }
-  const out: Partial<Pick<TreeRef, 'title' | 'color' | 'trees' | 'root'>> = {}
+  const out: Partial<Pick<TreeRef, 'title' | 'color' | 'linkColor' | 'root'>> = {}
   if (typeof marker.name === 'string' && marker.name.trim()) out.title = marker.name.trim()
   if (named(marker.color)) out.color = marker.color
-  if (marker.trees && typeof marker.trees === 'object' && !Array.isArray(marker.trees))
-    out.trees = Object.fromEntries(
-      Object.entries(marker.trees).filter((e): e is [string, string] => named(e[1])),
-    )
+  if (named(marker.linkColor)) out.linkColor = marker.linkColor
   // A plain relative folder: no `..`, no leading or trailing slash.
   if (typeof marker.root === 'string') {
     const root = marker.root.trim().replace(/^\/+|\/+$/g, '')
@@ -251,7 +253,7 @@ function toTreeRef(node: RepoNode): TreeRef | null {
     isPrivate: node.isPrivate,
     title: marker.title ?? node.name,
     color: marker.color ?? null,
-    ...(marker.trees ? { trees: marker.trees } : {}),
+    ...(marker.linkColor ? { linkColor: marker.linkColor } : {}),
     ...(marker.root ? { root: marker.root } : {}),
   }
 }
