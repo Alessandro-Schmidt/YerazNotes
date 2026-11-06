@@ -77,6 +77,11 @@
   max-width: calc(100% - 32px);
 }
 
+/* Pinned notes on the right: the stack reads backwards. */
+.stack[data-side='right'] {
+  flex-direction: row-reverse;
+}
+
 .placeholder {
   position: absolute;
   inset: 0;

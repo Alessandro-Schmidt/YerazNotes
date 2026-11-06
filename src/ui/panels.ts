@@ -87,3 +87,26 @@ export const widthVar = (panel: Panel) => `--${panel}-w`
 /** The widths as the page's CSS variables. */
 export const widthVars = (w: Widths) =>
   Object.fromEntries((Object.keys(w) as Panel[]).map((p) => [widthVar(p), `${w[p]}px`]))
+
+/** Which side a kept (pinned) note stays on; new notes open on the other side. */
+export type PinSide = 'left' | 'right'
+
+/** localStorage key of the device's pinned side. */
+export const PIN_SIDE_KEY = 'yeraz-pin-side'
+
+/** The pinned side saved on this device: left unless saved right. */
+export function savedPinSide(store = storage()): PinSide {
+  try {
+    return store?.getItem(PIN_SIDE_KEY) === 'right' ? 'right' : 'left'
+  } catch {
+    return 'left'
+  }
+}
+
+export function savePinSide(side: PinSide, store = storage()): void {
+  try {
+    store?.setItem(PIN_SIDE_KEY, side)
+  } catch {
+    // Refused storage: the side still changes for this visit.
+  }
+}

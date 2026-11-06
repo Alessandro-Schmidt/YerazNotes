@@ -29,7 +29,7 @@ import { SyncStatus } from './SyncStatus'
 import { colorVar } from './theme'
 import { Divider, TopBar } from './TopBar'
 import styles from './FamilyView.module.css'
-import { SHEET_HEIGHT, widthStore, widthVars } from './panels'
+import { SHEET_HEIGHT, savePinSide, savedPinSide, widthStore, widthVars } from './panels'
 import { PHONE, useMedia } from './useMedia'
 import { Search, type Matches } from './Search'
 import { treeColor, usePlanted } from '../views/common'
@@ -56,6 +56,12 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
   const [created, setCreated] = useState<string | null>(null)
   /** Nodes kept open beside the selection, each in its own column (owner's request). */
   const [pinned, setPinned] = useState<string[]>([])
+  const [pinSide, setPinSide] = useState(savedPinSide)
+  const swapPinSide = () => {
+    const side = pinSide === 'left' ? 'right' : 'left'
+    savePinSide(side)
+    setPinSide(side)
+  }
   const unpin = (id: string) => setPinned((p) => p.filter((x) => x !== id))
   /** What the last search found: the map's Matches layer. */
   const [found, setFound] = useState<Matches | null>(null)
@@ -303,7 +309,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           )}
           <Presence show={!!(graph && tree && (peekShown || stackShown))}>
             {graph && tree && (peekShown || stackShown) && (
-              <div className={stackShown ? styles.stack : undefined}>
+              <div className={stackShown ? styles.stack : undefined} data-side={pinSide}>
                 {stack.map((id) => (
                   <Peek
                     key={id}
@@ -319,6 +325,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
                       setExpanded(true)
                     }}
                     kept
+                    onSwap={swapPinSide}
                     onPin={unpin}
                     onClose={() => unpin(id)}
                     onAction={setAction}
