@@ -6,7 +6,6 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { fileUrl, inFamily } from '../github/graphql'
 import { iconImage, textFile, threadEnd, type Graph, type GraphNode } from '../model/graph'
 import { parseLeaf, parseMeta, repairHeader, type LeafMeta } from '../model/parse'
-import { leafColors } from '../read/colors'
 import { Cover } from '../read/LeafLook'
 import { mentionLink } from '../model/links'
 import { session, useSession } from '../store/session'
@@ -16,7 +15,6 @@ import { treeHref } from '../ui/paths'
 import { ROOT } from '../model/tree'
 import { planBranchText } from '../sync/structure'
 import { parentFor, StructureDialog, type StructureAction } from '../ui/StructureDialogs'
-import { ACCENT_IDS } from '../ui/theme'
 import { focusFirst, menuKeys } from '../ui/menuKeys'
 import { attach, attachmentMarkdown } from './attach'
 import type { EditorHandle } from './Editor'
@@ -282,7 +280,7 @@ export function LeafEditor({
 
   if (text?.path !== path) return <div className={styles.loading} aria-busy="true" />
   return (
-    <div className={styles.leaf} style={leafColors(meta)} data-leaf="">
+    <div className={styles.leaf} data-leaf="">
       <EditableCover
         key={`${path} ${repositioning}`}
         repo={repo}
@@ -457,9 +455,6 @@ function secondLine(text: string): string | undefined {
   return text.slice(start + 1, end < 0 ? undefined : end)
 }
 
-const COLORS = ['', ...ACCENT_IDS] as const
-const colorName = (id: string) => (id ? id[0]!.toUpperCase() + id.slice(1) : 'Default')
-
 /** Line 2 without the cover and its position. */
 function withoutCover(meta: LeafMeta): LeafMeta {
   const rest = { ...meta }
@@ -511,13 +506,6 @@ function LeafStyle({
   onCover(): void
   onReposition(): void
 }) {
-  const setColor = (part: 'heading' | 'text', value: string) =>
-    onChange(({ color, ...rest }) => {
-      const next = { ...color, [part]: value || undefined }
-      if (!next.heading) delete next.heading
-      if (!next.text) delete next.text
-      return Object.keys(next).length ? { ...rest, color: next } : rest
-    })
   return (
     <div className={styles.look}>
       {iconChoices && (
@@ -555,37 +543,6 @@ function LeafStyle({
           </button>
         </Menu>
       )}
-      {(['heading', 'text'] as const).map((part) => {
-        const current = typeof meta?.color?.[part] === 'string' ? meta.color[part] : ''
-        return (
-          <Menu
-            key={part}
-            label={part === 'heading' ? 'Heading colour' : 'Text colour'}
-            icon={
-              <span className={styles.swatch} data-part={part} aria-hidden="true">
-                {part === 'heading' ? 'H' : 'T'}
-              </span>
-            }
-          >
-            {COLORS.map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="menuitemradio"
-                aria-checked={current === id}
-                onClick={() => setColor(part, id)}
-              >
-                <span
-                  className={styles.dot}
-                  style={{ background: id ? `var(--c-${id})` : 'var(--text)' }}
-                  aria-hidden="true"
-                />
-                {colorName(id)}
-              </button>
-            ))}
-          </Menu>
-        )
-      })}
     </div>
   )
 }

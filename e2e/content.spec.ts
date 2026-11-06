@@ -610,14 +610,11 @@ test.describe('what github.com renders', () => {
 test.describe('leaf styling', () => {
   test.skip(({ isMobile }) => isMobile, 'Desktop engines')
 
-  test('colours and a cover go on line 2, and show in the theme', async ({ page, fake, graph }) => {
+  test('a cover goes on line 2; a leaf has no colour of its own', async ({ page, fake, graph }) => {
     const leaf = pair(graph).from.id
     await page.goto(`./#/tree/${REPO}/${leaf}`)
     await signInHere(page)
-    await page.getByRole('button', { name: 'Heading colour' }).click()
-    await page.getByRole('menuitemradio', { name: 'Amber' }).click()
-    await page.getByRole('button', { name: 'Text colour' }).click()
-    await page.getByRole('menuitemradio', { name: 'Blue' }).click()
+    await expect(page.getByRole('button', { name: 'Heading colour' })).toHaveCount(0)
     const png = await page.evaluate(() => {
       const canvas = document.createElement('canvas')
       canvas.width = 1500
@@ -641,17 +638,7 @@ test.describe('leaf styling', () => {
     await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read(leaf)?.split('\n')[1])
-      .toMatch(
-        /^<!-- yeraz \{"color":\{"heading":"amber","text":"blue"\},"cover":"\/assets\/\d{4}-\d{2}-\d{2}-mount-ararat\.png"\} -->$/,
-      )
-
-    const peek = page.getByRole('region', { name: 'Leaf preview' })
-    const amber = await page.evaluate(() =>
-      getComputedStyle(document.documentElement).getPropertyValue('--c-amber').trim(),
-    )
-    const article = peek.locator('[data-leaf]')
-    expect(amber).toMatch(/^#[0-9A-Fa-f]{6}$/)
-    await expect(article).toHaveCSS('--leaf-heading', amber)
+      .toMatch(/^<!-- yeraz \{"cover":"\/assets\/\d{4}-\d{2}-\d{2}-mount-ararat\.png"\} -->$/)
   })
 
   test('Undo of a cover takes it off the header, and a later change does not write it back', async ({
@@ -682,55 +669,12 @@ test.describe('leaf styling', () => {
     await page.getByRole('textbox', { name: 'Leaf text' }).click()
     await page.keyboard.press('ControlOrMeta+z')
     await expect(page.getByRole('button', { name: 'Add cover' })).toBeVisible()
-    await page.getByRole('button', { name: 'Heading colour' }).click()
-    await page.getByRole('menuitemradio', { name: 'Amber' }).click()
+    await page.getByRole('textbox', { name: 'Leaf text' }).click()
+    await page.keyboard.press('ControlOrMeta+End')
+    await page.keyboard.type(' Later.')
     await page.keyboard.press('ControlOrMeta+s')
-    await expect
-      .poll(() => fake.repo(REPO).read(leaf)?.split('\n')[1])
-      .toBe('<!-- yeraz {"color":{"heading":"amber"}} -->')
-  })
-})
-
-test.describe('leaf colours', () => {
-  test.skip(({ isMobile }) => isMobile, 'Desktop engines')
-
-  test('a raw hex heading colour is drawn adjusted to stay readable in each mode', async ({
-    page,
-    fake,
-  }) => {
-    await fake.repo(REPO).commit({
-      message: 'A navy heading',
-      additions: [
-        {
-          path: 'navy.md',
-          contents:
-            '# Navy\n<!-- yeraz {"color":{"heading":"#1A2B6D"}} -->\n\n## Inside\n\nText.\n',
-        },
-      ],
-    })
-    const rgb = (hex: string) =>
-      `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`
-    await page.goto(`./#/tree/${REPO}/navy.md`)
-    await signInHere(page)
-    const peek = page.getByRole('region', { name: 'Leaf preview' })
-    const heading = peek.locator('.cm-h2', { hasText: 'Inside' })
-    const leaf = peek.locator('[data-leaf]')
-    const value = (mode: string) =>
-      leaf.evaluate((el, m) => el.style.getPropertyValue(`--leaf-heading-${m}`), mode)
-    // The Peek shows structure first, then content: wait for the leaf's own text.
-    await expect(heading).toBeVisible()
-    await expect.poll(() => value('dark')).not.toBe('')
-    const [dark, light] = [await value('dark'), await value('light')]
-    // Navy on near-black is unreadable: lighter on dark bases, and Paper keeps it as it is.
-    expect(dark).toMatch(/^#[0-9A-F]{6}$/)
-    expect(dark).not.toBe('#1A2B6D')
-    expect(light).toBe('#1A2B6D')
-    await expect(heading).toHaveCSS('color', rgb(dark))
-    await page.evaluate(() => {
-      document.documentElement.dataset.base = 'paper'
-      document.documentElement.dataset.mode = 'light'
-    })
-    await expect(heading).toHaveCSS('color', rgb(light))
+    await expect.poll(() => fake.repo(REPO).read(leaf)).toContain('Later.')
+    expect(fake.repo(REPO).read(leaf)).not.toContain('cover')
   })
 })
 

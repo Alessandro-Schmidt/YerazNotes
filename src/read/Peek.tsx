@@ -43,7 +43,6 @@ import { focusFirst, menuKeys } from '../ui/menuKeys'
 import { templateHref, treeHref } from '../ui/paths'
 import styles from './Peek.module.css'
 import { coverPosition } from './cover'
-import { leafColors } from './colors'
 import { downloadAsset } from './files'
 import { History } from './History'
 import { printLeaf } from './print'
@@ -1061,8 +1060,6 @@ async function printable(
   const article = document.createElement('article')
   article.className = styles.article ?? ''
   article.dataset.leaf = ''
-  for (const [name, value] of Object.entries(leafColors(node.meta)))
-    article.style.setProperty(name, String(value))
   const title = document.createElement('h2')
   title.className = styles.title ?? ''
   title.textContent = `${node.icon ? `${node.icon} ` : ''}${node.title}`

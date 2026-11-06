@@ -188,6 +188,20 @@ describe.each([300, 1000])('a %i-leaf Family', (leaves) => {
 const engineering = () =>
   graphOf(makeFixture({ name: 'Engineering', leaves: 60, threads: 80, seed: 3 }).files)
 
+describe('Rearrange: a Family laid out with a seed', () => {
+  it('is the same for the same seed and differs from the map as named', () => {
+    const graph = engineering()
+    const named = familyLayout(graph)
+    const a = familyLayout(graph, 7)
+    expect(familyLayout(graph, 7)).toBe(a)
+    expect(layoutFamily(graph, undefined, 7).trees.map((t) => [t.id, t.x, t.y])).toEqual(
+      a.trees.map((t) => [t.id, t.x, t.y]),
+    )
+    expect(a.trees.map((t) => t.layout.nodes)).not.toEqual(named.trees.map((t) => t.layout.nodes))
+    expect(layoutFamily(graph, undefined, 0)).toEqual(layoutFamily(graph))
+  })
+})
+
 describe('a Tree laid out again', () => {
   it('keeps its layout and graph when nothing in it changed, so the map need not redraw it', () => {
     const a = layoutFamily(engineering())

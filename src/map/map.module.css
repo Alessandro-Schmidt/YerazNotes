@@ -89,7 +89,7 @@
 /* Threads: thinner and fainter than the hierarchy, drawn beneath it. */
 .thread {
   fill: none;
-  stroke: var(--tree, var(--accent));
+  stroke: var(--link, var(--tree, var(--accent)));
   stroke-width: 1px;
   stroke-opacity: 0.28;
   transition: stroke-opacity 0.25s;
@@ -97,7 +97,7 @@
 
 .hotThread {
   fill: none;
-  stroke: var(--tree, var(--accent));
+  stroke: var(--link, var(--tree, var(--accent)));
   stroke-width: 2px;
   stroke-opacity: 0.95;
   pointer-events: none;

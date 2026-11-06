@@ -3,7 +3,7 @@
 
 .editor :global(.cm-editor) {
   background: transparent;
-  color: var(--leaf-text, var(--text-body));
+  color: var(--text-body);
   font-size: 15.5px;
 }
 .editor :global(.cm-editor.cm-focused) {
@@ -17,13 +17,13 @@
 .editor :global(.cm-content) {
   padding: 0 0 40vh;
   /* The caret is the text's colour (issue #68). */
-  caret-color: var(--leaf-text, var(--text-body));
+  caret-color: var(--text-body);
 }
 .editor :global(.cm-line) {
   padding: 0;
 }
 .editor :global(.cm-cursor) {
-  border-left-color: var(--leaf-text, var(--text-body));
+  border-left-color: var(--text-body);
 }
 .editor :global(.cm-selectionBackground),
 .editor :global(.cm-focused .cm-selectionBackground),
@@ -80,7 +80,7 @@
 .editor :global(.cm-line.cm-h6) {
   font-family: var(--font-ui);
   font-weight: 600;
-  color: var(--leaf-heading, var(--tree, var(--accent)));
+  color: var(--tree, var(--accent));
   padding-top: 10px;
 }
 .editor :global(.cm-line.cm-h1:not(.cm-title)) {
@@ -164,7 +164,7 @@
 .editor :global(.cm-line.cm-callout) {
   --callout: var(--c-blue);
   border-left-color: var(--callout);
-  color: var(--leaf-text, var(--text-body));
+  color: var(--text-body);
 }
 .editor :global(.cm-line.cm-callout-tip) {
   --callout: var(--c-green);

@@ -15,7 +15,7 @@ These notes are kept with [Yeraz](https://github.com/Alessandro-Schmidt/YerazNot
 ## One leaf, one file
 
 - A leaf is a \`.md\` file. Its line 1 is its title: \`# 🔐 Keycloak\`. The emoji at the start is its icon on the map: give every new leaf one that says what it is about.
-- Line 2 may hold metadata in a comment: \`<!-- yeraz {"color":{"heading":"amber"}} -->\`. Leave it as it is; never write text on line 2.
+- Line 2 may hold metadata in a comment: \`<!-- yeraz {"cover":"/assets/ararat.png"} -->\`. Leave it as it is; never write text on line 2.
 - Sub-leaves live in a folder with the same name beside the leaf: \`keycloak.md\` and \`keycloak/realms.md\`.
 - A folder without a same-named file is a branch; the \`README.md\` inside it is the branch's text, not a leaf. Every folder or leaf at the root is a Tree.
 - File names stay when titles change: links depend on them.
@@ -31,7 +31,7 @@ These notes are kept with [Yeraz](https://github.com/Alessandro-Schmidt/YerazNot
 
 - Short leaves, one subject each. Link to a leaf instead of repeating it, and prefer a new leaf beside the one it grows from.
 - Keep the person's words and voice. Add structure, and keep your own opinions out. Task lists (\`- [ ]\`) are for things to do.
-- Don't touch \`.yeraz.json\` (the Family's name and colours) or anything in \`assets/\` unless asked.
+- Don't touch \`.yeraz.json\` (the Family's name, its colour and its links' colour) or anything in \`assets/\` unless asked.
 - When \`.yeraz.json\` names a \`root\` folder (\`"root":"notes"\`), the notes live in that folder: every path here, links included, starts inside it.
 
 ## Text encoding

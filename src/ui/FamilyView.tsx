@@ -4,7 +4,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocation } from 'wouter'
-import { familyLayout, treesOf } from '../map/family'
+import { familyLayout, newSeed, treesOf } from '../map/family'
 import { TreeMap } from '../map/TreeMap'
 import { byPlanted, compactWords, type Graph } from '../model/graph'
 import { ROOT } from '../model/tree'
@@ -82,11 +82,13 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
   const graph = data?.graph ?? null
   // The map in the order its leaves were planted (Settings › Views); as named until known.
   const planted = usePlanted(repo, graph, view === 'map')
+  // Rearrange: a seed in memory only, so a reload shows the map as named again.
+  const [seed, setSeed] = useState(0)
   const family = useMemo(() => {
-    const laid = graph ? familyLayout(planted ? byPlanted(graph, planted) : graph) : null
+    const laid = graph ? familyLayout(planted ? byPlanted(graph, planted) : graph, seed) : null
     markNow('layout-done')
     return laid
-  }, [graph, planted])
+  }, [graph, planted, seed])
   // No path: nothing selected. An empty path (`/tree/o/n/`): the Family itself.
   const wanted = params['*'] === undefined ? null : decodePath(params['*'])
   const selected =
@@ -281,13 +283,15 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
             </Suspense>
           ) : graph && family ? (
             <TreeMap
-              treeKey={key}
+              treeKey={seed ? `${key}~${seed}` : key}
               graph={graph}
               family={family}
               imageUrl={imageUrl}
               title={tree?.title ?? repo}
               color={color}
               treeColors={treeColors}
+              linkColor={tree?.linkColor ? colorVar(tree.linkColor) : undefined}
+              onRearrange={() => setSeed(newSeed)}
               selected={selected}
               matches={matches}
               onClearMatches={() => setFound(null)}

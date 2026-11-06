@@ -37,6 +37,10 @@ export interface TreeMapProps {
   color: string
   /** Each Tree's colour, by its id: the `--tree` of its group. */
   treeColors: Record<string, string>
+  /** The threads' colour (`.yeraz.json` `linkColor`); none: each Tree's colour. */
+  linkColor?: string
+  /** Lays the map out again with another random arrangement (the Rearrange button). */
+  onRearrange?(): void
   selected: string | null
   /** The Matches layer: the nodes a search found here, lit above the veil like a selection. */
   matches: { query: string; ids: readonly string[] } | null
@@ -102,6 +106,8 @@ export function TreeMap({
   title,
   color,
   treeColors,
+  linkColor,
+  onRearrange,
   selected,
   matches,
   onClearMatches,
@@ -500,7 +506,7 @@ export function TreeMap({
         onPointerLeave={() => {
           if (tipRef.current) tipRef.current.hidden = true
         }}
-        style={{ '--tree': color } as CSSProperties}
+        style={{ '--tree': color, ...(linkColor && { '--link': linkColor }) } as CSSProperties}
       >
         <svg
           ref={svgRef}
@@ -575,6 +581,17 @@ export function TreeMap({
           >
             <Icon name="fit" />
           </button>
+          {onRearrange && (
+            <button
+              type="button"
+              className={controls.iconButton}
+              aria-label="Rearrange"
+              title="Rearrange the map"
+              onClick={onRearrange}
+            >
+              <Icon name="shuffle" />
+            </button>
+          )}
           <span ref={levelRef} className={ui.level}>
             Leaves
           </span>

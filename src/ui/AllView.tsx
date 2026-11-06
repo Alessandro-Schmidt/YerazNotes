@@ -18,7 +18,7 @@ import {
   splitId,
   type FamilyGraph,
 } from '../map/families'
-import { treesOf, type FamilyLayout } from '../map/family'
+import { newSeed, treesOf, type FamilyLayout } from '../map/family'
 import { TreeMap } from '../map/TreeMap'
 import { byPlanted, type Graph } from '../model/graph'
 import { ROOT } from '../model/tree'
@@ -106,9 +106,12 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
   const { merged, layout: named, ref: all } = useMemo(() => mapOf(families), [families])
   // The map in the order leaves were planted (Settings › Views); as named until known.
   const planted = usePlanted(ALL, families.length ? merged : null, view === 'map')
+  // Rearrange: a seed in memory only.
+  const [seed, setSeed] = useState(0)
   const layout = useMemo(
-    () => (planted ? familiesLayout(byPlanted(merged, planted)) : named),
-    [planted, merged, named],
+    () =>
+      planted || seed ? familiesLayout(planted ? byPlanted(merged, planted) : merged, seed) : named,
+    [planted, merged, named, seed],
   )
 
   // The selection, in its Family: `#/all/owner/name/path`.
@@ -285,13 +288,14 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
             </Suspense>
           ) : families.length ? (
             <TreeMap
-              treeKey="all"
+              treeKey={seed ? `all~${seed}` : 'all'}
               graph={merged}
               family={layout}
               imageUrl={imageUrl}
               title={TITLE}
               color={colorVar(null)}
               treeColors={treeColors}
+              onRearrange={() => setSeed(newSeed)}
               groupTitles={titles}
               selected={selected}
               matches={lit}

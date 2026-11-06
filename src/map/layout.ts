@@ -70,6 +70,33 @@ export interface LayoutOptions {
   beta?: number
   /** Above this many leaves, leaf labels always follow the radius. */
   radialLabelsAbove?: number
+  /**
+   * Rearrange (the map's button): a non-zero seed shuffles each node's children and turns
+   * the whole Tree. Rings, parents among their children and label spacing stay; the same
+   * seed always gives the same map. 0: as named.
+   */
+  seed?: number
+}
+
+/** A small seeded random (mulberry32): the same seed gives the same numbers in [0, 1). */
+export function random(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/** A copy of `list`, shuffled by `next` (Fisher–Yates). */
+export function shuffled<T>(list: readonly T[], next: () => number): T[] {
+  const out = [...list]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1))
+    ;[out[i], out[j]] = [out[j]!, out[i]!]
+  }
+  return out
 }
 
 const DESIGN_R = 318
@@ -212,9 +239,13 @@ function coreLinesOf(title: string): string[] {
 }
 
 export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout {
-  const { minArc = 15, gap: topGap = 0.16, beta = 0.7, radialLabelsAbove = 60 } = options
+  const { minArc = 15, gap: topGap = 0.16, beta = 0.7, radialLabelsAbove = 60, seed = 0 } = options
   const get = (id: string) => graph.nodes.get(id)!
-  const root = hierarchy(get(ROOT), (n) => n.children.map(get))
+  const next = seed ? random(seed) : null
+  const turn = next ? next() * 2 * Math.PI : 0
+  const root = hierarchy(get(ROOT), (n) =>
+    (next ? shuffled(n.children, next) : n.children).map(get),
+  )
   // Rings: the design's 0.35R, 0.70R, R for three levels, generalised to any depth. These
   // are the smallest radii; a ring moves out when the labels inside it need room.
   const maxDepth = Math.max(1, root.height)
@@ -266,7 +297,9 @@ export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout
   const gap = groups > 1 ? Math.min(topGap, Math.PI / 2 / groups) : 0
   const unit = (2 * Math.PI - gap * groups) / span
   const angleOf = (d: HierarchyPointNode<GraphNode>) =>
-    d.depth === 0 ? 0 : gap / 2 + (groupOf.get(d) ?? 0) * gap + (d.x - minX + around / 2) * unit
+    d.depth === 0
+      ? 0
+      : turn + gap / 2 + (groupOf.get(d) ?? 0) * gap + (d.x - minX + around / 2) * unit
 
   const R = Math.max(DESIGN_R, minArc / unit)
   const coreLines = coreLinesOf(get(ROOT).title)
@@ -426,7 +459,7 @@ export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout
 
   const total = graph.stats.words || 1
   const ringR = coreR + 7
-  let acc = 0
+  let acc = turn
   const segments = top.map((t) => {
     const share = (t.data.total / total) * 2 * Math.PI
     const a0 = acc + 0.04

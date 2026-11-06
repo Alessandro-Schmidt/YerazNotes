@@ -661,8 +661,8 @@ describe('renaming a Tree', () => {
   })
 })
 
-describe('Family and Tree colours', () => {
-  it('colours the Family and a Tree in .yeraz.json, shown at once and kept after the commit', async () => {
+describe('Family and link colours', () => {
+  it('colours the Family and its links in .yeraz.json, shown at once and kept after the commit', async () => {
     await fake.addRepo('you/notes', {
       '.yeraz.json': '{\n  "name": "Notes"\n}\n',
       'Identity/a.md': '# A\n',
@@ -672,23 +672,23 @@ describe('Family and Tree colours', () => {
     await s.getState().open('you/notes')
     const ref = () => s.getState().trees.find((t) => t.repo === 'you/notes')!
     await s.getState().setColor('you/notes', 'amber')
-    await s.getState().setColor('you/notes', 'violet', 'Identity')
-    expect(ref()).toMatchObject({ color: 'amber', trees: { Identity: 'violet' } })
+    await s.getState().setColor('you/notes', 'violet', 'linkColor')
+    expect(ref()).toMatchObject({ color: 'amber', linkColor: 'violet' })
     // Discovery answering before the commit doesn't undo them.
     await s.getState().discover()
-    expect(ref()).toMatchObject({ color: 'amber', trees: { Identity: 'violet' } })
+    expect(ref()).toMatchObject({ color: 'amber', linkColor: 'violet' })
     fake.resetLog()
     await s.getState().flush('you/notes')
     expect(fake.log.filter((e) => e.operation === 'mutation')).toHaveLength(1)
     expect(fake.repo('you/notes').read('.yeraz.json')).toBe(
-      '{\n  "name": "Notes",\n  "color": "amber",\n  "trees": {\n    "Identity": "violet"\n  }\n}\n',
+      '{\n  "name": "Notes",\n  "color": "amber",\n  "linkColor": "violet"\n}\n',
     )
     // Back to the defaults: the keys go.
-    await s.getState().setColor('you/notes', null, 'Identity')
+    await s.getState().setColor('you/notes', null, 'linkColor')
     await s.getState().setColor('you/notes', null)
     await s.getState().flush('you/notes')
     expect(fake.repo('you/notes').read('.yeraz.json')).toBe('{\n  "name": "Notes"\n}\n')
-    expect(ref()).toMatchObject({ color: null, trees: {} })
+    expect(ref()).toMatchObject({ color: null, linkColor: null })
   })
 })
 
