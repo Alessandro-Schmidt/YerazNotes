@@ -103,7 +103,7 @@ export default function Editor({
           markdown({ base: markdownLanguage, codeLanguages: languages }),
           syntaxHighlighting(classHighlighter),
           EditorView.lineWrapping,
-          EditorView.contentAttributes.of({ 'aria-label': 'Leaf text', spellcheck: 'true' }),
+          EditorView.contentAttributes.of({ 'aria-label': 'Note text', spellcheck: 'true' }),
           emptyHint,
           newLineHint,
           titleHidden ? hiddenTitle : [],

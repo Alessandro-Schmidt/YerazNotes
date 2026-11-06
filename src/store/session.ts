@@ -670,7 +670,7 @@ export function createSession(deps: {
         }
         if (!tree)
           throw new NotFamilyError(
-            `Turn ${name} into a notebook? Yeraz adds a .yeraz.json and a Welcome leaf.`,
+            `Turn ${name} into a notebook? Yeraz adds a .yeraz.json and a Welcome note.`,
           )
         const key = tree.repo.toLowerCase()
         await store.set(KEYS.connected, [...new Set([...(await connected()), tree.repo])])
@@ -927,7 +927,7 @@ export function createSession(deps: {
       async history(repo, path, after = null) {
         const key = repo.toLowerCase()
         await pulls.get(key)
-        if (isFolder(key)) throw new Error('A folder keeps no history of its leaves.')
+        if (isFolder(key)) throw new Error('A folder keeps no history of its notes.')
         const ref = bases.get(key)?.ref
         const head = ref && (await store.get<CachedListing>(`tree:${ref.repo}`))?.head
         if (!ref || !head) throw new Error("This Family hasn't opened yet. Try again in a moment.")

@@ -49,11 +49,11 @@ export function Search({
       <button
         type="button"
         className={styles.box}
-        aria-label="Search leaves, branches, trees"
+        aria-label="Search notes, groups, projects"
         onClick={() => setOpen(true)}
       >
         <Icon name="search" size={16} />
-        <span className={styles.placeholder}>Search leaves, branches, trees…</span>
+        <span className={styles.placeholder}>Search notes, groups, projects…</span>
         <kbd className={styles.key}>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
       </button>
       {lit && (
@@ -190,7 +190,7 @@ function SearchDialog({
           aria-expanded={results.length > 0}
           aria-controls={listId}
           aria-activedescendant={current >= 0 ? `${listId}-${current}` : undefined}
-          placeholder="Search leaves, branches, trees…"
+          placeholder="Search notes, groups, projects…"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)

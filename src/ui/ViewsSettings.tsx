@@ -27,9 +27,9 @@ const ORDERS: { id: MapOrder; label: string; note: string }[] = [
   {
     id: 'planted',
     label: 'When planted',
-    note: 'Oldest first: each leaf where it was written, a branch by its first leaf.',
+    note: 'Oldest first: each note where it was written, a group by its first note.',
   },
-  { id: 'name', label: 'By name', note: 'Branches first, then leaves, A to Z.' },
+  { id: 'name', label: 'By name', note: 'Groups first, then notes, A to Z.' },
 ]
 
 export function ViewsSettings() {

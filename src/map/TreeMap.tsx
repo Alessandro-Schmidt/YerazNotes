@@ -446,7 +446,7 @@ export function TreeMap({
     tip.querySelector('span')!.textContent = ghost
       ? `Not written yet · ${threads}`
       : node.parent === ROOT
-        ? `Tree · ${compactWords(node.total)} words`
+        ? `Project · ${compactWords(node.total)} words`
         : node.kind === 'leaf'
           ? `${node.words.toLocaleString('en-US')} words · ${threads}`
           : `${compactWords(node.total)} words inside · ${node.children.length} items`
@@ -490,7 +490,7 @@ export function TreeMap({
         data-map=""
         tabIndex={0}
         role="group"
-        aria-label={`Map of ${title}: arrow keys move between leaves, Enter opens one`}
+        aria-label={`Map of ${title}: arrow keys move between notes, Enter opens one`}
         onKeyDown={onKeyDown}
         onClick={(e) => {
           markNow('select')
@@ -571,7 +571,7 @@ export function TreeMap({
           <button
             type="button"
             className={controls.iconButton}
-            aria-label="Fit all trees"
+            aria-label="Fit all projects"
             // The same fit as opening the Family: the panel insets plus the map's own margins.
             onClick={() => {
               target.current = null
@@ -603,7 +603,7 @@ export function TreeMap({
           </span>
           <span>
             <span className={controls.glyph} data-kind="sprout" />
-            Leaf with sub-leaves
+            Note with sub-notes
           </span>
           <span>
             <span className={controls.glyph} data-kind="branch" />

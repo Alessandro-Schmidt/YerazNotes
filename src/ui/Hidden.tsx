@@ -24,7 +24,7 @@ export function Hidden() {
         <div>
           <h1 className={styles.title}>Hidden</h1>
           <p className={styles.lede}>
-            Leaves, branches and Trees hidden from the map, with everything under them. Hide one
+            Notes, groups and projects hidden from the map, with everything under them. Hide one
             from its Options menu; it is written to the note itself, so every device hides the same.
           </p>
           {trees.length > 1 && (

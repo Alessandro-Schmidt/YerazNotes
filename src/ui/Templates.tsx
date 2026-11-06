@@ -31,9 +31,9 @@ export function Templates({ repo, path }: { repo?: string; path?: string }) {
         <div>
           <h1 className={styles.title}>Templates</h1>
           <p className={styles.lede}>
-            What a new leaf can start from. A template is a note kept in the Family's{' '}
+            What a new note can start from. A template is a note kept in the Family's{' '}
             <code>.yeraz/templates/</code> folder, so every device and everyone sharing the Family
-            has it. Its title is its name, its emoji and look go to the leaf, and{' '}
+            has it. Its title is its name, its emoji and look go to the note, and{' '}
             <code>{'{{title}}'}</code>, <code>{'{{date}}'}</code> and <code>{'{{tree}}'}</code> are
             filled in.
           </p>
@@ -122,7 +122,7 @@ function TemplateList({
 
   const remove = (template: Template) =>
     run(async () => {
-      if (!window.confirm(`Delete the template “${template.title}”? Leaves made from it stay.`))
+      if (!window.confirm(`Delete the template “${template.title}”? Notes made from it stay.`))
         return
       if (editing === template.path) setEditing(null)
       await session.getState().apply(family.repo, [{ path: template.path, text: null }])
@@ -140,7 +140,7 @@ function TemplateList({
           </p>
         ) : graph.templates.length === 0 ? (
           <p className={styles.note}>
-            No templates yet. Make one here, or save a leaf as one from its Options menu.
+            No templates yet. Make one here, or save a note as one from its Options menu.
           </p>
         ) : (
           <div className={own.rows}>

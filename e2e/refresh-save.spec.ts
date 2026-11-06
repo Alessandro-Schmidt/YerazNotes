@@ -20,9 +20,9 @@ test('Refresh and Save are on screen, on every device', async ({ page }) => {
   if (isPhone(page)) await expect(save).toBeHidden()
   else await expect(save).toBeDisabled()
 
-  await page.locator('header').getByRole('button', { name: 'New leaf' }).click()
+  await page.locator('header').getByRole('button', { name: 'New note' }).click()
   await page.getByRole('dialog').getByRole('textbox').first().fill('Written by hand')
-  await page.getByRole('dialog').getByRole('button', { name: 'Create leaf' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Create note' }).click()
   await expect(save).toBeEnabled()
   await onScreen('Save now')
 })

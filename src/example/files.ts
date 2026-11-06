@@ -47,11 +47,11 @@ export const EXAMPLE_FILES: Record<string, string> = {
   [AGENTS_FILE]: AGENTS_TEXT,
   'Welcome.md': `# 🌱 Welcome
 
-This is an example Family: four Trees, **Mathematics**, **Software**, **Chess** and **Armenia**, whose notes keep running into one another. Look around, change anything, or delete it all.
+This is an example Family: four projects, **Mathematics**, **Software**, **Chess** and **Armenia**, whose notes keep running into one another. Look around, change anything, or delete it all.
 
 ## Follow a thread
 
-Start anywhere and the threads lead on. One path through all four Trees:
+Start anywhere and the threads lead on. One path through all four projects:
 
 1. [Tigran Petrosian](/Chess/players/tigran-petrosian.md), the Armenian world champion, made Armenia a [chess nation](/Armenia/chess-nation.md).
 2. Chess rates its players with the [Elo system](/Chess/ratings.md), which is [probability](/Mathematics/probability.md) at heart,
@@ -61,13 +61,13 @@ Start anywhere and the threads lead on. One path through all four Trees:
 
 ## How it works
 
-- Every leaf is a Markdown file; line 1 is its title, the emoji at its start its icon.
-- The map draws a **thread** wherever a leaf mentions another, like the ones above.
-- A folder is a **branch**; its text is the \`README.md\` inside, like [Chess](</Chess/README.md>).
-- A leaf can hold **sub-leaves**: [Graph theory](/Mathematics/graph-theory.md) holds the [knight's tour](/Mathematics/graph-theory/knights-tour.md).
-- A link to a leaf not written yet, like [Armenian cuisine](/Armenia/cuisine.md), shows as a ghost: a leaf to write.
+- Every note is a Markdown file; line 1 is its title, the emoji at its start its icon.
+- The map draws a **thread** wherever a note mentions another, like the ones above.
+- A folder is a **group**; its text is the \`README.md\` inside, like [Chess](</Chess/README.md>).
+- A note can hold **sub-notes**: [Graph theory](/Mathematics/graph-theory.md) holds the [knight's tour](/Mathematics/graph-theory/knights-tour.md).
+- A link to a note not written yet, like [Armenian cuisine](/Armenia/cuisine.md), shows as a ghost: a note to write.
 - Edits are saved as you type. Hold Ctrl (⌘ on a Mac) for a second while writing to see what can be inserted.
-- A new leaf can start from a **template**: *Meeting* and *Chess game* are two, under *Start from* in New leaf. Settings › Templates keeps them.
+- A new note can start from a **template**: *Meeting* and *Chess game* are two, under *Start from* in New note. Settings › Templates keeps them.
 - [Notes for AI agents](/CLAUDE.md) tells an agent such as Claude Code how notes are kept here.
 `,
   '.yeraz/templates/meeting.md': `# 📝 Meeting
@@ -102,7 +102,7 @@ Start anywhere and the threads lead on. One path through all four Trees:
 `,
   'Armenia/README.md': `# 🇦🇲 Armenia
 
-An old country under Mount Ararat, with its own alphabet, its own church and a love of chess: four leaves here, and threads to every other Tree.
+An old country under Mount Ararat, with its own alphabet, its own church and a love of chess: four notes here, and threads to every other project.
 `,
   'Armenia/alphabet.md': `# 🔤 Alphabet
 
@@ -155,7 +155,7 @@ My own is the [chess engine](/Software/chess-engine.md), much weaker.
 `,
   'Chess/players.md': `# 👑 Players
 
-Players worth studying, one leaf each:
+Players worth studying, one note each:
 
 - [Tigran Petrosian](/Chess/players/tigran-petrosian.md), world champion 1963–1969
 - [Levon Aronian](/Chess/players/levon-aronian.md), three Olympiads with Armenia
@@ -217,7 +217,7 @@ The area of a circle inside a square of side $a$ is $\\frac{\\pi}{4}a^2$: about 
 A graph is points (vertices) joined by lines (edges). It began in 1736, when Euler showed that no walk crosses each of Königsberg's seven bridges exactly once.
 
 - A chessboard is a graph: squares are vertices, a piece's moves are edges. The [knight's tour](/Mathematics/graph-theory/knights-tour.md) asks for a path through all 64.
-- A map like this one is a graph too: leaves are vertices, threads are edges.
+- A map like this one is a graph too: notes are vertices, threads are edges.
 - The [chess engine](/Software/chess-engine.md) walks the graph of positions, one move per edge.
 
 A vertex of degree $d$ touches $d$ edges, and every edge has two ends, so
@@ -256,7 +256,7 @@ On a board of $n \\times n$ squares a tour exists for every $n \\ge 5$.
 - **Anania Shirakatsi** (7th century) wrote one of the first arithmetic books in [Armenian](/Armenia/alphabet.md), with tables and puzzles; copies are kept in the Matenadaran in [Yerevan](/Armenia/yerevan.md).
 - **Sergey Mergelyan** (1928–2008) proved in 1951, in his early twenties, which functions on a compact set of the plane are limits of polynomials: *Mergelyan's theorem*.
 
-Both belong in two Trees at once, which is what threads are for: see [Armenia](</Armenia/README.md>).
+Both belong in two projects at once, which is what threads are for: see [Armenia](</Armenia/README.md>).
 `,
   'Mathematics/probability.md': `# 📊 Probability
 
@@ -268,7 +268,7 @@ A player rated 200 points higher is expected to score about $0.76$. After a game
 `,
   'Software/README.md': `# 💻 Software
 
-Small programs that put the other Trees to work: a chess engine, a rating service, text in Armenian.
+Small programs that put the other projects to work: a chess engine, a rating service, text in Armenian.
 `,
   'Software/armenian-unicode.md': `# 🔤 Armenian in Unicode
 

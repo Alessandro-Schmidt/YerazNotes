@@ -2,7 +2,7 @@
 // the widths are kept on this device.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, signInHere, test } from './fixtures'
+import { expect, signInHere, test, save } from './fixtures'
 
 test.skip(({ isMobile }) => isMobile, 'Phones show the panels as sheets')
 
@@ -37,7 +37,7 @@ test('the Explorer and the Peek resize by their edges, and keep their widths', a
 
   await drag(page, page.getByRole('separator', { name: 'Explorer width' }), 100)
   await expect.poll(() => width(explorer)).toBe(372)
-  await drag(page, page.getByRole('separator', { name: 'Leaf panel width' }), -150)
+  await drag(page, page.getByRole('separator', { name: 'Note panel width' }), -150)
   await expect.poll(() => width(peek)).toBe(570)
 
   // From the keyboard: arrows by 16 px, Home to the least.
@@ -53,7 +53,7 @@ test('the Explorer and the Peek resize by their edges, and keep their widths', a
   await expect.poll(() => width(peek)).toBe(570)
 
   // A double click puts a panel back as it was.
-  await page.getByRole('separator', { name: 'Leaf panel width' }).dblclick()
+  await page.getByRole('separator', { name: 'Note panel width' }).dblclick()
   await expect.poll(() => width(peek)).toBe(420)
 })
 
@@ -69,7 +69,7 @@ test('Keep open holds a leaf beside the next one picked; both are edited at once
   const [first, second] = [leaves[0]!, leaves[1]!]
   await page.goto(`./#/tree/you/engineering/${first.id}`)
   await signInHere(page)
-  const peeks = page.getByRole('region', { name: 'Leaf preview' })
+  const peeks = page.getByRole('region', { name: 'Note preview' })
   await expect(peeks).toHaveCount(1)
   await peeks.getByRole('button', { name: 'Keep open' }).click()
   await expect(peeks.getByRole('button', { name: 'Keep open' })).toHaveAttribute(
@@ -104,7 +104,7 @@ test('Keep open holds a leaf beside the next one picked; both are edited at once
     await page.keyboard.press('ControlOrMeta+End')
     await page.keyboard.type(`\n${word}`)
   }
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo('you/engineering').read(first.id)).toContain('Kept.')
   await expect.poll(() => fake.repo('you/engineering').read(second.id)).toContain('Picked.')
 

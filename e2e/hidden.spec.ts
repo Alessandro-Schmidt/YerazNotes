@@ -28,7 +28,7 @@ test('Hide takes a leaf off the map and out of the Explorer; Settings › Hidden
 }) => {
   await page.goto(`./#/tree/${REPO}/Identity%2Fkeycloak.md`)
   await signInHere(page)
-  const peek = page.getByRole('region', { name: 'Leaf preview' })
+  const peek = page.getByRole('region', { name: 'Note preview' })
   await expect(page.locator('[data-map] [data-thread]')).toHaveCount(2)
   await peek.getByRole('button', { name: 'Options' }).click()
   await page.getByRole('menuitem', { name: 'Hide' }).click()
@@ -64,7 +64,7 @@ test('Hide takes a leaf off the map and out of the Explorer; Settings › Hidden
 test('a Tree hides with everything under it, through its README.md', async ({ page, fake }) => {
   await page.goto(`./#/tree/${REPO}/Old`)
   await signInHere(page)
-  const peek = page.getByRole('region', { name: 'Tree preview' })
+  const peek = page.getByRole('region', { name: 'Project preview' })
   await peek.getByRole('button', { name: 'Options' }).click()
   await page.getByRole('menuitem', { name: 'Hide' }).click()
   await showExplorer(page)

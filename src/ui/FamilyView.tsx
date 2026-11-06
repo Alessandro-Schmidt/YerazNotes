@@ -215,7 +215,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           <button
             type="button"
             className={controls.iconButton}
-            aria-label="Show leaf panel"
+            aria-label="Show note panel"
             aria-pressed={peekShown}
             onClick={() => {
               if (peekShown) {
@@ -234,11 +234,11 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
             <button
               type="button"
               className={`${controls.primary} ${styles.newLeaf}`}
-              aria-label="New leaf"
+              aria-label="New note"
               onClick={() => setAction({ kind: 'new-leaf', parent: parentFor(graph, selected) })}
             >
               <Icon name="plus" />
-              <span className={styles.newLeafText}>New leaf</span>
+              <span className={styles.newLeafText}>New note</span>
             </button>
           )}
         </div>
@@ -407,7 +407,7 @@ function Status({
   if (data.status === 'loading') {
     return (
       <span role="status">
-        {data.total > 0 ? `Loading ${data.fetched}/${data.total} leaves…` : 'Loading…'}
+        {data.total > 0 ? `Loading ${data.fetched}/${data.total} notes…` : 'Loading…'}
       </span>
     )
   }

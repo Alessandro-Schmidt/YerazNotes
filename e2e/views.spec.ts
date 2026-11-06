@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test'
 import { treesOf } from '../src/map/family'
 import type { Graph } from '../src/model/graph'
 import { VIEW_IDS, VIEWS, type ViewId } from '../src/views/views'
-import { expect, isPhone, signInHere, test } from './fixtures'
+import { expect, isPhone, signInHere, test, save } from './fixtures'
 
 const REPO = 'you/engineering'
 
@@ -36,7 +36,7 @@ const shown: Record<ViewId, (page: Page) => ReturnType<Page['locator']>> = {
   outline: (p) => p.getByRole('list', { name: /outline$/ }),
   columns: (p) => p.getByRole('list', { name: /^Inside / }).first(),
   treemap: (p) => p.locator('[data-tile]').first(),
-  graph: (p) => p.getByRole('img', { name: 'Graph of leaves and threads' }),
+  graph: (p) => p.getByRole('img', { name: 'Graph of notes and threads' }),
   rings: (p) => p.getByRole('img', { name: /^Growth rings of/ }),
   atlas: (p) => p.getByRole('img', { name: /^Atlas of/ }),
 }
@@ -132,9 +132,9 @@ test('Growth rings dates leaves from git and shows the core sample', async ({ pa
   await openOn(page, 'rings', leaf.id)
   await expect(page.getByRole('img', { name: 'Core sample, one band per month' })).toBeVisible()
   if (!isPhone(page)) {
-    const card = page.getByRole('region', { name: 'Selected leaf' })
+    const card = page.getByRole('region', { name: 'Selected note' })
     await expect(card).toContainText(/Planted \w+ \d{4}/)
-    await card.getByRole('button', { name: 'Open leaf' }).click()
+    await card.getByRole('button', { name: 'Open note' }).click()
     await expect(page.getByRole('region', { name: /preview$/ })).toHaveAttribute('data-expanded')
   }
 })
@@ -208,11 +208,14 @@ test('the Family and link colours are saved in .yeraz.json and colour the map', 
     await radio.click()
     await expect(radio).toBeChecked()
   }
-  await page.goto('./#/settings/colours')
+  // The marker is written from the opened Family: open it first.
+  await page.goto(`./#/tree/${REPO}`)
   await signInHere(page)
+  await expect(page.getByRole('status')).toHaveText('Synced to main', { timeout: 30_000 })
+  await page.goto('./#/settings/colours')
   await pick('Engineering', 'Blue')
   await pick('Links', 'Amber')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect
     .poll(() => JSON.parse(fake.repo(REPO).read('.yeraz.json') ?? '{}'))
     .toMatchObject({ color: 'blue', linkColor: 'amber' })
@@ -221,7 +224,7 @@ test('the Family and link colours are saved in .yeraz.json and colour the map', 
   // Back to the Family's colour: the key goes.
   await page.goto('./#/settings/colours')
   await pick('Links', 'Family')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect
     .poll(() => JSON.parse(fake.repo(REPO).read('.yeraz.json') ?? '{}').linkColor)
     .toBeUndefined()
@@ -278,7 +281,7 @@ test('Atlas opens the selected leaf in the Peek beside it, to edit there', async
   await editor.click()
   await page.keyboard.press('ControlOrMeta+End')
   await page.keyboard.type(' Charted from the Atlas.')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(leaf.id)).toContain('Charted from the Atlas.')
   await expect(page.getByRole('region', { name: 'Selected peak' })).toHaveCount(0)
 })

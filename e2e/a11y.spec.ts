@@ -36,7 +36,7 @@ test('the skip link is the first stop, and lands on the main region', async ({ p
 
 test('search', async ({ page }) => {
   await signIn(page)
-  await page.getByRole('button', { name: /Search leaves, branches, trees/ }).click()
+  await page.getByRole('button', { name: /Search notes, groups, projects/ }).click()
   const search = page.getByRole('dialog', { name: 'Search' })
   await search.getByRole('combobox').fill('a')
   await expect(search.getByRole('option').first()).toBeVisible()
@@ -67,7 +67,7 @@ test('the icon picker', async ({ page, graph }) => {
 test('the new leaf dialog', async ({ page }) => {
   await page.goto(`./#/tree/${REPO}`)
   await signInHere(page)
-  await page.getByRole('banner').getByRole('button', { name: 'New leaf' }).click()
+  await page.getByRole('banner').getByRole('button', { name: 'New note' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   expect(await violations(page)).toEqual([])
 })

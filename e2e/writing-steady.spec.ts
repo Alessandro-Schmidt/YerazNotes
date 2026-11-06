@@ -19,7 +19,7 @@ test.describe('on a phone', () => {
   test('writing in the sheet opens the note to the full page', async ({ page, fake }) => {
     test.skip(!isPhone(page), 'The bottom sheet is on phones')
     await open(page, fake)
-    const peek = page.getByRole('region', { name: 'Leaf preview' })
+    const peek = page.getByRole('region', { name: 'Note preview' })
     await expect(peek).not.toHaveAttribute('data-expanded')
     await page.locator('.cm-content').getByText('Before.').click()
     await expect(peek).toHaveAttribute('data-expanded')
@@ -34,7 +34,7 @@ test.describe('on a phone', () => {
     const editor = page.locator('.cm-content')
     await editor.getByText('two').click()
     // Writing opens the full page: the text is typed once it is there and still.
-    const peek = page.getByRole('region', { name: 'Leaf preview' })
+    const peek = page.getByRole('region', { name: 'Note preview' })
     await expect(peek).toHaveAttribute('data-expanded')
     await peek.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
     await page.keyboard.press('End')
@@ -65,7 +65,7 @@ test.describe('on a phone', () => {
     test.skip(!isPhone(page), 'The full page over the screen is on phones')
     await open(page, fake)
     await page.locator('.cm-content').getByText('Before.').click()
-    const peek = page.getByRole('region', { name: 'Leaf preview' })
+    const peek = page.getByRole('region', { name: 'Note preview' })
     await expect(peek).toHaveAttribute('data-expanded')
     await peek.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
     // A keyboard opening: the visible part of the screen shrinks, and the browser scrolls the
@@ -95,7 +95,7 @@ test('on a phone, the full page shows the sync state and Save, since it covers t
 }) => {
   test.skip(!isPhone(page), 'The bottom sheet is on phones')
   await open(page, fake)
-  const peek = page.getByRole('region', { name: 'Leaf preview' })
+  const peek = page.getByRole('region', { name: 'Note preview' })
   await page.locator('.cm-content').getByText('After.').click()
   await expect(peek).toHaveAttribute('data-expanded')
   await expect(peek).toContainText('Synced to main')

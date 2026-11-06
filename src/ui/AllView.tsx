@@ -248,7 +248,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
             <button
               type="button"
               className={`${controls.primary} ${styles.newLeaf}`}
-              aria-label="New leaf"
+              aria-label="New note"
               onClick={() =>
                 setAction({
                   tree: target.ref,
@@ -257,7 +257,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
               }
             >
               <Icon name="plus" />
-              <span className={styles.newLeafText}>New leaf</span>
+              <span className={styles.newLeafText}>New note</span>
             </button>
           )}
         </div>

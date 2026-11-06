@@ -1,6 +1,6 @@
 // Graph (design/views/screens/05, 14): the leaves as a network of threads, each Tree a soft
 // dashed hull, dot size = words. The selected leaf has its own card: its threads and
-// "Open leaf". Layers (threads, sub-leaves, hulls) are classes on the canvas.
+// "Open note". Layers (threads, sub-notes, hulls) are classes on the canvas.
 
 import { memo, useCallback, useMemo, useState, type CSSProperties } from 'react'
 import type { TreeRef } from '../github/graphql'
@@ -91,7 +91,7 @@ export default function Graph({
 
   return (
     <Canvas
-      label="Graph of leaves and threads"
+      label="Graph of notes and threads"
       bounds={layout.bounds}
       insets={insets}
       margin={node && !phone ? { right: 16 + 290 } : undefined}
@@ -121,7 +121,7 @@ export default function Graph({
               onClick={() => toggle('struct')}
             >
               <span className={styles.structSwatch} />
-              Sub-leaves
+              Sub-notes
             </button>
             <button
               type="button"
@@ -140,7 +140,7 @@ export default function Graph({
         !phone && (
           <section
             className={`${controls.panel} ${styles.card}`}
-            aria-label="Selected leaf"
+            aria-label="Selected note"
             style={{ '--tree': treeColor(tree, topOf(graph, node.id)) } as CSSProperties}
           >
             <span className={`${controls.eyebrow} ${styles.cardKind}`}>
@@ -193,7 +193,7 @@ export default function Graph({
           </span>
           <span>
             <span className={controls.glyph} data-kind="sprout" />
-            With sub-leaves
+            With sub-notes
           </span>
           <span>
             <span className={ui.threadSwatch} />

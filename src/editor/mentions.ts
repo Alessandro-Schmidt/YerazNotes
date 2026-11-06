@@ -79,7 +79,7 @@ export function completeMention(context: CompletionContext): CompletionResult | 
   if (query && here && !source.leaves().some((l) => taken(l.title)) && !/^[/\\]+$/.test(query))
     options.push({
       label: query,
-      displayLabel: source.create ? `New sub-note “${query}”` : `New leaf “${query}”`,
+      displayLabel: source.create ? `New sub-note “${query}”` : `New note “${query}”`,
       detail: source.create ? undefined : 'not written yet',
       boost: -99,
       apply: (view, c, from, to) =>

@@ -141,10 +141,10 @@ export function Peek({
     node.kind === 'root'
       ? 'Family'
       : node.kind === 'leaf'
-        ? 'Leaf'
+        ? 'Note'
         : node.parent === ROOT
-          ? 'Tree'
-          : 'Branch'
+          ? 'Project'
+          : 'Group'
   const out = [...(graph.out.get(id) ?? []), ...ghostsFrom(graph, id)]
   const into = graph.in.get(id) ?? []
   // The Family lists its Trees; its README.md is its text, shown above them.
@@ -198,7 +198,7 @@ export function Peek({
       aria-label={`${kind} preview`}
     >
       {!expanded && (
-        <ResizeHandle panel={docked ? 'dock' : 'peek'} edge="left" label="Leaf panel width" />
+        <ResizeHandle panel={docked ? 'dock' : 'peek'} edge="left" label="Note panel width" />
       )}
       <PeekHead
         {...{ kind, crumb, away, href, onSelect, expanded, onClose, sheet, kept, onSwap }}
@@ -381,7 +381,7 @@ export function Peek({
             className={`${controls.ghost} ${styles.openLeaf}`}
             onClick={() => motion.expand(true)}
           >
-            Open leaf
+            Open note
             <Icon name="arrowRight" />
           </button>
         )}
@@ -393,7 +393,7 @@ export function Peek({
               onClick={() => onAction({ kind: 'new-leaf', parent: id })}
             >
               <Icon name="plus" size={15} />
-              New leaf here
+              New note here
             </button>
           )}
           {node.kind === 'root' && (
@@ -403,7 +403,7 @@ export function Peek({
               onClick={() => onAction({ kind: 'new-branch', parent: ROOT })}
             >
               <Icon name="plus" size={15} />
-              New tree
+              New project
             </button>
           )}
           {node.kind !== 'root' && (
@@ -461,7 +461,7 @@ export function Peek({
                       role="menuitem"
                       onClick={() => onAction({ kind: 'new-leaf', parent: id })}
                     >
-                      Add sub-leaf
+                      Add sub-note
                     </button>
                   )}
                   <button
@@ -469,7 +469,7 @@ export function Peek({
                     role="menuitem"
                     onClick={() => onAction({ kind: 'new-leaf', parent: id, many: true })}
                   >
-                    {node.kind === 'leaf' ? 'Add sub-leaves…' : 'New leaves here…'}
+                    {node.kind === 'leaf' ? 'Add sub-notes…' : 'New notes here…'}
                   </button>
                   {node.kind === 'branch' && (
                     <button
@@ -477,7 +477,7 @@ export function Peek({
                       role="menuitem"
                       onClick={() => onAction({ kind: 'new-branch', parent: id })}
                     >
-                      New branch here
+                      New group here
                     </button>
                   )}
                   {node.kind === 'leaf' && (
@@ -896,7 +896,7 @@ function GhostPeek({
       ref={sheet}
       className={styles.peek}
       data-expanded={expanded || undefined}
-      aria-label="Leaf not written yet"
+      aria-label="Note not written yet"
     >
       <PeekHead
         kind="Not written yet"
@@ -912,8 +912,8 @@ function GhostPeek({
               <h2 className={styles.title}>{ghost.title}</h2>
             </div>
             <p className={styles.ghostText}>
-              {ghost.from.length === 1 ? 'A leaf links' : `${ghost.from.length} leaves link`} here,
-              but this leaf isn’t written yet. Writing it creates the file the links name.
+              {ghost.from.length === 1 ? 'A note links' : `${ghost.from.length} notes link`} here,
+              but this note isn’t written yet. Writing it creates the file the links name.
             </p>
             {error && (
               <p className={controls.error} role="alert">
@@ -927,7 +927,7 @@ function GhostPeek({
               onClick={() => void write()}
             >
               <Icon name="plus" size={15} />
-              Write this leaf
+              Write this note
             </button>
             <ThreadList
               title="Threads in · mentioned by"

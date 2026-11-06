@@ -1,6 +1,6 @@
 // Formatting while writing (editor/format.ts): shortcuts and marks typed over a selection.
 
-import { expect, isPhone, signInHere, test } from './fixtures'
+import { expect, isPhone, signInHere, test, save } from './fixtures'
 
 const REPO = 'you/engineering'
 const LEAF = 'Identity/format.md'
@@ -26,11 +26,11 @@ test('Ctrl/⌘+B wraps the selection, again takes it off; a typed * wraps it too
   for (let i = 0; i < 'Make this '.length; i++) await page.keyboard.press('ArrowRight')
   for (let i = 0; i < 'word'.length; i++) await page.keyboard.press('Shift+ArrowRight')
   await page.keyboard.press('ControlOrMeta+b')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('Make this **word** strong.')
   await page.keyboard.press('ControlOrMeta+b')
   await page.keyboard.type('*')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('Make this *word* strong.')
 })
 
@@ -66,7 +66,7 @@ test('on a phone, a bar above the keyboard formats the selection', async ({ page
   await bar.getByRole('button', { name: 'Bold' }).click()
   await expect(editor).toBeFocused()
   await bar.getByRole('button', { name: 'To-do' }).click()
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- [ ] Make this **word** strong.')
 })
 
@@ -102,7 +102,7 @@ test('a code block hides its fences; its language is picked, and colours its key
   await languages.getByRole('menuitem', { name: 'Python', exact: true }).click()
   await expect(languages).toHaveCount(0)
   await expect(language).toHaveText('Python')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('```python\nconst x = 1\n```')
   await expect(editor.locator('.tok-keyword', { hasText: 'const' })).toHaveCount(0)
 })
@@ -115,10 +115,10 @@ test('Tab nests a list item under the one above, Shift+Tab brings it out', async
   const editor = page.locator('.cm-content')
   await editor.getByText('two').click()
   await page.keyboard.press('Tab')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- one\n  - two\n')
   await page.keyboard.press('Shift+Tab')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- one\n- two\n')
 })
 
@@ -128,9 +128,9 @@ test('on a phone, the bar indents and outdents a list item', async ({ page, fake
   const bar = page.getByRole('toolbar', { name: 'Formatting' })
   await editor.getByText('two').click()
   await bar.getByRole('button', { name: 'Indent' }).click()
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- one\n  - two\n')
   await bar.getByRole('button', { name: 'Outdent' }).click()
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- one\n- two\n')
 })

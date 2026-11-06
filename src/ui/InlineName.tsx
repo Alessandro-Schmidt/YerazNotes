@@ -10,7 +10,7 @@ export function InlineName({
   onRename,
 }: {
   value: string
-  /** What the field is for, e.g. "Tree name". */
+  /** What the field is for, e.g. "Project name". */
   label: string
   /** Saves the new name; a thrown message is shown and the field stays open. */
   onRename(name: string): Promise<void>

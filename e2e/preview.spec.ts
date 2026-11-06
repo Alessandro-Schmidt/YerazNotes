@@ -9,9 +9,9 @@ const REPO = 'you/engineering'
 async function newLeaf(page: Page) {
   await page.goto(`./#/tree/${REPO}`)
   await signInHere(page)
-  await page.getByRole('button', { name: 'New leaf' }).first().click()
+  await page.getByRole('button', { name: 'New note' }).first().click()
   await page.getByRole('dialog').getByLabel('Title').fill('Preview check')
-  await page.getByRole('dialog').getByRole('button', { name: 'Create leaf' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Create note' }).click()
   await expect(page.locator('.cm-title')).toBeVisible()
 }
 

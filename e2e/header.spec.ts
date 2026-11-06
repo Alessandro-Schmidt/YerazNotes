@@ -15,7 +15,7 @@ async function open(page: Page, fake: FakeGitHub, text: string) {
     .commit({ message: 'Armenia', additions: [{ path: 'armenia.md', contents: text }] })
   await page.goto(`./#/tree/${REPO}/armenia.md`)
   await signInHere(page)
-  const content = page.getByRole('region', { name: 'Leaf preview' }).locator('.cm-content')
+  const content = page.getByRole('region', { name: 'Note preview' }).locator('.cm-content')
   await expect(content).toContainText('Mount Ararat')
   return content
 }

@@ -4,7 +4,7 @@
 import type { Browser, Page } from '@playwright/test'
 import type { FakeGitHub } from '../test/fake-github/fakeGitHub'
 import type { Graph } from '../src/model/graph'
-import { expect, isPhone, signInHere, test } from './fixtures'
+import { expect, isPhone, signInHere, test, save } from './fixtures'
 
 const REPO = 'you/engineering'
 
@@ -87,7 +87,7 @@ test.describe('autosave', () => {
     await openEditor(page, plainLeaf(graph).id)
     fake.resetLog()
     await typeAtEnd(page, ' Saved by shortcut.')
-    await page.keyboard.press('ControlOrMeta+s')
+    await save(page)
     await expect.poll(() => mutations(fake).length).toBe(1)
 
     await typeAtEnd(page, ' Saved by leaving.')
@@ -105,7 +105,7 @@ test.describe('autosave', () => {
     await openEditor(page, leaf.id)
     fake.faults.offline = true
     await typeAtEnd(page, ' Offline words.')
-    await page.keyboard.press('ControlOrMeta+s')
+    await save(page)
     await expect(page.getByRole('status')).toHaveText('Offline · edits kept on this device')
 
     await page.reload()
@@ -193,19 +193,19 @@ test('moving a leaf rewrites every backlink in one commit', async ({ page, fake,
   const linking = graph.in.get(leaf.id)!
   await page.goto(`./#/tree/${REPO}/${leaf.id}`)
   await signInHere(page)
-  const panel = page.getByRole('region', { name: 'Leaf preview' })
+  const panel = page.getByRole('region', { name: 'Note preview' })
   await panel.getByRole('button', { name: 'Options' }).click()
   await page.getByRole('menuitem', { name: 'Move…' }).click()
   const dialog = page.getByRole('dialog')
   // At the top of the Family, it becomes a Tree of its own.
   await dialog
-    .getByRole('radio', { name: 'At the top of the Family, as a Tree of its own' })
+    .getByRole('radio', { name: 'At the top of the Family, as a project of its own' })
     .check()
   fake.resetLog()
   await dialog.getByRole('button', { name: 'Move' }).click()
   const moved = leaf.id.replace(/^.*\//, '')
   await expect(page).toHaveURL(new RegExp(`#/tree/${REPO}/${moved.replace('.', '\\.')}$`))
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => mutations(fake).length).toBe(1)
 
   const repo = fake.repo(REPO)
@@ -236,15 +236,15 @@ test('a Tree moves under another Tree, everything in it with it, in one commit (
     .map((n) => n.id)
   await page.goto(`./#/tree/${REPO}/${tree}`)
   await signInHere(page)
-  const panel = page.getByRole('region', { name: 'Tree preview' })
+  const panel = page.getByRole('region', { name: 'Project preview' })
   await panel.getByRole('button', { name: 'Options' }).click()
   await page.getByRole('menuitem', { name: 'Move…' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('radio', { name: graph.nodes.get(into!)!.title, exact: true }).check()
   fake.resetLog()
   await dialog.getByRole('button', { name: 'Move' }).click()
-  await expect(page.getByRole('region', { name: 'Branch preview' })).toBeVisible()
-  await page.keyboard.press('ControlOrMeta+s')
+  await expect(page.getByRole('region', { name: 'Group preview' })).toBeVisible()
+  await save(page)
   await expect.poll(() => mutations(fake).length).toBe(1)
 
   const repo = fake.repo(REPO)
@@ -263,10 +263,10 @@ test('a new leaf at the top of the Family is a Tree of its own, ready to write',
   await signInHere(page)
   await page
     .getByRole('complementary', { name: 'Explorer' })
-    .getByRole('button', { name: 'New leaf' })
+    .getByRole('button', { name: 'New note' })
     .click()
   await page.getByRole('dialog').getByLabel('Title').fill('Fresh Ideas')
-  await page.getByRole('dialog').getByRole('button', { name: 'Create leaf' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Create note' }).click()
   await expect(page).toHaveURL(/#\/tree\/you\/engineering\/fresh-ideas\.md$/)
   await expect(page.locator('.cm-title')).toContainText('Fresh Ideas')
   await page.keyboard.type('First line of a new leaf.')
@@ -286,12 +286,12 @@ test('a leaf is edited where it is shown: over the map, and at an old editor lin
   await page.goto(`./#/edit/${REPO}/${leaf.id}`)
   await signInHere(page)
   await expect(page).toHaveURL(new RegExp(`#/tree/${REPO}/${leaf.id.replace('.', '\\.')}$`))
-  const panel = page.getByRole('region', { name: 'Leaf preview' })
-  await expect(panel.getByRole('textbox', { name: 'Leaf text' })).toBeVisible()
+  const panel = page.getByRole('region', { name: 'Note preview' })
+  await expect(panel.getByRole('textbox', { name: 'Note text' })).toBeVisible()
   await expect(panel.getByRole('button', { name: 'Edit leaf' })).toHaveCount(0)
   if (!isPhone(page)) await expect(page.locator('[data-map]')).toBeVisible()
   await typeAtEnd(page, ' Typed beside the map.')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(leaf.id)).toContain('Typed beside the map.')
 })
 
@@ -317,13 +317,13 @@ test('selecting another leaf on the map commits the edit; the new leaf waits for
 
   // A leaf holding only its title is shown ready to edit, but selecting it doesn't take the
   // keyboard (or open a phone's): only a leaf just created does.
-  const panel = page.getByRole('region', { name: 'Leaf preview' })
+  const panel = page.getByRole('region', { name: 'Note preview' })
   await expect(panel.locator('.cm-title')).toHaveText('Empty')
   await expect(panel.locator('.cm-editor')).not.toHaveClass(/cm-focused/)
   await panel.locator('.cm-content').click()
   await page.keyboard.press('ControlOrMeta+End')
   await page.keyboard.type('Now it has a line.')
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read('empty.md')).toBe('# Empty\nNow it has a line.')
 })
 
@@ -333,18 +333,18 @@ test('creates many sub-leaves of a leaf in one commit', async ({ page, fake, gra
   await page.goto(`./#/tree/${REPO}/${leaf.id}`)
   await signInHere(page)
   await page
-    .getByRole('region', { name: 'Leaf preview' })
+    .getByRole('region', { name: 'Note preview' })
     .getByRole('button', { name: 'Options' })
     .click()
-  await page.getByRole('menuitem', { name: 'Add sub-leaves…' }).click()
-  const dialog = page.getByRole('dialog', { name: 'New sub-leaves' })
+  await page.getByRole('menuitem', { name: 'Add sub-notes…' }).click()
+  const dialog = page.getByRole('dialog', { name: 'New sub-notes' })
   await dialog.getByLabel('Titles').fill('🧪 Experiments\n\n- Results\nresults\n')
   fake.resetLog()
-  await dialog.getByRole('button', { name: 'Create 3 leaves' }).click()
+  await dialog.getByRole('button', { name: 'Create 3 notes' }).click()
   await expect(dialog).toBeHidden()
   for (const name of ['experiments', 'results', 'results-2'])
     await expect(page.locator(`[data-node][data-id="${folder}/${name}.md"]`).first()).toBeAttached()
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => mutations(fake).length).toBe(1)
   const repo = fake.repo(REPO)
   expect(repo.read(`${folder}/experiments.md`)).toBe('# 🧪 Experiments\n\n')
@@ -358,16 +358,16 @@ test('the new-leaf dialog switches to several leaves at once', async ({ page, fa
   await signInHere(page)
   await page
     .getByRole('complementary', { name: 'Explorer' })
-    .getByRole('button', { name: 'New leaf' })
+    .getByRole('button', { name: 'New note' })
     .click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Title').fill('Reading list')
   await dialog.getByRole('button', { name: 'Several at once' }).click()
   await expect(dialog.getByLabel('Titles')).toHaveValue('Reading list')
   await dialog.getByLabel('Titles').fill('Reading list\nWatch list')
-  await dialog.getByRole('button', { name: 'Create 2 leaves' }).click()
+  await dialog.getByRole('button', { name: 'Create 2 notes' }).click()
   await expect(page.locator('[data-map] > svg [data-tree="watch-list.md"]')).toBeAttached()
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read('reading-list.md')).toBe('# Reading list\n\n')
   expect(fake.repo(REPO).read('watch-list.md')).toBe('# Watch list\n\n')
 })
@@ -398,14 +398,14 @@ test('creates a Tree (a folder at the top) with its first leaf, keeping the name
   await signInHere(page)
   await page
     .getByRole('complementary', { name: 'Explorer' })
-    .getByRole('button', { name: 'New tree' })
+    .getByRole('button', { name: 'New project' })
     .click()
   const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Tree name').fill('Distributed Systems')
-  await dialog.getByLabel('First leaf').fill('Consensus')
-  await dialog.getByRole('button', { name: 'Create tree' }).click()
+  await dialog.getByLabel('Project name').fill('Distributed Systems')
+  await dialog.getByLabel('First note').fill('Consensus')
+  await dialog.getByRole('button', { name: 'Create project' }).click()
   await expect(page).toHaveURL(/#\/tree\/you\/engineering\/Distributed%20Systems\/consensus\.md$/)
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect
     .poll(() => fake.repo(REPO).read('Distributed Systems/consensus.md'))
     .toBe('# Consensus\n\n')
@@ -421,21 +421,21 @@ test('deleting a leaf warns about the leaves that link to it', async ({ page, fa
   await page.goto(`./#/tree/${REPO}/${leaf.id}`)
   await signInHere(page)
   await page
-    .getByRole('region', { name: 'Leaf preview' })
+    .getByRole('region', { name: 'Note preview' })
     .getByRole('button', { name: 'Options' })
     .click()
   await page.getByRole('menuitem', { name: 'Delete…' }).click()
   const dialog = page.getByRole('dialog')
-  await expect(dialog).toContainText(`${linkers.size} leaves link here`)
+  await expect(dialog).toContainText(`${linkers.size} notes link here`)
   const count = 1 + graph.nodes.get(leaf.id)!.children.length
   await dialog
-    .getByRole('button', { name: count > 1 ? `Delete ${count} leaves` : 'Delete leaf' })
+    .getByRole('button', { name: count > 1 ? `Delete ${count} notes` : 'Delete note' })
     .click()
   await expect(page).toHaveURL(new RegExp(`#/tree/${REPO}$`))
   // The links to it stay: on the map it is a ghost now, a leaf not written yet.
   await expect(page.locator(`[data-node]:not([data-ghost])[data-id="${leaf.id}"]`)).toHaveCount(0)
   await expect(page.locator(`[data-node][data-ghost][data-id="${leaf.id}"]`).first()).toBeAttached()
-  await page.keyboard.press('ControlOrMeta+s')
+  await save(page)
   await expect.poll(() => fake.repo(REPO).read(leaf.id)).toBeUndefined()
 })
 
@@ -483,9 +483,9 @@ test('live preview hides Markdown, toggles tasks, and shows the source on reques
   test.skip(isPhone(page), 'Typing tests run on desktop engines')
   await page.goto(`./#/tree/${REPO}`)
   await signInHere(page)
-  await page.getByRole('button', { name: 'New leaf' }).first().click()
+  await page.getByRole('button', { name: 'New note' }).first().click()
   await page.getByRole('dialog').getByLabel('Title').fill('Preview check')
-  await page.getByRole('dialog').getByRole('button', { name: 'Create leaf' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Create note' }).click()
   await expect(page.locator('.cm-title')).toBeVisible()
   await page.keyboard.type('## Section\n- [ ] A task')
 
@@ -512,7 +512,7 @@ test('the editor and the dialogs have no accessibility violations', async ({ pag
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
   await page.goto(`./#/tree/${REPO}/${linkedLeaf(graph).id}`)
   await page
-    .getByRole('region', { name: 'Leaf preview' })
+    .getByRole('region', { name: 'Note preview' })
     .getByRole('button', { name: 'Options' })
     .click()
   await page.getByRole('menuitem', { name: 'Move…' }).click()

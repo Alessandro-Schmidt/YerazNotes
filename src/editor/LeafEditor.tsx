@@ -76,7 +76,7 @@ export function LeafEditor({
         const file = n.kind === 'leaf' || n.kind === 'branch' ? textFile(graph, n.id) : null
         const to = file && url(file)
         if (!to || file === path) return []
-        const kind = n.kind === 'branch' ? (n.parent === ROOT ? 'Tree' : 'Branch') : undefined
+        const kind = n.kind === 'branch' ? (n.parent === ROOT ? 'Project' : 'Group') : undefined
         const detail = [where, kind].filter(Boolean).join(' · ') || undefined
         return [{ path: to, title: n.title, icon: n.icon, detail }]
       })
