@@ -197,6 +197,15 @@ export function Peek({
           ]
 
   const { named, where } = threadNames(graph)
+  const chipRow = (
+    <div className={styles.chips}>
+      {chips.map((c) => (
+        <span key={c} className={`${controls.mono} ${styles.meta}`}>
+          {c}
+        </span>
+      ))}
+    </div>
+  )
 
   return (
     <section
@@ -256,7 +265,7 @@ export function Peek({
                 autoFocus={created}
                 onOpen={onSelect}
               />
-            ) : (
+            ) : node.kind === 'branch' ? null : (
               <div className={styles.titleRow}>
                 <Glyph node={node} />
                 <h2 className={styles.title}>
@@ -272,13 +281,7 @@ export function Peek({
                 </h2>
               </div>
             )}
-            <div className={styles.chips}>
-              {chips.map((c) => (
-                <span key={c} className={`${controls.mono} ${styles.meta}`}>
-                  {c}
-                </span>
-              ))}
-            </div>
+            {node.kind !== 'branch' && chipRow}
 
             {/* A branch's text (its folder's README.md): always in the leaf editor, ready to
                 write, even before the file exists; the first save creates it. */}
@@ -289,6 +292,15 @@ export function Peek({
                 path={textFile(graph, id)!}
                 source={source}
                 onOpen={onSelect}
+                heading={
+                  <>
+                    <div className={styles.titleRow}>
+                      <Glyph node={node} />
+                      <h2 className={styles.title}>{node.title}</h2>
+                    </div>
+                    {chipRow}
+                  </>
+                }
               />
             )}
 

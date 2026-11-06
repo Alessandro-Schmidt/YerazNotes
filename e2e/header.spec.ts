@@ -117,4 +117,31 @@ test.describe('the header', () => {
         '# 🇦🇲 Armenia\n<!-- yeraz {"color":{"heading":"amber"},"cover":"https://example.com/c.png","iconInline":true,"coverAspect":"slim"} -->\n\nMount Ararat.\n',
       )
   })
+  test('a group’s icon can sit beside its name too', async ({ page, fake }) => {
+    await fake.repo(REPO).commit({
+      message: 'Caucasus',
+      additions: [
+        { path: 'caucasus/README.md', contents: '# 🏔️ Caucasus\n\nMountains.\n' },
+        { path: 'caucasus/elbrus.md', contents: '# Elbrus\n' },
+      ],
+    })
+    await page.goto(`./#/tree/${REPO}/caucasus`)
+    await signInHere(page)
+    const peek = page.getByRole('region', { name: /preview/ })
+    await expect(peek.locator('.cm-content')).toContainText('Mountains')
+    const name = peek.getByRole('heading', { level: 2, name: 'caucasus' })
+    const icon = peek.getByRole('button', { name: 'Change icon 🏔️' })
+    expect((await icon.boundingBox())!.y).toBeGreaterThan((await name.boundingBox())!.y + 20)
+
+    await icon.click()
+    await page.getByRole('menuitemcheckbox', { name: 'Beside the title' }).click()
+    const [a, t] = [(await icon.boundingBox())!, (await name.boundingBox())!]
+    expect(Math.abs(a.y + a.height / 2 - (t.y + t.height / 2))).toBeLessThan(8)
+    expect(a.x + a.width).toBeLessThanOrEqual(t.x)
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('ControlOrMeta+s')
+    await expect
+      .poll(() => fake.repo(REPO).read('caucasus/README.md'))
+      .toContain('"iconInline":true')
+  })
 })

@@ -6,6 +6,7 @@ import {
   lazy,
   Suspense,
   type CSSProperties,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -49,6 +50,7 @@ export function LeafEditor({
   source,
   autoFocus,
   onOpen,
+  heading,
 }: {
   repo: string
   path: string
@@ -58,6 +60,8 @@ export function LeafEditor({
   autoFocus?: boolean | undefined
   /** Opens another leaf: an @ mention was clicked. */
   onOpen(id: string): void
+  /** A branch's name (and what goes with it), drawn here so its icon can sit beside it. */
+  heading?: ReactNode
 }) {
   const key = repo.toLowerCase()
   const tree = useSession((s) => s.trees.find((t) => t.repo.toLowerCase() === key))
@@ -296,8 +300,8 @@ export function LeafEditor({
     }
   }
 
-  // Line 2's `iconInline`: the icon on the title's line, beside it (a branch's title is hidden).
-  const inline = meta?.iconInline === true && branch === null
+  // Line 2's `iconInline`: the icon on the title's line, beside it (a branch's: beside its name).
+  const inline = meta?.iconInline === true
   const shape = iconShape(meta)
   const focus = iconFocus(meta)
   // The title starts after the icon: 36 px high in its frame, or an emoji's width.
@@ -314,7 +318,7 @@ export function LeafEditor({
     <div
       className={styles.iconRow}
       data-position={inline ? 'left' : iconPlace(meta)}
-      data-inline={inline ? '' : undefined}
+      data-inline={inline && branch === null ? '' : undefined}
       // Over the cover's lower edge; not while the cover is being moved.
       data-over-cover={meta?.cover && !repositioning && !inline ? '' : undefined}
     >
@@ -354,16 +358,14 @@ export function LeafEditor({
           }
         >
           {iconChoices}
-          {branch === null && (
-            <button
-              type="button"
-              role="menuitemcheckbox"
-              aria-checked={inline}
-              onClick={() => choose('iconInline', inline ? undefined : true)}
-            >
-              Beside the title
-            </button>
-          )}
+          <button
+            type="button"
+            role="menuitemcheckbox"
+            aria-checked={inline}
+            onClick={() => choose('iconInline', inline ? undefined : true)}
+          >
+            Beside the title
+          </button>
           {!inline && (
             <>
               <span className={styles.menuLabel} role="presentation">
@@ -422,6 +424,12 @@ export function LeafEditor({
   if (text?.path !== path) return <div className={styles.loading} aria-busy="true" />
   return (
     <div className={styles.leaf} data-leaf="">
+      {heading && (
+        <div className={styles.headingRow}>
+          {inline && iconRow}
+          <div className={styles.heading}>{heading}</div>
+        </div>
+      )}
       <EditableCover
         key={`${path} ${repositioning}`}
         repo={repo}
@@ -436,7 +444,7 @@ export function LeafEditor({
       {/* The header's controls change the editor's text, so they appear with it. */}
       <Suspense fallback={<div className={styles.loading} aria-busy="true" />}>
         <div className={styles.header}>
-          {!inline && iconRow}
+          {(!inline || (branch !== null && !heading)) && iconRow}
           <LeafStyle
             meta={meta}
             iconChoices={owned?.icon || image ? null : iconChoices}
@@ -490,10 +498,10 @@ export function LeafEditor({
         />
         <div
           className={styles.body}
-          data-icon-inline={inline ? '' : undefined}
+          data-icon-inline={inline && branch === null ? '' : undefined}
           style={inline ? ({ '--inline-icon-w': `${inlineWidth}px` } as CSSProperties) : undefined}
         >
-          {inline && iconRow}
+          {inline && branch === null && iconRow}
           <Editor
             initial={text.text}
             source={source}

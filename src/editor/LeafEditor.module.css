@@ -347,3 +347,28 @@
   gap: 8px;
   padding: 6px;
 }
+
+/* A branch's name, with its icon beside it when line 2 says `iconInline`: the icon in the
+   first column, level with the name; the chips under the name. */
+.headingRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+.heading {
+  display: contents;
+}
+.heading > * {
+  grid-column: 2;
+}
+.headingRow > .iconRow {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0 12px 0 0;
+}
+.headingRow .icon {
+  font-size: 32px;
+}
+.headingRow .iconImage {
+  height: 36px;
+}
