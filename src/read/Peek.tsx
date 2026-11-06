@@ -418,7 +418,10 @@ export function Peek({
                       type="button"
                       role="menuitem"
                       onClick={() =>
-                        void printable(tree.repo, graph, id, href).then(printLeaf, () => undefined)
+                        void printable(tree.repo, graph, id, href).then(
+                          (leaf) => printLeaf(leaf, node.title),
+                          () => undefined,
+                        )
                       }
                     >
                       Export PDF

@@ -703,14 +703,31 @@
   font-size: 24px;
 }
 
-/* A bookmark: the same card, its address on one line. */
+/* A bookmark: the same card across the column, its site's icon and address on one line. */
 .content :global(.bookmark) {
-  max-width: 100%;
+  display: flex;
+  gap: 4px;
+  padding: 14px 16px;
+}
+.content :global(.bookmark) strong {
+  font-size: 15px;
 }
 .content :global(.bookmark) span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.content :global(.favicon) {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: center / contain no-repeat;
 }
 
 /* A menu opens from its button. */
