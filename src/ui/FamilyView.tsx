@@ -179,7 +179,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           <FamilyMenu current={repo} />
         </div>
         {!phone && <ViewSwitcher />}
-        <Search repo={repo} onMatches={setFound} />
+        <Search repo={repo} lit={!!found} onMatches={setFound} />
         <span className={styles.status}>
           <Status data={data} repo={repo} branch={tree?.branch ?? 'main'} />
         </span>

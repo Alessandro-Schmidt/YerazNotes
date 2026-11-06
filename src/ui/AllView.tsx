@@ -222,7 +222,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           <FamilyMenu all />
         </div>
         {!phone && <ViewSwitcher />}
-        <Search repo={target?.ref.repo ?? ''} onMatches={setFound} />
+        <Search repo={target?.ref.repo ?? ''} lit={!!found} onMatches={setFound} />
         <div className={styles.toggles}>
           <SaveAndRefresh repos={trees.map((t) => t.repo)} />
           {target && (

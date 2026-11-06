@@ -22,7 +22,16 @@ export interface Matches {
 }
 
 /** `repo` is the Family on screen; `onMatches` receives what a picked search found. */
-export function Search({ repo, onMatches }: { repo: string; onMatches(m: Matches): void }) {
+export function Search({
+  repo,
+  lit = false,
+  onMatches,
+}: {
+  repo: string
+  /** Matches are lit on the map: a × (or Escape) clears them. */
+  lit?: boolean
+  onMatches(m: Matches | null): void
+}) {
   const [open, setOpen] = useState(false)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -30,11 +39,11 @@ export function Search({ repo, onMatches }: { repo: string; onMatches(m: Matches
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setOpen(true)
-      }
+      } else if (e.key === 'Escape' && lit) onMatches(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [lit, onMatches])
   return (
     <>
       <button
@@ -47,6 +56,17 @@ export function Search({ repo, onMatches }: { repo: string; onMatches(m: Matches
         <span className={styles.placeholder}>Search leaves, branches, trees…</span>
         <kbd className={styles.key}>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
       </button>
+      {lit && (
+        <button
+          type="button"
+          className={styles.clear}
+          aria-label="Clear highlights"
+          title="Clear highlights (Esc)"
+          onClick={() => onMatches(null)}
+        >
+          <Icon name="close" size={16} />
+        </button>
+      )}
       {open && <SearchDialog repo={repo} onMatches={onMatches} onClose={() => setOpen(false)} />}
     </>
   )
@@ -58,10 +78,11 @@ function SearchDialog({
   onClose,
 }: {
   repo: string
-  onMatches(m: Matches): void
+  onMatches(m: Matches | null): void
   onClose(): void
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
+  const list = useRef<HTMLUListElement>(null)
   const listId = useId()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -127,6 +148,12 @@ function SearchDialog({
     for (const h of hits) if (h.kind !== 'tree') (ids[h.repo.toLowerCase()] ??= []).push(h.id)
     return { query: query.trim(), ids }
   }, [hits, query])
+  // The active result rises to the top of the list, the others slide up (a game's menu).
+  useEffect(() => {
+    const ul = list.current
+    const li = ul?.children[current] as HTMLElement | undefined
+    if (ul && li) ul.scrollTo({ top: li.offsetTop - 6 /* the list's padding */ })
+  }, [current])
   const here = matches.ids[repo.toLowerCase()]?.length ?? 0
 
   const go = (r: Searchable) => {
@@ -168,6 +195,7 @@ function SearchDialog({
           onChange={(e) => {
             setQuery(e.target.value)
             setActive(0)
+            if (!e.target.value.trim()) onMatches(null)
           }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') setActive((a) => Math.min(a + 1, results.length - 1))
@@ -178,7 +206,7 @@ function SearchDialog({
           }}
         />
       </div>
-      <ul id={listId} role="listbox" aria-label="Results" className={styles.results}>
+      <ul ref={list} id={listId} role="listbox" aria-label="Results" className={styles.results}>
         {results.map((r, i) => (
           <li
             key={`${r.repo}:${r.id}`}
