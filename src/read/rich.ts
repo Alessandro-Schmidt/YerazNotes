@@ -15,7 +15,7 @@ import {
   subtitleTracks,
   type Embed,
 } from '../model/embeds'
-import { fileCardHtml } from './files'
+import { favicon, fileCardHtml } from './files'
 import { youtubeButtonHtml } from './youtube'
 
 type MarkdownIt = InstanceType<typeof MarkdownItClass>
@@ -170,7 +170,7 @@ function embedHtml(embed: Embed, env: RichEnv, escape: (s: string) => string): s
   if (embed.kind === 'bookmark') {
     return (
       `<p><a class="repo-card bookmark" href="${escape(embed.url)}" target="_blank" rel="noopener noreferrer">` +
-      `<strong>${escape(embed.title)}</strong><span>${escape(shortUrl(embed.url))}</span></a></p>\n`
+      `<strong>${escape(embed.title)}</strong><span>${favicon(embed.url)}${escape(shortUrl(embed.url))}</span></a></p>\n`
     )
   }
   if (embed.kind === 'repo') {

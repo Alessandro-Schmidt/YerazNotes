@@ -266,7 +266,9 @@ describe('renderLeaf', () => {
     )
     expect(html).toContain(
       '<p><a class="repo-card bookmark" href="https://en.wikipedia.org/wiki/Baroque" target="_blank" rel="noopener noreferrer">' +
-        '<strong>Baroque &lt;art&gt;</strong><span>en.wikipedia.org/wiki/Baroque</span></a></p>',
+        '<strong>Baroque &lt;art&gt;</strong><span>' +
+        `<i class="favicon" style="background-image:url('https://en.wikipedia.org/favicon.ico')"></i>` +
+        'en.wikipedia.org/wiki/Baroque</span></a></p>',
     )
     expect(html).toContain('<p><a href="https://example.com/post" target="_blank"')
     expect(html).toContain('Read <a href="https://example.com/a" target="_blank"')

@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import styles from './TopBar.module.css'
 
-const brand = (file: string) => `${import.meta.env.BASE_URL}brand/${file}`
 
 /**
  * The 56 px bar: the leaf and "Yeraz", then whatever the screen puts after it. The leaf
@@ -33,19 +32,12 @@ export function TopBar({ children, home }: { children?: ReactNode; home?: () => 
           })
         }
       >
-        {/* Both marks are present; CSS shows the one for the current mode, so a theme switch renders nothing. */}
+        {/* The app's icon, as the favicon and the installers draw it. */}
         <img
-          className={`${styles.mark} ${styles.markDark}`}
-          src={brand('yeraz-mark-small.svg')}
+          className={styles.mark}
+          src={`${import.meta.env.BASE_URL}favicon.svg?v=leaf`}
           alt=""
-          width={25}
-          height={24}
-        />
-        <img
-          className={`${styles.mark} ${styles.markLight}`}
-          src={brand('yeraz-mark-small-light.svg')}
-          alt=""
-          width={25}
+          width={24}
           height={24}
         />
         <span className={styles.word}>Yeraz</span>

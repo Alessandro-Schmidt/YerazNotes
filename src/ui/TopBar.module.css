@@ -54,11 +54,6 @@
   width: auto;
 }
 
-:root[data-mode='light'] .markDark,
-:root[data-mode='dark'] .markLight {
-  display: none;
-}
-
 .word {
   font-weight: 600;
   font-size: 15px;
