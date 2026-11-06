@@ -119,3 +119,17 @@ export function savePinSide(side: PinSide, store = storage()): void {
     // Refused storage: the side still changes for this visit.
   }
 }
+
+/**
+ * The column on a stacked note's left, which trades width with it across their shared edge
+ * (undefined for the leftmost, whose edge is free). `slot` is a kept note's place, or
+ * undefined for the opened note; `kept` is how many are kept.
+ */
+export function leftOf(side: PinSide, kept: number, slot?: number): Panel | undefined {
+  if (kept === 0) return undefined
+  if (side === 'left')
+    return slot === undefined ? `pin${kept - 1}` : slot > 0 ? `pin${slot - 1}` : undefined
+  // Right: the opened note first, then the kept ones from the last to the first.
+  if (slot === undefined) return undefined
+  return slot === kept - 1 ? 'peek' : `pin${slot + 1}`
+}

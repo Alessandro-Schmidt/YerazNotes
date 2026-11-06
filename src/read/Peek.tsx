@@ -38,6 +38,7 @@ import { Icon } from '../ui/icons'
 import { InlineName } from '../ui/InlineName'
 import { play } from '../ui/motion'
 import { ResizeHandle } from '../ui/ResizeHandle'
+import type { Panel } from '../ui/panels'
 import { widthVar } from '../ui/panels'
 import { PHONE, useMedia } from '../ui/useMedia'
 import { SyncStatus } from '../ui/SyncStatus'
@@ -68,6 +69,8 @@ export interface PeekProps {
   pinned?: boolean
   /** A kept note's place in the stack: its column's width is its own (`pin0`, `pin1`…). */
   slot?: number
+  /** The column to its left in a stack: dragging the edge between them moves width from one to the other. */
+  partner?: Panel
   /** Keeps this node open beside whatever is selected next; the head shows the button. */
   onPin?(id: string): void
   /** This node is pinned: the pin shows pressed, and a click unpins it. */
@@ -93,6 +96,7 @@ export function Peek({
   created,
   pinned,
   slot,
+  partner,
   onPin,
   kept,
   onSwap,
@@ -212,6 +216,7 @@ export function Peek({
         <ResizeHandle
           panel={docked ? 'dock' : slot === undefined ? 'peek' : `pin${slot}`}
           edge="left"
+          partner={docked ? undefined : partner}
           label="Note panel width"
         />
       )}

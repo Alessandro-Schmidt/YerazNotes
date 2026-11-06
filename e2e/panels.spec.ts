@@ -134,11 +134,13 @@ test('a kept note and the opened one resize each on its own', async ({ page, gra
   await expect.poll(() => width(peeks.nth(0))).toBe(420)
   await expect.poll(() => width(peeks.nth(1))).toBe(420)
 
+  // The edge between them moves: the opened one gains what the kept one gives up.
   await drag(page, peeks.nth(1).getByRole('separator', { name: 'Note panel width' }), -100)
   await expect.poll(() => width(peeks.nth(1))).toBe(520)
-  await expect.poll(() => width(peeks.nth(0))).toBe(420)
+  await expect.poll(() => width(peeks.nth(0))).toBe(320)
+  // The kept one's outer edge widens it alone.
   await drag(page, peeks.nth(0).getByRole('separator', { name: 'Note panel width' }), -60)
-  await expect.poll(() => width(peeks.nth(0))).toBe(480)
+  await expect.poll(() => width(peeks.nth(0))).toBe(380)
   await expect.poll(() => width(peeks.nth(1))).toBe(520)
 
   // Kept on this device, each its own.
