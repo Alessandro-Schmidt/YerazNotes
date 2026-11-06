@@ -299,7 +299,8 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
             </Suspense>
           ) : graph && family ? (
             <TreeMap
-              treeKey={seed ? `${key}~${seed}` : key}
+              treeKey={key}
+              arrangement={seed}
               graph={graph}
               family={family}
               imageUrl={imageUrl}

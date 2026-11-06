@@ -304,7 +304,8 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
             </Suspense>
           ) : families.length ? (
             <TreeMap
-              treeKey={seed ? `all~${seed}` : 'all'}
+              treeKey="all"
+              arrangement={seed}
               graph={merged}
               family={layout}
               imageUrl={imageUrl}

@@ -207,6 +207,24 @@ describe('labels', () => {
     expect(layoutTree(graph, { seed: 43 }).nodes).not.toEqual(a.nodes)
   })
 
+  it('Rearrange changes the structure, not just the turn of the Tree', () => {
+    const graph = fixtureGraph(120)
+    // Rotation-free: each top-level node's share of the circle, read from the first node.
+    const shape = (seed: number) => {
+      const top = layoutTree(graph, { seed })
+        .nodes.filter((n) => n.depth === 1)
+        .sort((x, y) => x.angle - y.angle)
+      const first = top.find((n) => n.id === top.map((t) => t.id).sort()[0])!
+      return top.map((n) => [
+        n.id,
+        Math.round(((n.angle - first.angle + 4 * Math.PI) % (2 * Math.PI)) * 100),
+      ])
+    }
+    const seeds = [0, 1, 2, 3, 42, 99]
+    const shapes = seeds.map((s) => JSON.stringify(shape(s)))
+    expect(new Set(shapes).size).toBe(seeds.length)
+  })
+
   it('stay horizontal on small Trees where they fit, and follow the radius on large ones', () => {
     const big = layoutTree(graphs[0]![1])
     expect(big.nodes.some((n) => n.kind === 'leaf' && n.labelRotate !== 0)).toBe(true)
