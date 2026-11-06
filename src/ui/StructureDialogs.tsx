@@ -2,7 +2,7 @@
 // Move, Delete and Create a new repository
 // (development-plan.md M2 steps 2 and 5). Plans come from sync/structure.ts.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { fileUrl, type TreeRef } from '../github/graphql'
 import { crumbs, type Graph, type Template } from '../model/graph'
 import { ROOT } from '../model/tree'
@@ -34,6 +34,28 @@ export function parentFor(graph: Graph, selected: string | null): string {
   const node = selected !== null ? graph.nodes.get(selected) : undefined
   if (!node || node.kind === 'root') return ROOT
   return node.kind === 'branch' ? node.id : (node.parent ?? ROOT)
+}
+
+/**
+ * Ctrl/Cmd+N: a new note; Ctrl/Cmd+S: a sub-note (`run(sub)`). Ctrl+S still commits too.
+ * Some browsers keep Ctrl+N for a new window; the desktop app gets it.
+ */
+export function useNewNoteKeys(run: (sub: boolean) => void) {
+  const latest = useRef(run)
+  useEffect(() => {
+    latest.current = run
+  })
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return
+      if (key !== 'n' && key !== 's') return
+      e.preventDefault()
+      latest.current(key === 's')
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
 }
 
 const where = (graph: Graph, id: string, family = 'the Family') =>

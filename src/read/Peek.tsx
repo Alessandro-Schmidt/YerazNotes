@@ -50,6 +50,7 @@ import { printLeaf } from './print'
 import { playYouTube } from './youtube'
 import { renderLeaf } from './render'
 import { planGhostLeaf, planTemplate } from '../sync/structure'
+import { newNoteAction } from '../sync/structure'
 import type { StructureAction } from '../ui/StructureDialogs'
 
 export interface PeekProps {
@@ -278,6 +279,29 @@ export function Peek({
                 sha={readme.sha}
                 href={href}
               />
+            )}
+
+            {(node.kind === 'leaf' || node.kind === 'branch') && (
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={controls.ghost}
+                  title="Ctrl/Cmd+N"
+                  onClick={() => onAction(newNoteAction(graph, id, false)!)}
+                >
+                  <Icon name="arrowRight" size={15} />
+                  New note
+                </button>
+                <button
+                  type="button"
+                  className={controls.ghost}
+                  title="Ctrl/Cmd+S"
+                  onClick={() => onAction(newNoteAction(graph, id, true)!)}
+                >
+                  <Icon name="arrowDown" size={15} />
+                  New sub-note
+                </button>
+              </div>
             )}
 
             {children.length + hiddenKids.length > 0 && (

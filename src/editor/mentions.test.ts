@@ -117,6 +117,26 @@ describe('completeMention', () => {
     // Without a file being written (no `here`), there is no beside.
     expect(complete('See @Tokens')!.options.some((o) => o.detail === 'not written yet')).toBe(false)
   })
+
+  it('writes a new name now, as a sub-note, when the source can', () => {
+    const made: string[] = []
+    const here = {
+      ...source,
+      here: () => 'identity/keycloak.md',
+      create: (title: string) => (made.push(title), `identity/keycloak/${title}.md`),
+    }
+    const state = EditorState.create({ doc: 'See @Tokens', extensions: [mentionSource.of(here)] })
+    const last = completeMention(new CompletionContext(state, 11, false))!.options.at(-1)!
+    expect(last.displayLabel).toBe('New sub-note “Tokens”')
+    let inserted = ''
+    const view = {
+      state,
+      dispatch: (tr: { changes: { insert: string } }) => (inserted = tr.changes.insert),
+    }
+    ;(last.apply as (v: unknown, c: unknown, from: number, to: number) => void)(view, last, 5, 11)
+    expect(made).toEqual(['Tokens'])
+    expect(inserted).toBe('[Tokens](/identity/keycloak/Tokens.md)')
+  })
 })
 
 describe('newLeafPath', () => {
