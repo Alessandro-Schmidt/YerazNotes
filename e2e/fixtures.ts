@@ -130,16 +130,3 @@ export async function signInHere(page: Page) {
 export const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1000) <= 640
 
 export { expect } from '@playwright/test'
-
-/** Ctrl/⌘+S commits and also opens New sub-note (StructureDialogs useNewNoteKeys): close it to keep writing. */
-export async function save(page: Page) {
-  const focused = await page.evaluateHandle(() => document.activeElement as HTMLElement | null)
-  await page.keyboard.press('ControlOrMeta+s')
-  const dialog = page.getByRole('dialog', { name: /^New sub-note/ })
-  await dialog.waitFor({ timeout: 2000 }).then(
-    () => page.keyboard.press('Escape'),
-    () => {},
-  )
-  await expect(dialog).toHaveCount(0)
-  await focused.evaluate((el) => el?.focus())
-}

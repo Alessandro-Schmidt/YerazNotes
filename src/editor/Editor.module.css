@@ -501,6 +501,10 @@
 .editor :global(.cm-embed-bookmark strong) {
   font-size: 15px;
 }
+.editor :global(.cm-embed-bookmark .bookmark-desc) {
+  font-size: 13px;
+  color: var(--muted);
+}
 .editor :global(.cm-embed-bookmark span) {
   display: flex;
   align-items: center;

@@ -48,6 +48,7 @@ import {
 } from '../model/embeds'
 import { leadingIcon, linkTarget, ownPath } from '../model/parse'
 import { downloadAsset, favicon, fileCardHtml } from '../read/files'
+import { fillBookmark } from '../read/linkMeta'
 import { playYouTube, youtubeButtonHtml } from '../read/youtube'
 import { encodePath } from '../ui/paths'
 import {
@@ -390,6 +391,7 @@ class EmbedWidget extends WidgetType {
       url.dataset.href = embed.url
       box.title = embed.url
       box.append(title, url)
+      fillBookmark(box, embed.url)
       return box
     }
     if (embed.kind === 'youtube') {

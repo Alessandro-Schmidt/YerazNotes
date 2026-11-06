@@ -4,7 +4,7 @@
 // where the system has none (Windows: ui/flags.ts).
 
 import type { Page } from '@playwright/test'
-import { expect, signInHere, test, save } from './fixtures'
+import { expect, signInHere, test } from './fixtures'
 
 const REPO = 'you/engineering'
 const LEAF = 'Identity/armenia.md'
@@ -55,7 +55,7 @@ test.describe('icon and cover', () => {
     })
     await page.getByRole('button', { name: /^Change icon/ }).click()
     await page.getByRole('menuitemradio', { name: 'Centre' }).click()
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => saved(fake))
       .toMatch(
@@ -70,7 +70,7 @@ test.describe('icon and cover', () => {
     // Remove icon takes the image and its place away.
     await page.getByRole('button', { name: /^Change icon/ }).click()
     await page.getByRole('menuitem', { name: 'Remove icon' }).click()
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect.poll(() => saved(fake)).toBe('# Armenia\n\nMount Ararat.\n')
   })
 
@@ -89,7 +89,7 @@ test.describe('icon and cover', () => {
     ])
     await menu.getByRole('menuitem', { name: 'Remove icon' }).click()
     await expect(page.getByRole('button', { name: 'Add icon' })).toBeVisible()
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect.poll(() => saved(fake)).toBe('# Armenia\n\nMount Ararat.\n')
   })
 
@@ -171,7 +171,7 @@ test.describe('a Tree’s icon and cover', () => {
       buffer: await png(page, 1200, 400),
     })
     await expect(peek.getByRole('button', { name: 'Change cover' })).toBeVisible()
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     // The README starts from the branch's name; its line 1 never renames the branch.
     await expect
       .poll(() => fake.repo(REPO).read(`${tree}/README.md`))

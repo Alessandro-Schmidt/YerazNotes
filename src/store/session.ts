@@ -344,6 +344,8 @@ export function createSession(deps: {
     const readMarker = async (repo: string) => {
       const key = repo.toLowerCase()
       await pulls.get(key)
+      // Opened from Settings before its map: open the Family here.
+      if (!bases.has(key)) await get().open(repo)
       const base = bases.get(key)
       if (!base) throw new Error("This Family hasn't opened yet. Try again in a moment.")
       const pending = (await loadDirty(key))[MARKER]?.text

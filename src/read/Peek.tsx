@@ -50,6 +50,7 @@ import { playYouTube } from './youtube'
 import { renderLeaf } from './render'
 import { planGhostLeaf, planTemplate } from '../sync/structure'
 import { newNoteAction } from '../sync/structure'
+import { fillBookmark } from './linkMeta'
 import type { StructureAction } from '../ui/StructureDialogs'
 
 export interface PeekProps {
@@ -1049,6 +1050,8 @@ function ReadText({
         .assetUrl(repo, href ?? el.dataset.asset!)
         .then((url) => url && el.setAttribute(href ? 'href' : 'src', url))
     }
+    for (const a of body.current?.querySelectorAll<HTMLAnchorElement>('a.bookmark') ?? [])
+      fillBookmark(a, a.href)
     // Attachments are downloaded only when their card is used.
     for (const el of body.current?.querySelectorAll<HTMLElement>('[data-asset-file]') ?? [])
       el.onclick = () =>

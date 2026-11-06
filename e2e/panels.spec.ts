@@ -2,7 +2,7 @@
 // the widths are kept on this device.
 
 import type { Locator, Page } from '@playwright/test'
-import { expect, signInHere, test, save } from './fixtures'
+import { expect, signInHere, test } from './fixtures'
 
 test.skip(({ isMobile }) => isMobile, 'Phones show the panels as sheets')
 
@@ -104,7 +104,7 @@ test('Keep open holds a leaf beside the next one picked; both are edited at once
     await page.keyboard.press('ControlOrMeta+End')
     await page.keyboard.type(`\n${word}`)
   }
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => fake.repo('you/engineering').read(first.id)).toContain('Kept.')
   await expect.poll(() => fake.repo('you/engineering').read(second.id)).toContain('Picked.')
 

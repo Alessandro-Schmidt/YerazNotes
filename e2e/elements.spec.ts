@@ -4,7 +4,7 @@
 
 import type { Page } from '@playwright/test'
 import type { FakeGitHub } from '../test/fake-github/fakeGitHub'
-import { expect, signInHere, test, save as commit } from './fixtures'
+import { expect, signInHere, test } from './fixtures'
 
 const REPO = 'you/engineering'
 const LEAF = 'elements.md'
@@ -18,7 +18,7 @@ async function open(page: Page, fake: FakeGitHub, text: string) {
 
 /** Commits the leaf (Ctrl/Cmd+S); the polled text is what GitHub holds. */
 async function save(page: Page, fake: FakeGitHub) {
-  await commit(page)
+  await page.keyboard.press('ControlOrMeta+s')
   return expect.poll(() => fake.repo(REPO).read(LEAF), { timeout: 10_000 })
 }
 

@@ -2,7 +2,7 @@
 // it a bookmark, a paragraph of one titled link shown as a card wherever the leaf is shown.
 
 import type { Page } from '@playwright/test'
-import { expect, signInHere, test, save } from './fixtures'
+import { expect, signInHere, test } from './fixtures'
 
 const REPO = 'you/engineering'
 const PAGE = 'https://en.wikipedia.org/wiki/Baroque'
@@ -44,7 +44,7 @@ test.describe('bookmarks', () => {
     await expect(card).toContainText('Baroque')
     await expect(card).toContainText('en.wikipedia.org/wiki/Baroque')
 
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read('links.md'))
       .toBe(`# Links\n\nReading list:\n\n[Baroque](${PAGE})\n`)
@@ -91,7 +91,7 @@ test.describe('bookmarks', () => {
     await expect(page.locator('.cm-content')).toContainText('youtu.be/dQw4w9WgXcQ')
     await expect(menu).toHaveCount(0)
 
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read('links.md'))
       .toBe(

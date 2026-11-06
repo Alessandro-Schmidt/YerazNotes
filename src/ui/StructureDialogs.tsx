@@ -37,7 +37,8 @@ export function parentFor(graph: Graph, selected: string | null): string {
 }
 
 /**
- * Ctrl/Cmd+N: a new note; Ctrl/Cmd+S: a sub-note (`run(sub)`). Ctrl+S still commits too.
+ * Ctrl/Cmd+Y or +N: a new note; Ctrl/Cmd+Shift+Y: a sub-note (`run(sub)`).
+ * Caught before the editor, so Ctrl+Y is not CodeMirror's redo (redo stays on Ctrl/Cmd+Shift+Z).
  * Some browsers keep Ctrl+N for a new window; the desktop app gets it.
  */
 export function useNewNoteKeys(run: (sub: boolean) => void) {
@@ -48,10 +49,11 @@ export function useNewNoteKeys(run: (sub: boolean) => void) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase()
-      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return
-      if (key !== 'n' && key !== 's') return
+      if (!(e.metaKey || e.ctrlKey) || e.altKey) return
+      if (!(key === 'y' || (key === 'n' && !e.shiftKey))) return
       e.preventDefault()
-      latest.current(key === 's')
+      e.stopPropagation()
+      latest.current(key === 'y' && e.shiftKey)
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)

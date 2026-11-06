@@ -41,6 +41,9 @@ None of this is a cookie or a tracker, so the app asks for no consent.
 - **Images from other websites**, when a note you open links to one
   (`![…](https://…)`). Your browser loads it from that website, which sees your IP address,
   as with an image in an email. Images kept in the repository (`/assets/…`) come from GitHub.
+- **Bookmarks** in a note you open: the card loads the site's icon from that site, and the
+  desktop app also reads the page once for its title and description (kept on your device).
+  The site sees your IP address.
 - **Links** you click open in your browser like any link.
 
 The desktop app connects to nothing else: it has no updater and no telemetry.

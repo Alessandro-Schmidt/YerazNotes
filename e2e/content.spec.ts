@@ -2,7 +2,7 @@
 
 import type { Page } from '@playwright/test'
 import type { Graph } from '../src/model/graph'
-import { expect, signInHere, test, save } from './fixtures'
+import { expect, signInHere, test } from './fixtures'
 
 const REPO = 'you/engineering'
 
@@ -48,7 +48,7 @@ test.describe('mentions', () => {
     await expect(page.getByRole('status')).toContainText('Unsaved edits')
 
     fake.resetLog()
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect.poll(() => mutations(fake).length).toBe(1)
     expect(fake.repo(REPO).read(from.id)).toContain(`[${to.title}](/${to.id})`)
 
@@ -93,7 +93,7 @@ test.describe('dragging text onto a chip', () => {
     })
     await expect(editor).not.toContainText('Move me.')
     await expect(editor).toContainText('Stays.')
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read('target.md'))
       .toBe('# Target\n\nAlready here.\n\nMove me.\n')
@@ -136,7 +136,7 @@ test.describe('dragging text onto a chip', () => {
 
     await drag('Move me.', page.locator('.cm-mention[data-path="target.md"]'), 10, 8)
     await expect(page.locator('.cm-content')).not.toContainText('Move me.')
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read('target.md'))
       .toBe('# Target\n\nAlready here.\n\nMove me.\n')
@@ -199,7 +199,7 @@ test.describe('insert menu', () => {
     await page.getByRole('dialog').getByLabel('Title').fill('Quarterly report')
     await page.getByRole('button', { name: 'Create note' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     // Enter continues the list; the new leaf is a sub-leaf of this one.
     const leaf = pair(graph).from.id
     const sub = `/${leaf.replace(/\.md$/, '')}/quarterly-report.md`
@@ -217,7 +217,7 @@ test.describe('insert menu', () => {
     await page.keyboard.up('Control')
     await page.getByRole('menuitem', { name: 'Code block' }).click()
     await page.keyboard.type('npm test')
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read(pair(graph).from.id))
       .toContain('\n```\nnpm test\n```')
@@ -291,7 +291,7 @@ test.describe('images', () => {
     await expect(page.getByRole('status')).toContainText('Unsaved edits')
 
     fake.resetLog()
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect.poll(() => mutations(fake).length).toBe(1)
     const repo = fake.repo(REPO)
     const files = [...repo.head!.files.keys()].filter((p) => p.startsWith('assets/'))
@@ -635,7 +635,7 @@ test.describe('leaf styling', () => {
     await expect(page.locator('main img').first()).toHaveAttribute('src', /^blob:/)
 
     await expect(page.getByRole('status')).toContainText('Unsaved edits')
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read(leaf)?.split('\n')[1])
       .toMatch(/^<!-- yeraz \{"cover":"\/assets\/\d{4}-\d{2}-\d{2}-mount-ararat\.png"\} -->$/)
@@ -672,7 +672,7 @@ test.describe('leaf styling', () => {
     await page.getByRole('textbox', { name: 'Note text' }).click()
     await page.keyboard.press('ControlOrMeta+End')
     await page.keyboard.type(' Later.')
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect.poll(() => fake.repo(REPO).read(leaf)).toContain('Later.')
     expect(fake.repo(REPO).read(leaf)).not.toContain('cover')
   })
@@ -737,7 +737,7 @@ test.describe('cover position', () => {
     await expect(page.getByRole('slider')).toHaveCount(0)
     await expect(page.locator('main img').first()).toHaveCSS('object-position', '50% 5%')
 
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read(leaf)?.split('\n')[1])
       .toMatch(/"coverPosition":5\b/)
@@ -781,7 +781,7 @@ test.describe('icons', () => {
     await expect(icons).toBeHidden()
     await expect(page.getByRole('button', { name: 'Change icon 🔐' })).toBeVisible()
 
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect
       .poll(() => fake.repo(REPO).read(leaf.id)?.split('\n')[0])
       .toBe(`# 🔐 ${leaf.title}`)

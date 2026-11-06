@@ -4,7 +4,7 @@
 import type { Browser, Page } from '@playwright/test'
 import type { FakeGitHub } from '../test/fake-github/fakeGitHub'
 import type { Graph } from '../src/model/graph'
-import { expect, isPhone, signInHere, test, save } from './fixtures'
+import { expect, isPhone, signInHere, test } from './fixtures'
 
 const REPO = 'you/engineering'
 
@@ -87,7 +87,7 @@ test.describe('autosave', () => {
     await openEditor(page, plainLeaf(graph).id)
     fake.resetLog()
     await typeAtEnd(page, ' Saved by shortcut.')
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect.poll(() => mutations(fake).length).toBe(1)
 
     await typeAtEnd(page, ' Saved by leaving.')
@@ -105,7 +105,7 @@ test.describe('autosave', () => {
     await openEditor(page, leaf.id)
     fake.faults.offline = true
     await typeAtEnd(page, ' Offline words.')
-    await save(page)
+    await page.keyboard.press('ControlOrMeta+s')
     await expect(page.getByRole('status')).toHaveText('Offline · edits kept on this device')
 
     await page.reload()
@@ -205,7 +205,7 @@ test('moving a leaf rewrites every backlink in one commit', async ({ page, fake,
   await dialog.getByRole('button', { name: 'Move' }).click()
   const moved = leaf.id.replace(/^.*\//, '')
   await expect(page).toHaveURL(new RegExp(`#/tree/${REPO}/${moved.replace('.', '\\.')}$`))
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => mutations(fake).length).toBe(1)
 
   const repo = fake.repo(REPO)
@@ -244,7 +244,7 @@ test('a Tree moves under another Tree, everything in it with it, in one commit (
   fake.resetLog()
   await dialog.getByRole('button', { name: 'Move' }).click()
   await expect(page.getByRole('region', { name: 'Group preview' })).toBeVisible()
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => mutations(fake).length).toBe(1)
 
   const repo = fake.repo(REPO)
@@ -291,7 +291,7 @@ test('a leaf is edited where it is shown: over the map, and at an old editor lin
   await expect(panel.getByRole('button', { name: 'Edit leaf' })).toHaveCount(0)
   if (!isPhone(page)) await expect(page.locator('[data-map]')).toBeVisible()
   await typeAtEnd(page, ' Typed beside the map.')
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => fake.repo(REPO).read(leaf.id)).toContain('Typed beside the map.')
 })
 
@@ -323,7 +323,7 @@ test('selecting another leaf on the map commits the edit; the new leaf waits for
   await panel.locator('.cm-content').click()
   await page.keyboard.press('ControlOrMeta+End')
   await page.keyboard.type('Now it has a line.')
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => fake.repo(REPO).read('empty.md')).toBe('# Empty\nNow it has a line.')
 })
 
@@ -344,7 +344,7 @@ test('creates many sub-leaves of a leaf in one commit', async ({ page, fake, gra
   await expect(dialog).toBeHidden()
   for (const name of ['experiments', 'results', 'results-2'])
     await expect(page.locator(`[data-node][data-id="${folder}/${name}.md"]`).first()).toBeAttached()
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => mutations(fake).length).toBe(1)
   const repo = fake.repo(REPO)
   expect(repo.read(`${folder}/experiments.md`)).toBe('# 🧪 Experiments\n\n')
@@ -367,7 +367,7 @@ test('the new-leaf dialog switches to several leaves at once', async ({ page, fa
   await dialog.getByLabel('Titles').fill('Reading list\nWatch list')
   await dialog.getByRole('button', { name: 'Create 2 notes' }).click()
   await expect(page.locator('[data-map] > svg [data-tree="watch-list.md"]')).toBeAttached()
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => fake.repo(REPO).read('reading-list.md')).toBe('# Reading list\n\n')
   expect(fake.repo(REPO).read('watch-list.md')).toBe('# Watch list\n\n')
 })
@@ -405,7 +405,7 @@ test('creates a Tree (a folder at the top) with its first leaf, keeping the name
   await dialog.getByLabel('First note').fill('Consensus')
   await dialog.getByRole('button', { name: 'Create project' }).click()
   await expect(page).toHaveURL(/#\/tree\/you\/engineering\/Distributed%20Systems\/consensus\.md$/)
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect
     .poll(() => fake.repo(REPO).read('Distributed Systems/consensus.md'))
     .toBe('# Consensus\n\n')
@@ -435,7 +435,7 @@ test('deleting a leaf warns about the leaves that link to it', async ({ page, fa
   // The links to it stay: on the map it is a ghost now, a leaf not written yet.
   await expect(page.locator(`[data-node]:not([data-ghost])[data-id="${leaf.id}"]`)).toHaveCount(0)
   await expect(page.locator(`[data-node][data-ghost][data-id="${leaf.id}"]`).first()).toBeAttached()
-  await save(page)
+  await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => fake.repo(REPO).read(leaf.id)).toBeUndefined()
 })
 
@@ -518,4 +518,29 @@ test('the editor and the dialogs have no accessibility violations', async ({ pag
   await page.getByRole('menuitem', { name: 'Move…' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
+})
+
+test('Ctrl/Cmd+Y writes a new note and +Shift+Y a sub-note, even in the editor; +S only saves', async ({
+  page,
+  fake,
+  graph,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'keyboard shortcuts')
+  const leaf = plainLeaf(graph)
+  await openEditor(page, leaf.id)
+  await typeAtEnd(page, ' Kept.')
+  await page.keyboard.press('ControlOrMeta+s')
+  await expect.poll(() => fake.repo(REPO).read(leaf.id)).toContain('Kept.')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.locator('.cm-content').click()
+  await page.keyboard.press('ControlOrMeta+y')
+  await expect(page.getByRole('dialog', { name: /^New note/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await page.locator('.cm-content').click()
+  await page.keyboard.press('ControlOrMeta+Shift+y')
+  await expect(page.getByRole('dialog', { name: /^New sub-note/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+  // Not CodeMirror's redo: the text is as it was.
+  await expect(page.locator('.cm-content')).toContainText('Kept.')
 })

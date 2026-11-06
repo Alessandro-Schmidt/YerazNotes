@@ -712,6 +712,10 @@
 .content :global(.bookmark) strong {
   font-size: 15px;
 }
+.content :global(.bookmark-desc) {
+  font-size: 13px;
+  color: var(--muted);
+}
 .content :global(.bookmark) span {
   display: flex;
   align-items: center;

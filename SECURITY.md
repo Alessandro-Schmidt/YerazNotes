@@ -36,6 +36,10 @@ Yeraz has no server. Knowing what it trusts helps to judge a report:
   paths and symbolic links inside the folder are refused, and a save never writes through one
   (its temporary file is always created new). A folder is asked for again only by an absolute
   path on a local drive, never a network share.
+- **Bookmark cards on the desktop** fetch the bookmarked `https` page once (8 s, 512 KB) to show
+  its title and description. A note can therefore make the desktop app send a plain GET to an
+  address it names. The page is never parsed as a document: only the text of its title and
+  `description` metadata is kept (cached on the device) and shown as text, never as HTML.
 
 What the app sends where, for privacy, is in [PRIVACY.md](PRIVACY.md).
 

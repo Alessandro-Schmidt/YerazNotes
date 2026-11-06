@@ -33,6 +33,31 @@ fn delete_token() -> Result<(), String> {
     }
 }
 
+/// A web page's HTML, for a bookmark's title and description: https only, 8 s, 512 KB at most.
+/// The app reads text out of it and never shows it as HTML.
+#[tauri::command]
+async fn fetch_page(url: String) -> Result<String, String> {
+    if !url.starts_with("https://") {
+        return Err("Only https pages".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Read;
+        let response = ureq::get(&url)
+            .timeout(std::time::Duration::from_secs(8))
+            .call()
+            .map_err(|e| e.to_string())?;
+        let mut body = Vec::new();
+        response
+            .into_reader()
+            .take(512 * 1024)
+            .read_to_end(&mut body)
+            .map_err(|e| e.to_string())?;
+        Ok(String::from_utf8_lossy(&body).into_owned())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 mod folder;
 
 use tauri::Manager;
@@ -54,6 +79,7 @@ pub fn run() {
             get_token,
             set_token,
             delete_token,
+            fetch_page,
             folder::pick_folder,
             folder::pick_parent,
             folder::allow_folder,
