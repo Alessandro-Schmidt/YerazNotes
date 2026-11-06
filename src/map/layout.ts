@@ -71,9 +71,10 @@ export interface LayoutOptions {
   /** Above this many leaves, leaf labels always follow the radius. */
   radialLabelsAbove?: number
   /**
-   * Rearrange (the map's button): a non-zero seed shuffles each node's children and turns
-   * the whole Tree. Rings, parents among their children and label spacing stay; the same
-   * seed always gives the same map. 0: as named.
+   * Rearrange (the map's button): a non-zero seed shuffles each node's children and gives
+   * each subtree its own share of room around it, so subtrees change places and widths
+   * (never a plain turn). Rings, parents among their children and label spacing stay; the
+   * same seed always gives the same map. 0: as named.
    */
   seed?: number
 }
@@ -242,10 +243,13 @@ export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout
   const { minArc = 15, gap: topGap = 0.16, beta = 0.7, radialLabelsAbove = 60, seed = 0 } = options
   const get = (id: string) => graph.nodes.get(id)!
   const next = seed ? random(seed) : null
-  const turn = next ? next() * 2 * Math.PI : 0
   const root = hierarchy(get(ROOT), (n) =>
     (next ? shuffled(n.children, next) : n.children).map(get),
   )
+  // Rearranged: room around each subtree, 1 to 2.5 times what it needs (never less).
+  const room = new Map<string, number>()
+  if (next) root.each((d) => void (d.children && room.set(d.data.id, 1 + next() * 1.5)))
+  const roomOf = (d: HierarchyPointNode<GraphNode> | undefined) => (d && room.get(d.data.id)) ?? 1
   // Rings: the design's 0.35R, 0.70R, R for three levels, generalised to any depth. These
   // are the smallest radii; a ring moves out when the labels inside it need room.
   const maxDepth = Math.max(1, root.height)
@@ -264,13 +268,14 @@ export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout
     const bs = b.ancestors().reverse()
     let k = 1
     while (k < as.length && k < bs.length && as[k] === bs[k]) k++
+    const wide = Math.max(roomOf(as[k]), roomOf(bs[k]))
     let units = 0
     for (; k < Math.max(as.length, bs.length); k++) {
       const room =
         (k < as.length ? half(as[k]!) : minArc / 2) + (k < bs.length ? half(bs[k]!) : minArc / 2)
       units = Math.max(units, room / (minArc * fraction(k)))
     }
-    return units
+    return units * wide
   }
   const laid = cluster<GraphNode>().nodeSize([1, 1]).separation(separation)(root)
 
@@ -297,9 +302,7 @@ export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout
   const gap = groups > 1 ? Math.min(topGap, Math.PI / 2 / groups) : 0
   const unit = (2 * Math.PI - gap * groups) / span
   const angleOf = (d: HierarchyPointNode<GraphNode>) =>
-    d.depth === 0
-      ? 0
-      : turn + gap / 2 + (groupOf.get(d) ?? 0) * gap + (d.x - minX + around / 2) * unit
+    d.depth === 0 ? 0 : gap / 2 + (groupOf.get(d) ?? 0) * gap + (d.x - minX + around / 2) * unit
 
   const R = Math.max(DESIGN_R, minArc / unit)
   const coreLines = coreLinesOf(get(ROOT).title)
@@ -459,7 +462,7 @@ export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout
 
   const total = graph.stats.words || 1
   const ringR = coreR + 7
-  let acc = turn
+  let acc = 0
   const segments = top.map((t) => {
     const share = (t.data.total / total) * 2 * Math.PI
     const a0 = acc + 0.04
