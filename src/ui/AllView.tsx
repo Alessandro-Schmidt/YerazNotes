@@ -39,7 +39,13 @@ import { Presence } from './motion'
 import { allHref, decodePath } from './paths'
 import { SaveAndRefresh } from './SaveAndRefresh'
 import { Search, type Matches } from './Search'
-import { parentFor, StructureDialog, type StructureAction } from './StructureDialogs'
+import { newNoteAction } from '../sync/structure'
+import {
+  parentFor,
+  StructureDialog,
+  useNewNoteKeys,
+  type StructureAction,
+} from './StructureDialogs'
 import { useDeleteKey } from './deleteKey'
 import { colorVar } from './theme'
 import { ProjectTabs } from './ProjectTabs'
@@ -208,6 +214,10 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
     : { right: peekShown && !expanded ? (panel === 'dock' ? widths.dock : widths.peek + 32) : 0 }
   // New leaf goes to the selection's Family, or the first one.
   const target = family ?? families[0]
+  useNewNoteKeys((sub) => {
+    const a = target && newNoteAction(target.graph, family ? path : null, sub)
+    if (a) setAction({ tree: target.ref, action: a })
+  })
   const View = view === 'map' ? null : VIEW_COMPONENTS[view]
 
   /** A view's action, on merged ids, as its Family's: the root's goes to `target`. */

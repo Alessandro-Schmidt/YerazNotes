@@ -14,7 +14,7 @@ import controls from '../ui/controls.module.css'
 import { Icon } from '../ui/icons'
 import { treeHref } from '../ui/paths'
 import { ROOT } from '../model/tree'
-import { planBranchText } from '../sync/structure'
+import { planBranchText, planNewLeaf } from '../sync/structure'
 import { parentFor, StructureDialog, type StructureAction } from '../ui/StructureDialogs'
 import { ACCENT_IDS } from '../ui/theme'
 import { focusFirst, menuKeys } from '../ui/menuKeys'
@@ -115,6 +115,13 @@ export function LeafEditor({
       open: (id) => openRef.current(id),
       // A template is nowhere on the map: a leaf mentioned from it is made at the root.
       here: () => (graphRef.current?.nodes.has(path) ? path : ''),
+      // A name no note has yet: written now, as a sub-note of this one (a branch's: in it).
+      create: (title) => {
+        const graph = graphRef.current!
+        const change = planNewLeaf(graph, threadEnd(graph, path) ?? path, title)
+        void session.getState().apply(repo, [change])
+        return change.path
+      },
       // Dragged text dropped on a chip: at the end of that leaf, as a paragraph of its own.
       append: async (id, text) => {
         const { getState } = session

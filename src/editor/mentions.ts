@@ -34,6 +34,8 @@ export interface MentionSource {
   here?(): string
   /** Adds `text` at the end of the leaf at `path`: dragged text dropped on its chip. */
   append?(path: string, text: string): Promise<void>
+  /** Writes a sub-note of this one named `title` now, and returns its path. */
+  create?(title: string): string
 }
 
 /** Where a leaf named `title`, mentioned from `file`, would be written: beside it. */
@@ -77,10 +79,11 @@ export function completeMention(context: CompletionContext): CompletionResult | 
   if (query && here && !source.leaves().some((l) => taken(l.title)) && !/^[/\\]+$/.test(query))
     options.push({
       label: query,
-      displayLabel: `New leaf “${query}”`,
-      detail: 'not written yet',
+      displayLabel: source.create ? `New sub-note “${query}”` : `New leaf “${query}”`,
+      detail: source.create ? undefined : 'not written yet',
       boost: -99,
-      apply: insert(query, newLeafPath(query, here)),
+      apply: (view, c, from, to) =>
+        insert(query, source.create?.(query) ?? newLeafPath(query, here))(view, c, from, to),
     })
   return { from: match.from + 1, options, validFor: /^[^\s@[\]()]*$/ }
 }

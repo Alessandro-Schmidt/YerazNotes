@@ -9,6 +9,7 @@ import {
   planNewBranch,
   planNewLeaf,
   planNewLeaves,
+  newNoteAction,
   planGhostLeaf,
   leavesUnder,
   moveReads,
@@ -440,5 +441,19 @@ describe('planMoveAcross: to another Family', () => {
       'identity/oauth.md',
     ])
     expect(here.filter((c) => c.text === null)).toHaveLength(3)
+  })
+})
+
+describe('newNoteAction', () => {
+  it('puts a new note beside the selected one, or at the top when none is', () => {
+    expect(newNoteAction(graph, 'identity/keycloak.md', false)?.parent).toBe('identity')
+    expect(newNoteAction(graph, 'identity', false)?.parent).toBe(ROOT)
+    expect(newNoteAction(graph, null, false)?.parent).toBe(ROOT)
+  })
+
+  it('puts a sub-note under the selected one, and none without one', () => {
+    expect(newNoteAction(graph, 'identity/keycloak.md', true)?.parent).toBe('identity/keycloak.md')
+    expect(newNoteAction(graph, null, true)).toBeNull()
+    expect(newNoteAction(graph, ROOT, true)).toBeNull()
   })
 })

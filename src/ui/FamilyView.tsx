@@ -22,7 +22,13 @@ import { Icon } from './icons'
 import { InlineName } from './InlineName'
 import { ConflictBanner } from './ConflictBanner'
 import { decodePath, treeHref } from './paths'
-import { parentFor, StructureDialog, type StructureAction } from './StructureDialogs'
+import { newNoteAction } from '../sync/structure'
+import {
+  parentFor,
+  StructureDialog,
+  useNewNoteKeys,
+  type StructureAction,
+} from './StructureDialogs'
 import { SaveAndRefresh } from './SaveAndRefresh'
 import { useDeleteKey } from './deleteKey'
 import { SyncStatus } from './SyncStatus'
@@ -99,6 +105,10 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
     graph && wanted !== null && (graph.nodes.has(wanted) || graph.ghosts.has(wanted))
       ? wanted
       : null
+  useNewNoteKeys((sub) => {
+    const a = graph && newNoteAction(graph, selected, sub)
+    if (a) setAction(a)
+  })
 
   // Arriving at a node's URL from outside (a link, the back button) shows its Peek.
   const [arrived, setArrived] = useState(wanted)
