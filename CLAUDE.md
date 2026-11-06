@@ -75,6 +75,8 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
 - [ ] A leaf is a `.md` file; line 1 is the title (`# 🔐 Keycloak`, leading emoji = icon)
 - [ ] Optional line 2: `<!-- yeraz {...} -->` metadata (a `color` there is ignored: leaves, branches and Trees have no colour); `coverPosition` is % from the top;
   `icon` is an image icon (`/assets/…` or https, instead of the title's emoji); `iconPosition` is `center` or `right`;
+  `iconInline: true` puts the icon on the title's line; `iconShape` is `rounded`, `square` or `"W:H"` (a circle when absent); `iconFocus` is `[x, y]` % of an image icon shown in its frame;
+  `coverAspect` is `slim`, `tall` or `"W:H"` (3:1 when absent);
   `hidden: true` takes the leaf (or, in a README.md, the branch or Tree) off the map with everything under it (still listed, marked, in the Explorer and its parent's Peek, where a click shows it again; Settings › Hidden too)
 - [ ] Sub-leaves live in a sibling folder with the same name (`keycloak.md` + `keycloak/`)
 - [ ] A branch is a folder without a same-named `.md`; its name is the folder name, as typed

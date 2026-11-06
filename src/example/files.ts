@@ -15,7 +15,7 @@ These notes are kept with [Yeraz](https://github.com/Alessandro-Schmidt/YerazNot
 ## One leaf, one file
 
 - A leaf is a \`.md\` file. Its line 1 is its title: \`# 🔐 Keycloak\`. The emoji at the start is its icon on the map: give every new leaf one that says what it is about.
-- Line 2 may hold metadata in a comment: \`<!-- yeraz {"cover":"/assets/ararat.png"} -->\`. Leave it as it is; never write text on line 2.
+- Line 2 may hold metadata in a comment: \`<!-- yeraz {"cover":"/assets/ararat.png"} -->\`. Leave it as it is; never write text on line 2. Its fields: \`cover\`, \`coverPosition\` (% from the top), \`coverAspect\` (\`slim\`, \`tall\` or \`"W:H"\`), \`icon\` (an image), \`iconPosition\` (\`center\`, \`right\`), \`iconInline\` (\`true\`: on the title's line), \`iconShape\` (\`rounded\`, \`square\` or \`"W:H"\`), \`iconFocus\` (\`[x, y]\` %), \`hidden\`.
 - Sub-leaves live in a folder with the same name beside the leaf: \`keycloak.md\` and \`keycloak/realms.md\`.
 - A folder without a same-named file is a branch; the \`README.md\` inside it is the branch's text, not a leaf. Every folder or leaf at the root is a Tree.
 - File names stay when titles change: links depend on them.

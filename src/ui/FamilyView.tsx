@@ -35,7 +35,7 @@ import { SyncStatus } from './SyncStatus'
 import { colorVar } from './theme'
 import { Divider, TopBar } from './TopBar'
 import styles from './FamilyView.module.css'
-import { SHEET_HEIGHT, savePinSide, savedPinSide, widthStore, widthVars } from './panels'
+import { SHEET_HEIGHT, savePinSide, savedPinSide, widthOf, widthStore, widthVars } from './panels'
 import { PHONE, useMedia } from './useMedia'
 import { Search, type Matches } from './Search'
 import { treeColor, usePlanted } from '../views/common'
@@ -171,7 +171,14 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
     ? { bottom: peekShown ? SHEET_HEIGHT() : 0 }
     : panel === 'dock'
       ? { right: peekShown && !expanded ? widths.dock : 0 }
-      : { right: columns ? columns * widths.peek + 32 + (columns - 1) * 12 : 0 }
+      : {
+          right: columns
+            ? (peekShown && !expanded ? widths.peek : 0) +
+              stack.reduce((sum, _, i) => sum + widthOf(widths, `pin${i}`), 0) +
+              32 +
+              (columns - 1) * 12
+            : 0,
+        }
   const View = view === 'map' ? null : VIEW_COMPONENTS[view]
 
   return (
@@ -324,7 +331,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           <Presence show={!!(graph && tree && (peekShown || stackShown))}>
             {graph && tree && (peekShown || stackShown) && (
               <div className={stackShown ? styles.stack : undefined} data-side={pinSide}>
-                {stack.map((id) => (
+                {stack.map((id, slot) => (
                   <Peek
                     key={id}
                     tree={tree}
@@ -332,6 +339,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
                     id={id}
                     expanded={false}
                     pinned
+                    slot={slot}
                     href={href}
                     onSelect={select}
                     onExpand={() => {

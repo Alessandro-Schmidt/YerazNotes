@@ -331,7 +331,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           <Presence show={peekShown || stackShown}>
             {(peekShown || stackShown) && (
               <div className={stackShown ? styles.stack : undefined} data-side={pinSide}>
-                {stack.map(({ id, family: f, path: p }) => (
+                {stack.map(({ id, family: f, path: p }, slot) => (
                   <Peek
                     key={id}
                     tree={f.ref}
@@ -339,6 +339,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
                     id={p}
                     expanded={false}
                     pinned
+                    slot={slot}
                     kept
                     onSwap={swapPinSide}
                     href={(id) => `#${allHref(f.ref.repo, id)}`}

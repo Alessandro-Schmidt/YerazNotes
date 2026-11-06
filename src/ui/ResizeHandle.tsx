@@ -4,7 +4,7 @@
 // move it by 16 px, Home and End to its least and most; a double click puts it back.
 
 import { useRef, useSyncExternalStore } from 'react'
-import { clampWidth, PANELS, saveWidth, widthStore, widthVar, type Panel } from './panels'
+import { clampWidth, limits, saveWidth, widthOf, widthStore, widthVar, type Panel } from './panels'
 import styles from './ResizeHandle.module.css'
 
 export function ResizeHandle({
@@ -17,12 +17,12 @@ export function ResizeHandle({
   edge: 'left' | 'right'
   label: string
 }) {
-  const width = useSyncExternalStore(widthStore.subscribe, widthStore.get)[panel]
+  const width = widthOf(useSyncExternalStore(widthStore.subscribe, widthStore.get), panel)
   const drag = useRef<{ x: number; width: number; now: number } | null>(null)
   const grow = edge === 'right' ? 1 : -1
   const show = (el: HTMLElement, w: number) =>
     el.closest<HTMLElement>('[data-panels]')?.style.setProperty(widthVar(panel), `${w}px`)
-  const { min, max } = PANELS[panel]
+  const { min, max } = limits(panel)
 
   return (
     <div

@@ -119,3 +119,30 @@ test('Keep open holds a leaf beside the next one picked; both are edited at once
   await expect(peeks).toHaveCount(1)
   await expect(peeks.getByRole('heading', { level: 2 })).toHaveText(second.title)
 })
+
+test('a kept note and the opened one resize each on its own', async ({ page, graph }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  const leaves = [...graph.nodes.values()]
+    .filter((n) => n.kind === 'leaf' && n.parent !== '')
+    .sort((a, b) => a.id.localeCompare(b.id))
+  await page.goto(`./#/tree/you/engineering/${leaves[0]!.id}`)
+  await signInHere(page)
+  const peeks = page.getByRole('region', { name: 'Note preview' })
+  await peeks.getByRole('button', { name: 'Keep open' }).click()
+  await page.getByRole('treeitem', { name: new RegExp(leaves[1]!.title) }).click()
+  await expect(peeks).toHaveCount(2)
+  await expect.poll(() => width(peeks.nth(0))).toBe(420)
+  await expect.poll(() => width(peeks.nth(1))).toBe(420)
+
+  await drag(page, peeks.nth(1).getByRole('separator', { name: 'Note panel width' }), -100)
+  await expect.poll(() => width(peeks.nth(1))).toBe(520)
+  await expect.poll(() => width(peeks.nth(0))).toBe(420)
+  await drag(page, peeks.nth(0).getByRole('separator', { name: 'Note panel width' }), -60)
+  await expect.poll(() => width(peeks.nth(0))).toBe(480)
+  await expect.poll(() => width(peeks.nth(1))).toBe(520)
+
+  // Kept on this device, each its own.
+  await page.reload()
+  await expect(peeks).toHaveCount(1)
+  await expect.poll(() => width(peeks)).toBe(520)
+})

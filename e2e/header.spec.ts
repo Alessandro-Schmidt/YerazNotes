@@ -91,4 +91,30 @@ test.describe('the header', () => {
       .poll(() => fake.repo(REPO).read('armenia.md'))
       .toBe(`# 🇦🇲 Armenia\n${cover}\n\nMount Ararat. 5,165 m.\n`)
   })
+  test('the icon beside the title, and the cover’s format, are line-2 choices', async ({
+    page,
+    fake,
+  }) => {
+    const cover = '<!-- yeraz {"color":{"heading":"amber"},"cover":"https://example.com/c.png"} -->'
+    const content = await open(page, fake, `# 🇦🇲 Armenia\n${cover}\n\nMount Ararat.\n`)
+    const title = content.locator('.cm-title')
+    const icon = page.getByRole('button', { name: 'Change icon 🇦🇲' })
+    // Above the title, as before.
+    expect((await icon.boundingBox())!.y + 20).toBeLessThan((await title.boundingBox())!.y)
+
+    await icon.click()
+    await page.getByRole('menuitemcheckbox', { name: 'Beside the title' }).click()
+    const [a, t] = [(await icon.boundingBox())!, (await title.boundingBox())!]
+    expect(Math.abs(a.y + a.height / 2 - (t.y + t.height / 2))).toBeLessThan(8)
+    expect((await title.textContent())!.trim()).toBe('Armenia')
+
+    await page.getByRole('button', { name: 'Change cover' }).click()
+    await page.getByRole('menuitemradio', { name: 'Slim' }).click()
+    await page.keyboard.press('ControlOrMeta+s')
+    await expect
+      .poll(() => fake.repo(REPO).read('armenia.md'))
+      .toBe(
+        '# 🇦🇲 Armenia\n<!-- yeraz {"color":{"heading":"amber"},"cover":"https://example.com/c.png","iconInline":true,"coverAspect":"slim"} -->\n\nMount Ararat.\n',
+      )
+  })
 })

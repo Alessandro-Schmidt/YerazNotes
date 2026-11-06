@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FocusEvent,
   type MouseEvent,
   type RefObject,
@@ -37,12 +38,13 @@ import { Icon } from '../ui/icons'
 import { InlineName } from '../ui/InlineName'
 import { play } from '../ui/motion'
 import { ResizeHandle } from '../ui/ResizeHandle'
+import { widthVar } from '../ui/panels'
 import { PHONE, useMedia } from '../ui/useMedia'
 import { SyncStatus } from '../ui/SyncStatus'
 import { focusFirst, menuKeys } from '../ui/menuKeys'
 import { templateHref, treeHref } from '../ui/paths'
 import styles from './Peek.module.css'
-import { coverPosition } from './cover'
+import { coverAspect, coverPosition } from './cover'
 import { downloadAsset } from './files'
 import { History } from './History'
 import { printLeaf } from './print'
@@ -64,6 +66,8 @@ export interface PeekProps {
   created?: boolean
   /** Kept open beside the selection (owner's request: several leaves edited at once). */
   pinned?: boolean
+  /** A kept note's place in the stack: its column's width is its own (`pin0`, `pin1`…). */
+  slot?: number
   /** Keeps this node open beside whatever is selected next; the head shows the button. */
   onPin?(id: string): void
   /** This node is pinned: the pin shows pressed, and a click unpins it. */
@@ -88,6 +92,7 @@ export function Peek({
   docked,
   created,
   pinned,
+  slot,
   onPin,
   kept,
   onSwap,
@@ -196,10 +201,19 @@ export function Peek({
       data-expanded={expanded || undefined}
       data-docked={docked || undefined}
       data-stacked={pinned || undefined}
+      style={
+        slot === undefined
+          ? undefined
+          : ({ '--col-w': `var(${widthVar(`pin${slot}`)}, 420px)` } as CSSProperties)
+      }
       aria-label={`${kind} preview`}
     >
       {!expanded && (
-        <ResizeHandle panel={docked ? 'dock' : 'peek'} edge="left" label="Note panel width" />
+        <ResizeHandle
+          panel={docked ? 'dock' : slot === undefined ? 'peek' : `pin${slot}`}
+          edge="left"
+          label="Note panel width"
+        />
       )}
       <PeekHead
         {...{ kind, crumb, away, href, onSelect, expanded, onClose, sheet, kept, onSwap }}
@@ -1122,6 +1136,7 @@ async function printable(
     if (own !== null) img.dataset.asset = own
     else if (/^https:\/\//.test(cover)) img.src = cover
     img.style.objectPosition = `50% ${coverPosition(node.meta)}%`
+    img.style.aspectRatio = coverAspect(node.meta) ?? ''
     article.prepend(img)
   }
   await Promise.all(
