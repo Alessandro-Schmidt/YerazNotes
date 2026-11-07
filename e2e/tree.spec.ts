@@ -86,12 +86,12 @@ test("a Tree's core shows that Tree as it is; Fit all trees shows the Family aga
   const family = await scale(page)
   await page.locator(`[data-tree="${tree.id}"] [data-core] circle`).first().dispatchEvent('click')
   await expect(page).toHaveURL(new RegExp(`#/tree/you/engineering/${tree.id}$`))
-  const panel = page.getByRole('region', { name: 'Tree preview' })
+  const panel = page.getByRole('region', { name: 'Project preview' })
   await expect(panel.getByRole('heading', { level: 2 })).toHaveText(tree.title)
-  await expect(panel.getByRole('heading', { name: 'Inside this tree' })).toBeVisible()
+  await expect(panel.getByRole('heading', { name: 'Inside this project' })).toBeVisible()
   await expect.poll(() => scale(page)).toBeGreaterThan(family * 1.2)
   await panel.getByRole('button', { name: 'Dismiss' }).click()
-  await page.getByRole('button', { name: 'Fit all trees' }).click()
+  await page.getByRole('button', { name: 'Fit all projects' }).click()
   await expect.poll(() => scale(page)).toBeLessThan(family * 1.2)
 })
 
@@ -110,7 +110,7 @@ test('a link to a leaf or a Tree opens on every Tree together', async ({ page, g
     const opened = await scale(page)
     // On a phone the Peek's sheet covers the map's controls.
     await peek(page).getByRole('button', { name: 'Dismiss' }).click()
-    await page.getByRole('button', { name: 'Fit all trees' }).click()
+    await page.getByRole('button', { name: 'Fit all projects' }).click()
     // No closer than the whole Family (a Tree alone would be well over 1.2×).
     await expect.poll(() => scale(page)).toBeGreaterThan(opened / 1.2)
   }
@@ -354,7 +354,7 @@ test('only the map zooms: the page itself never scales, nor zooms into a field',
   expect(await css('html', 'touch-action')).toBe('pan-x pan-y')
   expect(await css('[data-map] > svg', 'touch-action')).toBe('none')
   if (isPhone(page)) {
-    await page.getByRole('button', { name: /Search leaves/ }).click()
+    await page.getByRole('button', { name: /Search notes/ }).click()
     expect(parseFloat(await css('input', 'font-size'))).toBeGreaterThanOrEqual(16)
   }
 })
@@ -396,7 +396,7 @@ test('a Tree opened before its content arrives is fitted to its full shape when 
   await expect(page.getByRole('status')).toContainText('Loading')
   await expect(page.getByRole('status')).toHaveText('Synced to main', { timeout: 30_000 })
   const opened = await camera(page)
-  await page.getByRole('button', { name: 'Fit all trees' }).click()
+  await page.getByRole('button', { name: 'Fit all projects' }).click()
   expect(await camera(page)).toBe(opened)
 })
 
@@ -413,7 +413,7 @@ test("content arriving doesn't move a camera someone has moved", async ({ page, 
 
 test('the leaf panel, with nothing selected, shows the Family itself', async ({ page, graph }) => {
   await openTree(page)
-  await page.getByRole('button', { name: 'Show leaf panel' }).click()
+  await page.getByRole('button', { name: 'Show note panel' }).click()
   const panel = page.getByRole('region', { name: 'Family preview' })
   await expect(panel.getByRole('heading', { level: 2 })).toHaveText('Engineering')
   await expect(panel).toContainText(`${graph.stats.threads.toLocaleString('en-US')} threads`)
@@ -486,7 +486,7 @@ test('the Explorer collapses and comes back', async ({ page }) => {
 test('the Explorer reaches every leaf from the keyboard', async ({ page, graph }) => {
   test.skip(isPhone(page), 'Phones have no keyboard')
   await openTree(page)
-  const tree = page.getByRole('tree', { name: 'Branches and leaves' })
+  const tree = page.getByRole('tree', { name: 'Groups and notes' })
   const first = tree.getByRole('treeitem').first()
   await first.focus()
   const firstId = await first.getAttribute('data-row')

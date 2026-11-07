@@ -13,6 +13,9 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
 - `npm run fixture -- --leaves 1000 --threads 1500 --seed 7` — write a fixture Tree to `fixtures-out/`
 - `npm run import -- <source> <new folder> [--name …]` — notes from Obsidian, Notion or any Markdown folder as a new Family (`src/import/convert.ts`, issue #39);
   `skills/yeraz-import/convert.mjs` is the standalone copy (no clone needed: Logseq, Bear, OneNote HTML/MHT too, an emoji on every title), tested by `test/yeraz-import.test.ts`
+- `npm run yeraz -- <command>` (or `yeraz` after `npm link`): a Family from the command line, a folder or `--repo owner/name`:
+  `tree`, `stats`, `show`, `links`, `find`, `check` (exit 1 on errors, for CI), `templates`, `new`, `mv` (rewrites links), `rm`, `write` (stdin), `init`;
+  `--json`, `--dry-run`. `yeraz mcp` serves the same commands as MCP tools over stdio (`src/cli/mcp.ts`, hand-rolled JSON-RPC); `src/cli/` (commands on `sync/structure.ts`, saved through `sync/folder.ts` or `push.ts`), entry `scripts/yeraz.ts`
 - `npm run perf` — budget tests on the 1,000-leaf fixture, laptop and 4× throttled phone (§7.4)
 - `npm run visual` — the app in the states of `design/screens/01–07` and every view of `design/views/`, with the design's Trees, into `visual-review/`
 - Visual snapshots (`e2e/visual.spec.ts`) run on demand in Playwright's Linux image: `gh workflow run snapshots.yml`
@@ -35,18 +38,18 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
   commands (`src-tauri/src/folder.rs`), or on phones, Safari and Firefox the browser's own storage (`deviceFolders`); a folder Family's id is `~/<slug>`. Tests use `test/memoryFolder.ts`
 - `src/editor/` CodeMirror 6 (lazy chunk): `Editor.tsx`, `livePreview.ts` (+ `metaLine.ts`: line 2 hidden, kept whole), `LeafEditor.tsx` (the leaf, edited in the Peek), `mentions.ts`, `insertMenu.ts`, `format.ts` (shortcuts, marks typed over a selection), `toolbar.ts` (touch: a bar above the keyboard), `steady.ts` (touch: the caret stays at eye level), `images.ts`, `emoji.ts`,
   `elements.ts` (an element's ⋯ menu, Markdown shown on request), `tables.ts` (tables as grids; `src/model/table.ts`)
-- `src/map/` `layout.ts` (pure, d3) · `family.ts` (a Family's Trees, placed) · `families.ts` (every Family merged, ids
+- `src/map/` `layout.ts` (pure, d3; `seed` for the map's Rearrange, memory only) · `family.ts` (a Family's Trees, placed) · `families.ts` (every Family merged, ids
   `owner/name::path`; drawn by `ui/AllView.tsx` at `#/all`, the default `#/`) · `TreeMap.tsx` · `useZoom.ts`
 - `src/views/` the other views (`design/views/`): `views.ts` (ids, saved per device), `ViewSwitcher.tsx`, `index.ts` (lazy chunks),
   `Canvas.tsx` (drawn views' stage: camera, selection layer), one file per view, pure layouts in `layout/`;
-  Settings › Views (`ui/ViewsSettings.tsx`) and › Tree colours (`ui/TreeColours.tsx`, `.yeraz.json` `trees`)
+  Settings › Views (`ui/ViewsSettings.tsx`) and › Family colours (`ui/FamilyColours.tsx`, `.yeraz.json` `color`, `linkColor`)
 - `src/read/` `render.ts` (markdown-it, lazy) · `Peek.tsx` · `History.tsx` (past versions, diff, restore) · `src/ui/` App, FamilyView, FamilyMenu, Start, Explorer, TokenScreen,
   theme (saved per device in `localStorage`, applied before paint by `index.html`), `panels.ts` + `ResizeHandle.tsx` (Explorer and Peek widths, per device), Appearance (`#/settings/appearance`),
   `customTheme.ts` + `ThemeEditor.tsx` (custom themes), `contrast.ts` (`readable` adjusts a failing colour), `Hidden.tsx` (Settings › Hidden),
   `Templates.tsx` (Settings › Templates, issue #41; `model/template.ts` fills one, `StructureDialogs.tsx` offers them under *Start from*),
   `InsertMenuSettings.tsx` (Settings › Insert menu: order, hidden items, own Markdown blocks; `editor/menuSetup.ts`, per device)
 - `src/example/files.ts` `CLAUDE.md` for AI agents (in every new Family) and the example Family (*Try an example*)
-- `themes/` community themes (each must pass every contrast rule as written) · `src/read/colors.ts` leaf colours
+- `themes/` community themes (each must pass every contrast rule as written)
 - Map rule: React draws geometry once per layout; selection, zoom level and layers are data
   attributes or the selection layer, never a React render of the map
 - `test/fake-github/` the fake: `fakeGitHub.ts` (handler), `graphql.ts`, `repo.ts`, `fixture.ts`,
@@ -70,8 +73,10 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
 ## Repository format (the contract, ARCHITECTURE.md §4)
 
 - [ ] A leaf is a `.md` file; line 1 is the title (`# 🔐 Keycloak`, leading emoji = icon)
-- [ ] Optional line 2: `<!-- yeraz {...} -->` metadata; colours are names (`"amber"`), not hex; `coverPosition` is % from the top;
+- [ ] Optional line 2: `<!-- yeraz {...} -->` metadata (a `color` there is ignored: leaves, branches and Trees have no colour); `coverPosition` is % from the top;
   `icon` is an image icon (`/assets/…` or https, instead of the title's emoji); `iconPosition` is `center` or `right`;
+  `iconInline: true` puts the icon on the title's line; `iconShape` is `rounded`, `square` or `"W:H"` (a circle when absent); `iconFocus` is `[x, y]` % of an image icon shown in its frame;
+  `coverAspect` is `slim`, `tall` or `"W:H"` (3:1 when absent);
   `hidden: true` takes the leaf (or, in a README.md, the branch or Tree) off the map with everything under it (still listed, marked, in the Explorer and its parent's Peek, where a click shows it again; Settings › Hidden too)
 - [ ] Sub-leaves live in a sibling folder with the same name (`keycloak.md` + `keycloak/`)
 - [ ] A branch is a folder without a same-named `.md`; its name is the folder name, as typed
@@ -80,7 +85,7 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
   leaf's sibling folder stay leaves
 - [ ] Threads are root-relative Markdown links (`[Keycloak](/identity/keycloak.md)`)
 - [ ] An image's width ends its title: `![Realm](/assets/realm.png "width=50%")`, a percent of the column
-- [ ] Images in `/assets/`; `.yeraz.json` marks the root (`name`, `color`, optional `trees`: `{"Identity":"amber"}`); filenames never change on retitle
+- [ ] Images in `/assets/`; `.yeraz.json` marks the root (`name`, `color` the Family's rings, optional `linkColor` its threads, both colour names; an old `trees` is ignored); filenames never change on retitle
 - [ ] `.yeraz.json` stays at the repository root; an optional `root` (`"notes"`) puts the whole Family in that folder, paths inside it as above
   (a repository turned into a notebook from *Connect* gets `notes/`, beside the project's files)
 - [ ] A template for new leaves is a `.md` in `.yeraz/templates/` (hidden from the map): line 1 its name (its emoji → the leaf's icon), line 2 the leaf's look, the rest the leaf's start with `{{title}}`, `{{date}}`, `{{tree}}` filled in

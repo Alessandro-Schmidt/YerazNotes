@@ -86,7 +86,7 @@ test.describe('attaching files', () => {
     await page.goto(`./#/tree/${REPO}/${LEAF}`)
     await signInHere(page)
     const card = page
-      .getByRole('region', { name: 'Leaf preview' })
+      .getByRole('region', { name: 'Note preview' })
       .getByRole('button', { name: 'Download Backup.zip, ZIP · 2.9 KB' })
     await expect(card).toBeVisible()
     const download = page.waitForEvent('download')
@@ -126,7 +126,7 @@ test.describe('attaching files', () => {
     )
     await expect(page.locator('.cm-content .file-card')).toContainText('totals.csv')
     expect(messages).toEqual([
-      'film.mov is 101.0\u00a0MB. GitHub doesn’t accept files over 100\u00a0MB, so it can’t be added to the Tree.',
+      'film.mov is 101.0\u00a0MB. GitHub doesn’t accept files over 100\u00a0MB, so it can’t be added to the project.',
     ])
 
     fake.resetLog()

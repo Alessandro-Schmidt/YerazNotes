@@ -2,7 +2,9 @@
 // Columns) are dragged wider or narrower by their inner edge, and each width is saved for
 // this device, like the theme and the view. The page holds them as CSS variables.
 
-export type Panel = 'explorer' | 'peek' | 'dock'
+/** A kept (pinned) note's column has its own width, by its place in the stack: `pin0`, `pin1`… */
+export type Panel = 'explorer' | 'peek' | 'dock' | `pin${number}`
+type Base = 'explorer' | 'peek' | 'dock'
 
 /**
  * The height (px) of a phone's bottom sheet, as Peek.module.css draws it: 60% of the screen,
@@ -10,20 +12,26 @@ export type Panel = 'explorer' | 'peek' | 'dock'
  */
 export const SHEET_HEIGHT = () => Math.round(Math.min(window.innerHeight * 0.6, 520))
 
-export const PANELS: Record<Panel, { initial: number; min: number; max: number }> = {
+export const PANELS: Record<Base, { initial: number; min: number; max: number }> = {
   explorer: { initial: 272, min: 200, max: 520 },
   peek: { initial: 420, min: 320, max: 960 },
   dock: { initial: 640, min: 360, max: 1100 },
 }
 
-export type Widths = Record<Panel, number>
+export type Widths = Record<Base, number> & Partial<Record<`pin${number}`, number>>
+
+/** A panel's least, most and initial widths: a kept note's are the Peek's. */
+export const limits = (panel: Panel) => PANELS[panel as Base] ?? PANELS.peek
+
+/** A panel's width: saved, or its initial one. */
+export const widthOf = (w: Widths, panel: Panel): number => w[panel] ?? limits(panel).initial
 
 /** localStorage key of the device's panel widths. */
 export const WIDTHS_KEY = 'yeraz-panels'
 
 /** A width the panel can take: whole pixels, between its least and most. */
 export const clampWidth = (panel: Panel, width: number) =>
-  Math.round(Math.min(PANELS[panel].max, Math.max(PANELS[panel].min, width)))
+  Math.round(Math.min(limits(panel).max, Math.max(limits(panel).min, width)))
 
 const storage = (): Storage | undefined => {
   try {
@@ -44,7 +52,8 @@ export function savedWidths(store = storage()): Widths {
   const widths = initial()
   try {
     const saved = JSON.parse(store?.getItem(WIDTHS_KEY) ?? '{}') as Partial<Widths>
-    for (const panel of Object.keys(widths) as Panel[]) {
+    const keys = Object.keys(saved).filter((k) => /^pin\d+$/.test(k))
+    for (const panel of [...Object.keys(widths), ...keys] as Panel[]) {
       const w = saved[panel]
       if (typeof w === 'number' && Number.isFinite(w)) widths[panel] = clampWidth(panel, w)
     }
@@ -61,7 +70,7 @@ let current: Widths | null = null
 export function saveWidth(panel: Panel, width: number | null, store = storage()): void {
   const next = {
     ...widthStore.get(),
-    [panel]: width === null ? PANELS[panel].initial : clampWidth(panel, width),
+    [panel]: width === null ? limits(panel).initial : clampWidth(panel, width),
   }
   try {
     store?.setItem(WIDTHS_KEY, JSON.stringify(next))
@@ -87,3 +96,40 @@ export const widthVar = (panel: Panel) => `--${panel}-w`
 /** The widths as the page's CSS variables. */
 export const widthVars = (w: Widths) =>
   Object.fromEntries((Object.keys(w) as Panel[]).map((p) => [widthVar(p), `${w[p]}px`]))
+
+/** Which side a kept (pinned) note stays on; new notes open on the other side. */
+export type PinSide = 'left' | 'right'
+
+/** localStorage key of the device's pinned side. */
+export const PIN_SIDE_KEY = 'yeraz-pin-side'
+
+/** The pinned side saved on this device: left unless saved right. */
+export function savedPinSide(store = storage()): PinSide {
+  try {
+    return store?.getItem(PIN_SIDE_KEY) === 'right' ? 'right' : 'left'
+  } catch {
+    return 'left'
+  }
+}
+
+export function savePinSide(side: PinSide, store = storage()): void {
+  try {
+    store?.setItem(PIN_SIDE_KEY, side)
+  } catch {
+    // Refused storage: the side still changes for this visit.
+  }
+}
+
+/**
+ * The column on a stacked note's left, which trades width with it across their shared edge
+ * (undefined for the leftmost, whose edge is free). `slot` is a kept note's place, or
+ * undefined for the opened note; `kept` is how many are kept.
+ */
+export function leftOf(side: PinSide, kept: number, slot?: number): Panel | undefined {
+  if (kept === 0) return undefined
+  if (side === 'left')
+    return slot === undefined ? `pin${kept - 1}` : slot > 0 ? `pin${slot - 1}` : undefined
+  // Right: the opened note first, then the kept ones from the last to the first.
+  if (slot === undefined) return undefined
+  return slot === kept - 1 ? 'peek' : `pin${slot + 1}`
+}

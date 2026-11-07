@@ -15,20 +15,20 @@ export const VIEW_IDS = [
 export type ViewId = (typeof VIEW_IDS)[number]
 
 export const VIEWS: Record<ViewId, { label: string; note: string }> = {
-  map: { label: 'Map', note: 'Every Tree around its core, threads bundled between them' },
-  mind: { label: 'Mind map', note: 'Trees either side of the core, leaves in rows' },
+  map: { label: 'Map', note: 'Every project around its core, threads bundled between them' },
+  mind: { label: 'Mind map', note: 'Projects either side of the core, notes in rows' },
   outline: { label: 'Outline', note: 'A table of contents with first lines and word counts' },
-  columns: { label: 'Columns', note: 'One level per column, the leaf open beside them' },
-  treemap: { label: 'Treemap', note: 'Each leaf a tile as large as its words' },
-  graph: { label: 'Graph', note: 'Leaves as a network of threads, each Tree a hull' },
-  rings: { label: 'Rings', note: 'One ring per month, each leaf where it was planted' },
-  atlas: { label: 'Atlas', note: 'Each Tree an island, each leaf a peak as high as its words' },
+  columns: { label: 'Columns', note: 'One level per column, the note open beside them' },
+  treemap: { label: 'Treemap', note: 'Each note a tile as large as its words' },
+  graph: { label: 'Graph', note: 'Notes as a network of threads, each project a hull' },
+  rings: { label: 'Rings', note: 'One ring per month, each note where it was planted' },
+  atlas: { label: 'Atlas', note: 'Each project an island, each note a peak as high as its words' },
 }
 
 /**
  * How a view shows the selection on a wide screen: the floating Peek, the Peek docked as
  * its last column (Columns), or the view's own panel, where the Peek opens only as a full
- * page (`Open leaf`). Phones use the Peek's sheet, but for Rings (design/views/screens/15).
+ * page (`Open note`). Phones use the Peek's sheet, but for Rings (design/views/screens/15).
  */
 export const PANEL: Record<ViewId, 'float' | 'dock' | 'own'> = {
   map: 'float',

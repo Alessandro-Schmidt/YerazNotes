@@ -170,7 +170,7 @@ export default function Columns({
                   onClick={() => onAction({ kind: 'new-leaf', parent: c.of.id })}
                 >
                   <Icon name="plus" size={14} />
-                  {c.of.kind === 'leaf' ? 'New sub-leaf' : `New leaf in ${c.of.title}`}
+                  {c.of.kind === 'leaf' ? 'New sub-note' : `New note in ${c.of.title}`}
                 </button>
               )}
               {i === shown.length - 1 && c.of.kind === 'root' && (
@@ -180,7 +180,7 @@ export default function Columns({
                   onClick={() => onAction({ kind: 'new-branch', parent: ROOT })}
                 >
                   <Icon name="plus" size={14} />
-                  New tree
+                  New project
                 </button>
               )}
             </section>

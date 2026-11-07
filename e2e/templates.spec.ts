@@ -23,7 +23,7 @@ test('New leaf starts from a template: its emoji and look, the title, the date a
 }) => {
   await page.goto(`./#/tree/${REPO}/Work%2Fplan.md`)
   await signInHere(page)
-  const peek = page.getByRole('region', { name: 'Leaf preview' })
+  const peek = page.getByRole('region', { name: 'Note preview' })
   // The template is not a leaf: nowhere on the map or in the Explorer.
   await expect(
     page.locator('[data-map] [data-node][data-id="Work/plan.md"]').first(),
@@ -31,11 +31,11 @@ test('New leaf starts from a template: its emoji and look, the title, the date a
   await expect(page.locator('[data-map] [data-id^=".yeraz"]')).toHaveCount(0)
   await expect(page.getByRole('treeitem', { name: /Meeting/ })).toHaveCount(0)
   await peek.getByRole('button', { name: 'Options' }).click()
-  await page.getByRole('menuitem', { name: 'Add sub-leaf' }).click()
+  await page.getByRole('menuitem', { name: 'Add sub-note', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('textbox', { name: /^Title/ }).fill('Sprint review')
   await dialog.getByRole('combobox', { name: /^Start from/ }).selectOption({ label: '📝 Meeting' })
-  await dialog.getByRole('button', { name: 'Create leaf' }).click()
+  await dialog.getByRole('button', { name: 'Create note' }).click()
   await expect(page).toHaveURL(/Work(\/|%2F)plan(\/|%2F)sprint-review\.md$/)
   await expect(page.locator('.cm-title')).toContainText('Sprint review')
   await page.keyboard.press('ControlOrMeta+s')
@@ -84,7 +84,7 @@ test('a leaf is saved as a template from its ⋯ menu, and opens in Settings ›
 }) => {
   await page.goto(`./#/tree/${REPO}/Work%2Fplan.md`)
   await signInHere(page)
-  const peek = page.getByRole('region', { name: 'Leaf preview' })
+  const peek = page.getByRole('region', { name: 'Note preview' })
   await peek.getByRole('button', { name: 'Options' }).click()
   await page.getByRole('menuitem', { name: 'Save as template' }).click()
   await expect(page).toHaveURL(

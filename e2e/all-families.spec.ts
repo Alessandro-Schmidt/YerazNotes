@@ -62,7 +62,7 @@ test('Keep open holds a leaf of one Family beside a leaf of another', async ({ p
   const other = [...graph.nodes.values()].find((n) => n.kind === 'leaf' && n.parent !== '')!
   await signIn(page)
   await page.goto('./#/all/you/art/Baroque/caravaggio.md')
-  const peeks = page.getByRole('region', { name: 'Leaf preview' })
+  const peeks = page.getByRole('region', { name: 'Note preview' })
   await expect(peeks).toHaveCount(1)
   await peeks.getByRole('button', { name: 'Keep open' }).click()
   await page.goto(`./#/all/you/engineering/${other.id}`)
@@ -94,7 +94,7 @@ test('@ links to another Family’s Tree; the map of every Family draws the thre
   await page.locator('.cm-content').click()
   await page.keyboard.press('ControlOrMeta+End')
   await page.keyboard.type(`\nSee @${title}`)
-  await page.getByRole('option', { name: new RegExp(`^${title}.*Engineering · Tree`) }).click()
+  await page.getByRole('option', { name: new RegExp(`^${title}.*Engineering · Project`) }).click()
   await page.keyboard.press('ControlOrMeta+s')
   await expect
     .poll(() => fake.repo('you/art').read('Baroque/caravaggio.md'))
@@ -110,14 +110,14 @@ test('a leaf moves to another Family, found by typing where', async ({ page, fak
   test.skip(isPhone(page), 'The move dialog is the same on phones; one run is enough')
   await signIn(page)
   await page.goto('./#/tree/you/art/Baroque/caravaggio.md')
-  const panel = page.getByRole('region', { name: 'Leaf preview' })
+  const panel = page.getByRole('region', { name: 'Note preview' })
   await panel.getByRole('button', { name: 'Options' }).click()
   await page.getByRole('menuitem', { name: 'Move…' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('searchbox', { name: 'Where to' }).fill('top of engin')
   await expect(dialog.getByRole('radio')).toHaveCount(1)
   await dialog
-    .getByRole('radio', { name: 'At the top of Engineering, as a Tree of its own' })
+    .getByRole('radio', { name: 'At the top of Engineering, as a project of its own' })
     .check()
   await dialog.getByRole('button', { name: 'Move' }).click()
   await expect(page).toHaveURL(/#\/tree\/you\/engineering\/caravaggio\.md$/)
@@ -161,7 +161,7 @@ const shown: Record<ViewId, (page: Page) => ReturnType<Page['locator']>> = {
   outline: (p) => p.getByRole('list', { name: /outline$/ }),
   columns: (p) => p.getByRole('list', { name: /^Inside / }).first(),
   treemap: (p) => p.locator('[data-tile]').first(),
-  graph: (p) => p.getByRole('img', { name: 'Graph of leaves and threads' }),
+  graph: (p) => p.getByRole('img', { name: 'Graph of notes and threads' }),
   rings: (p) => p.getByRole('img', { name: /^Growth rings of/ }),
   atlas: (p) => p.getByRole('img', { name: /^Atlas of/ }),
 }

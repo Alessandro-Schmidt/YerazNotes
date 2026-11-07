@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FocusEvent,
   type MouseEvent,
   type RefObject,
@@ -37,19 +38,22 @@ import { Icon } from '../ui/icons'
 import { InlineName } from '../ui/InlineName'
 import { play } from '../ui/motion'
 import { ResizeHandle } from '../ui/ResizeHandle'
+import type { Panel } from '../ui/panels'
+import { widthVar } from '../ui/panels'
 import { PHONE, useMedia } from '../ui/useMedia'
 import { SyncStatus } from '../ui/SyncStatus'
 import { focusFirst, menuKeys } from '../ui/menuKeys'
 import { templateHref, treeHref } from '../ui/paths'
 import styles from './Peek.module.css'
-import { coverPosition } from './cover'
-import { leafColors } from './colors'
+import { coverAspect, coverPosition } from './cover'
 import { downloadAsset } from './files'
 import { History } from './History'
 import { printLeaf } from './print'
 import { playYouTube } from './youtube'
 import { renderLeaf } from './render'
 import { planGhostLeaf, planTemplate } from '../sync/structure'
+import { newNoteAction } from '../sync/structure'
+import { fillBookmark } from './linkMeta'
 import type { StructureAction } from '../ui/StructureDialogs'
 
 export interface PeekProps {
@@ -63,10 +67,16 @@ export interface PeekProps {
   created?: boolean
   /** Kept open beside the selection (owner's request: several leaves edited at once). */
   pinned?: boolean
+  /** A kept note's place in the stack: its column's width is its own (`pin0`, `pin1`…). */
+  slot?: number
+  /** The column to its left in a stack: dragging the edge between them moves width from one to the other. */
+  partner?: Panel
   /** Keeps this node open beside whatever is selected next; the head shows the button. */
   onPin?(id: string): void
   /** This node is pinned: the pin shows pressed, and a click unpins it. */
   kept?: boolean
+  /** Moves the pinned notes to the other side of the new one; the head shows the button. */
+  onSwap?(): void
   href(id: string): string
   onSelect(id: string): void
   onExpand(expanded: boolean): void
@@ -85,8 +95,11 @@ export function Peek({
   docked,
   created,
   pinned,
+  slot,
+  partner,
   onPin,
   kept,
+  onSwap,
   href,
   onSelect,
   onExpand,
@@ -138,10 +151,10 @@ export function Peek({
     node.kind === 'root'
       ? 'Family'
       : node.kind === 'leaf'
-        ? 'Leaf'
+        ? 'Note'
         : node.parent === ROOT
-          ? 'Tree'
-          : 'Branch'
+          ? 'Project'
+          : 'Group'
   const out = [...(graph.out.get(id) ?? []), ...ghostsFrom(graph, id)]
   const into = graph.in.get(id) ?? []
   // The Family lists its Trees; its README.md is its text, shown above them.
@@ -184,6 +197,15 @@ export function Peek({
           ]
 
   const { named, where } = threadNames(graph)
+  const chipRow = (
+    <div className={styles.chips}>
+      {chips.map((c) => (
+        <span key={c} className={`${controls.mono} ${styles.meta}`}>
+          {c}
+        </span>
+      ))}
+    </div>
+  )
 
   return (
     <section
@@ -192,13 +214,23 @@ export function Peek({
       data-expanded={expanded || undefined}
       data-docked={docked || undefined}
       data-stacked={pinned || undefined}
+      style={
+        slot === undefined
+          ? undefined
+          : ({ '--col-w': `var(${widthVar(`pin${slot}`)}, 420px)` } as CSSProperties)
+      }
       aria-label={`${kind} preview`}
     >
       {!expanded && (
-        <ResizeHandle panel={docked ? 'dock' : 'peek'} edge="left" label="Leaf panel width" />
+        <ResizeHandle
+          panel={docked ? 'dock' : slot === undefined ? 'peek' : `pin${slot}`}
+          edge="left"
+          partner={docked ? undefined : partner}
+          label="Note panel width"
+        />
       )}
       <PeekHead
-        {...{ kind, crumb, away, href, onSelect, expanded, onClose, sheet, kept }}
+        {...{ kind, crumb, away, href, onSelect, expanded, onClose, sheet, kept, onSwap }}
         onPin={onPin && node.kind !== 'root' && !expanded && !docked ? () => onPin(id) : undefined}
         onExpand={motion.expand}
       />
@@ -233,7 +265,7 @@ export function Peek({
                 autoFocus={created}
                 onOpen={onSelect}
               />
-            ) : (
+            ) : node.kind === 'branch' ? null : (
               <div className={styles.titleRow}>
                 <Glyph node={node} />
                 <h2 className={styles.title}>
@@ -249,13 +281,7 @@ export function Peek({
                 </h2>
               </div>
             )}
-            <div className={styles.chips}>
-              {chips.map((c) => (
-                <span key={c} className={`${controls.mono} ${styles.meta}`}>
-                  {c}
-                </span>
-              ))}
-            </div>
+            {node.kind !== 'branch' && chipRow}
 
             {/* A branch's text (its folder's README.md): always in the leaf editor, ready to
                 write, even before the file exists; the first save creates it. */}
@@ -266,6 +292,15 @@ export function Peek({
                 path={textFile(graph, id)!}
                 source={source}
                 onOpen={onSelect}
+                heading={
+                  <>
+                    <div className={styles.titleRow}>
+                      <Glyph node={node} />
+                      <h2 className={styles.title}>{node.title}</h2>
+                    </div>
+                    {chipRow}
+                  </>
+                }
               />
             )}
 
@@ -278,6 +313,29 @@ export function Peek({
                 sha={readme.sha}
                 href={href}
               />
+            )}
+
+            {(node.kind === 'leaf' || node.kind === 'branch') && (
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={controls.ghost}
+                  title="Ctrl/Cmd+N"
+                  onClick={() => onAction(newNoteAction(graph, id, false)!)}
+                >
+                  <Icon name="arrowRight" size={15} />
+                  New note
+                </button>
+                <button
+                  type="button"
+                  className={controls.ghost}
+                  title="Ctrl/Cmd+S"
+                  onClick={() => onAction(newNoteAction(graph, id, true)!)}
+                >
+                  <Icon name="arrowDown" size={15} />
+                  New sub-note
+                </button>
+              </div>
             )}
 
             {children.length + hiddenKids.length > 0 && (
@@ -355,7 +413,7 @@ export function Peek({
             className={`${controls.ghost} ${styles.openLeaf}`}
             onClick={() => motion.expand(true)}
           >
-            Open leaf
+            Open note
             <Icon name="arrowRight" />
           </button>
         )}
@@ -367,7 +425,7 @@ export function Peek({
               onClick={() => onAction({ kind: 'new-leaf', parent: id })}
             >
               <Icon name="plus" size={15} />
-              New leaf here
+              New note here
             </button>
           )}
           {node.kind === 'root' && (
@@ -377,7 +435,7 @@ export function Peek({
               onClick={() => onAction({ kind: 'new-branch', parent: ROOT })}
             >
               <Icon name="plus" size={15} />
-              New tree
+              New project
             </button>
           )}
           {node.kind !== 'root' && (
@@ -415,7 +473,10 @@ export function Peek({
                       type="button"
                       role="menuitem"
                       onClick={() =>
-                        void printable(tree.repo, graph, id, href).then(printLeaf, () => undefined)
+                        void printable(tree.repo, graph, id, href).then(
+                          (leaf) => printLeaf(leaf, node.title),
+                          () => undefined,
+                        )
                       }
                     >
                       Export PDF
@@ -432,7 +493,7 @@ export function Peek({
                       role="menuitem"
                       onClick={() => onAction({ kind: 'new-leaf', parent: id })}
                     >
-                      Add sub-leaf
+                      Add sub-note
                     </button>
                   )}
                   <button
@@ -440,7 +501,7 @@ export function Peek({
                     role="menuitem"
                     onClick={() => onAction({ kind: 'new-leaf', parent: id, many: true })}
                   >
-                    {node.kind === 'leaf' ? 'Add sub-leaves…' : 'New leaves here…'}
+                    {node.kind === 'leaf' ? 'Add sub-notes…' : 'New notes here…'}
                   </button>
                   {node.kind === 'branch' && (
                     <button
@@ -448,7 +509,7 @@ export function Peek({
                       role="menuitem"
                       onClick={() => onAction({ kind: 'new-branch', parent: id })}
                     >
-                      New branch here
+                      New group here
                     </button>
                   )}
                   {node.kind === 'leaf' && (
@@ -550,6 +611,7 @@ function PeekHead({
   away = null,
   onPin,
   kept,
+  onSwap,
   href,
   onSelect,
   expanded,
@@ -564,6 +626,7 @@ function PeekHead({
   /** Keeps the node open beside the next selection; no button without it. */
   onPin?: (() => void) | undefined
   kept?: boolean | undefined
+  onSwap?: (() => void) | undefined
   sheet: RefObject<HTMLElement | null>
 } & Pick<PeekProps, 'href' | 'onSelect' | 'expanded' | 'onExpand' | 'onClose'>) {
   // On a touch screen the handle and head are a grip: swipe up to open the full page,
@@ -629,13 +692,24 @@ function PeekHead({
             ))
           )}
         </nav>
+        {onSwap && (
+          <button
+            type="button"
+            className={controls.iconButton}
+            aria-label="Pin on the other side"
+            title="Move pinned notes to the other side"
+            onClick={onSwap}
+          >
+            <Icon name="swap" size={16} />
+          </button>
+        )}
         {onPin && (
           <button
             type="button"
             className={`${controls.iconButton} ${styles.pin}`}
             aria-label="Keep open"
             aria-pressed={!!kept}
-            title={kept ? 'Pinned: click to unpin' : 'Keep this open beside the next leaf you pick'}
+            title={kept ? 'Pinned: click to unpin' : 'Keep this open beside the next note you pick'}
             onClick={onPin}
           >
             <Icon name="pin" size={16} />
@@ -854,7 +928,7 @@ function GhostPeek({
       ref={sheet}
       className={styles.peek}
       data-expanded={expanded || undefined}
-      aria-label="Leaf not written yet"
+      aria-label="Note not written yet"
     >
       <PeekHead
         kind="Not written yet"
@@ -870,8 +944,8 @@ function GhostPeek({
               <h2 className={styles.title}>{ghost.title}</h2>
             </div>
             <p className={styles.ghostText}>
-              {ghost.from.length === 1 ? 'A leaf links' : `${ghost.from.length} leaves link`} here,
-              but this leaf isn’t written yet. Writing it creates the file the links name.
+              {ghost.from.length === 1 ? 'A note links' : `${ghost.from.length} notes link`} here,
+              but this note isn’t written yet. Writing it creates the file the links name.
             </p>
             {error && (
               <p className={controls.error} role="alert">
@@ -885,7 +959,7 @@ function GhostPeek({
               onClick={() => void write()}
             >
               <Icon name="plus" size={15} />
-              Write this leaf
+              Write this note
             </button>
             <ThreadList
               title="Threads in · mentioned by"
@@ -1007,6 +1081,8 @@ function ReadText({
         .assetUrl(repo, href ?? el.dataset.asset!)
         .then((url) => url && el.setAttribute(href ? 'href' : 'src', url))
     }
+    for (const a of body.current?.querySelectorAll<HTMLAnchorElement>('a.bookmark') ?? [])
+      fillBookmark(a, a.href)
     // Attachments are downloaded only when their card is used.
     for (const el of body.current?.querySelectorAll<HTMLElement>('[data-asset-file]') ?? [])
       el.onclick = () =>
@@ -1061,8 +1137,6 @@ async function printable(
   const article = document.createElement('article')
   article.className = styles.article ?? ''
   article.dataset.leaf = ''
-  for (const [name, value] of Object.entries(leafColors(node.meta)))
-    article.style.setProperty(name, String(value))
   const title = document.createElement('h2')
   title.className = styles.title ?? ''
   title.textContent = `${node.icon ? `${node.icon} ` : ''}${node.title}`
@@ -1079,6 +1153,7 @@ async function printable(
     if (own !== null) img.dataset.asset = own
     else if (/^https:\/\//.test(cover)) img.src = cover
     img.style.objectPosition = `50% ${coverPosition(node.meta)}%`
+    img.style.aspectRatio = coverAspect(node.meta) ?? ''
     article.prepend(img)
   }
   await Promise.all(

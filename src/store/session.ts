@@ -181,7 +181,8 @@ export interface SessionState {
    * Colours a Family (`color`) or one of its Trees (`tree`), by colour name; null goes back
    * to the theme accent (the Family's colour, for a Tree). Written to `.yeraz.json`.
    */
-  setColor(repo: string, color: string | null, tree?: string): Promise<void>
+  /** The Family's colour, or (`linkColor`) its threads' colour, in `.yeraz.json`. */
+  setColor(repo: string, color: string | null, field?: 'color' | 'linkColor'): Promise<void>
   /**
    * Hides a leaf or a branch (a Tree too) with everything under it, or shows it again: line 2
    * `hidden` of the leaf, or of the branch's README.md, which is written when it has none.
@@ -308,8 +309,13 @@ export function createSession(deps: {
     const titled = (ref: TreeRef): TreeRef => {
       const text = dirty.get(ref.repo.toLowerCase())?.[MARKER]?.text
       if (typeof text !== 'string') return ref
-      const { title, color, trees } = markerFields(text)
-      return { ...ref, title: title ?? ref.title, color: color ?? null, trees: trees ?? {} }
+      const { title, color, linkColor } = markerFields(text)
+      return {
+        ...ref,
+        title: title ?? ref.title,
+        color: color ?? null,
+        linkColor: linkColor ?? null,
+      }
     }
     const saveTrees = async (list: TreeRef[]) => {
       const trees = list.map(titled)
@@ -338,6 +344,8 @@ export function createSession(deps: {
     const readMarker = async (repo: string) => {
       const key = repo.toLowerCase()
       await pulls.get(key)
+      // Opened from Settings before its map: open the Family here.
+      if (!bases.has(key)) await get().open(repo)
       const base = bases.get(key)
       if (!base) throw new Error("This Family hasn't opened yet. Try again in a moment.")
       const pending = (await loadDirty(key))[MARKER]?.text
@@ -374,27 +382,17 @@ export function createSession(deps: {
     const setSync = (key: string, state: SyncState) =>
       set((s) => ({ sync: { ...s.sync, [key]: state } }))
     const count = (key: string) => Object.keys(dirty.get(key) ?? {}).length
-    /** Writes a Family's or a Tree's colour into the marker (setColor, in turn). */
-    const colour = async (repo: string, color: string | null, tree?: string) => {
+    /** Writes a Family's colour or its link colour into the marker (setColor, in turn). */
+    const colour = async (repo: string, color: string | null, field: 'color' | 'linkColor') => {
       const key = repo.toLowerCase()
       const { text, marker } = await readMarker(repo)
       const next = { ...marker }
-      if (tree === undefined) {
-        if (color === null) delete next.color
-        else next.color = color
-      } else {
-        const own = marker.trees
-        const trees: Record<string, unknown> =
-          own && typeof own === 'object' && !Array.isArray(own) ? { ...own } : {}
-        if (color === null) delete trees[tree]
-        else trees[tree] = color
-        if (Object.keys(trees).length) next.trees = trees
-        else delete next.trees
-      }
+      if (color === null) delete next[field]
+      else next[field] = color
       if (JSON.stringify(next) === JSON.stringify(marker)) return
       await writeMarker(repo, text, next)
       const fields = markerFields(JSON.stringify(next))
-      await retitle(key, { color: fields.color ?? null, trees: fields.trees ?? {} })
+      await retitle(key, { color: fields.color ?? null, linkColor: fields.linkColor ?? null })
     }
 
     /** Drops what this session holds of a Family in memory, and its pending edits. */
@@ -445,7 +443,7 @@ export function createSession(deps: {
         isPrivate: true,
         title: fields.title ?? picked.name,
         color: fields.color ?? null,
-        trees: fields.trees ?? {},
+        linkColor: fields.linkColor ?? null,
         folder: picked.name,
       }
       await store.set(`folder:${ref.repo}`, picked.handle)
@@ -526,11 +524,11 @@ export function createSession(deps: {
         await saveDirty(key)
         const committedMarker = snapshot[MARKER]?.text
         if (typeof committedMarker === 'string') {
-          const { title, color, trees } = markerFields(committedMarker)
+          const { title, color, linkColor } = markerFields(committedMarker)
           await retitle(key, {
             ...(title ? { title } : {}),
             color: color ?? null,
-            trees: trees ?? {},
+            linkColor: linkColor ?? null,
           })
         }
         show(key)
@@ -674,7 +672,7 @@ export function createSession(deps: {
         }
         if (!tree)
           throw new NotFamilyError(
-            `Turn ${name} into a notebook? Yeraz adds a .yeraz.json and a Welcome leaf.`,
+            `Turn ${name} into a notebook? Yeraz adds a .yeraz.json and a Welcome note.`,
           )
         const key = tree.repo.toLowerCase()
         await store.set(KEYS.connected, [...new Set([...(await connected()), tree.repo])])
@@ -931,7 +929,7 @@ export function createSession(deps: {
       async history(repo, path, after = null) {
         const key = repo.toLowerCase()
         await pulls.get(key)
-        if (isFolder(key)) throw new Error('A folder keeps no history of its leaves.')
+        if (isFolder(key)) throw new Error('A folder keeps no history of its notes.')
         const ref = bases.get(key)?.ref
         const head = ref && (await store.get<CachedListing>(`tree:${ref.repo}`))?.head
         if (!ref || !head) throw new Error("This Family hasn't opened yet. Try again in a moment.")
@@ -1027,9 +1025,9 @@ export function createSession(deps: {
         })
       },
 
-      async setColor(repo, color, tree) {
+      async setColor(repo, color, field = 'color') {
         const key = repo.toLowerCase()
-        await inTurn(key, () => colour(repo, color, tree))
+        await inTurn(key, () => colour(repo, color, field))
       },
 
       async renameRepository(repo, name) {
@@ -1095,7 +1093,7 @@ export function createSession(deps: {
               : ''
           throw new Error(message + hint, { cause: e })
         }
-        next = { ...next, color: ref.color, trees: ref.trees ?? {} }
+        next = { ...next, color: ref.color, linkColor: ref.linkColor ?? null }
         await saveTrees(mergeTrees([next], get().trees))
         await get().removeTree(repo)
         return next

@@ -40,7 +40,7 @@
   position: relative;
   inset: auto;
   height: 100%;
-  flex: 0 1 var(--peek-w, 420px);
+  flex: 0 1 var(--col-w, var(--peek-w, 420px));
   min-width: 300px;
   max-width: none;
 }
@@ -205,7 +205,7 @@
 .content {
   font-size: 14.5px;
   line-height: 1.65;
-  color: var(--leaf-text, var(--text-body));
+  color: var(--text-body);
   overflow-wrap: anywhere;
 }
 .content > :first-child {
@@ -225,7 +225,7 @@
   font-family: var(--font-ui);
   font-size: 15px;
   font-weight: 600;
-  color: var(--leaf-heading, var(--tree, var(--accent)));
+  color: var(--tree, var(--accent));
 }
 .content h3 {
   font-size: 17px;
@@ -283,7 +283,7 @@
 .content :global(.callout) {
   --callout: var(--c-blue);
   border-left-color: var(--callout);
-  color: var(--leaf-text, var(--text-body));
+  color: var(--text-body);
 }
 .content :global(.callout-tip) {
   --callout: var(--c-green);
@@ -703,14 +703,35 @@
   font-size: 24px;
 }
 
-/* A bookmark: the same card, its address on one line. */
+/* A bookmark: the same card across the column, its site's icon and address on one line. */
 .content :global(.bookmark) {
-  max-width: 100%;
+  display: flex;
+  gap: 4px;
+  padding: 14px 16px;
+}
+.content :global(.bookmark) strong {
+  font-size: 15px;
+}
+.content :global(.bookmark-desc) {
+  font-size: 13px;
+  color: var(--muted);
 }
 .content :global(.bookmark) span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.content :global(.favicon) {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: center / contain no-repeat;
 }
 
 /* A menu opens from its button. */

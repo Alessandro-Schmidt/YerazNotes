@@ -1,6 +1,6 @@
 [package]
 name = "yeraz"
-version = "0.2.0"
+version = "0.3.0"
 description = "Your notes as a map, kept in your own GitHub repositories."
 edition = "2021"
 
@@ -19,6 +19,8 @@ keyring = { version = "=3.6.3", features = ["apple-native", "windows-native", "s
 # Families in folders (issue #64): the native folder picker, and the file list sent to the app.
 tauri-plugin-dialog = "=2.8.4"
 serde = { version = "=1.0.229", features = ["derive"] }
+# Bookmark cards: a page's title and description (the webview's fetch is refused by CORS).
+ureq = { version = "=2.12.1", default-features = false, features = ["tls"] }
 
 [profile.release]
 codegen-units = 1

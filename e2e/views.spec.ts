@@ -1,5 +1,5 @@
 // The ways to see a Family (design/views/README.md): the switcher, each view showing the
-// same graph and the same selection, Settings › Views, and Tree colours in .yeraz.json.
+// same graph and the same selection, Settings › Views, and Family colours in .yeraz.json.
 
 import AxeBuilder from '@axe-core/playwright'
 import type { Page } from '@playwright/test'
@@ -36,7 +36,7 @@ const shown: Record<ViewId, (page: Page) => ReturnType<Page['locator']>> = {
   outline: (p) => p.getByRole('list', { name: /outline$/ }),
   columns: (p) => p.getByRole('list', { name: /^Inside / }).first(),
   treemap: (p) => p.locator('[data-tile]').first(),
-  graph: (p) => p.getByRole('img', { name: 'Graph of leaves and threads' }),
+  graph: (p) => p.getByRole('img', { name: 'Graph of notes and threads' }),
   rings: (p) => p.getByRole('img', { name: /^Growth rings of/ }),
   atlas: (p) => p.getByRole('img', { name: /^Atlas of/ }),
 }
@@ -132,9 +132,9 @@ test('Growth rings dates leaves from git and shows the core sample', async ({ pa
   await openOn(page, 'rings', leaf.id)
   await expect(page.getByRole('img', { name: 'Core sample, one band per month' })).toBeVisible()
   if (!isPhone(page)) {
-    const card = page.getByRole('region', { name: 'Selected leaf' })
+    const card = page.getByRole('region', { name: 'Selected note' })
     await expect(card).toContainText(/Planted \w+ \d{4}/)
-    await card.getByRole('button', { name: 'Open leaf' }).click()
+    await card.getByRole('button', { name: 'Open note' }).click()
     await expect(page.getByRole('region', { name: /preview$/ })).toHaveAttribute('data-expanded')
   }
 })
@@ -197,13 +197,10 @@ test('Settings › Views chooses how a Family is shown', async ({ page }) => {
   await expect(switcher(page).getByRole('radio', { name: 'Treemap' })).toBeChecked()
 })
 
-test('Tree colours are saved in .yeraz.json and colour that Tree on the map', async ({
+test('the Family and link colours are saved in .yeraz.json and colour the map', async ({
   page,
   fake,
-  graph,
 }) => {
-  const tree = treesOf(graph)[0]!
-  const title = graph.nodes.get(tree)!.title
   const pick = async (row: string, colour: string) => {
     const radio = page
       .getByRole('radiogroup', { name: `${row} colour` })
@@ -211,26 +208,36 @@ test('Tree colours are saved in .yeraz.json and colour that Tree on the map', as
     await radio.click()
     await expect(radio).toBeChecked()
   }
+  // Straight to Settings: the page opens the Family itself.
   await page.goto('./#/settings/colours')
   await signInHere(page)
-  await pick(title, 'Amber')
   await pick('Engineering', 'Blue')
+  await pick('Links', 'Amber')
   await page.keyboard.press('ControlOrMeta+s')
   await expect
     .poll(() => JSON.parse(fake.repo(REPO).read('.yeraz.json') ?? '{}'))
-    .toMatchObject({ color: 'blue', trees: { [tree]: 'amber' } })
+    .toMatchObject({ color: 'blue', linkColor: 'amber' })
   await page.goto(`./#/tree/${REPO}`)
-  await expect(page.locator(`[data-map] [data-tree="${tree}"]`).first()).toHaveAttribute(
-    'style',
-    /--tree: var\(--c-amber\)/,
-  )
-  // Back to the Family's colour: the Tree's entry goes.
+  await expect(page.locator('[data-map]')).toHaveAttribute('style', /--link: var\(--c-amber\)/)
+  // Back to the Family's colour: the key goes.
   await page.goto('./#/settings/colours')
-  await pick(title, 'Family')
+  await pick('Links', 'Family')
   await page.keyboard.press('ControlOrMeta+s')
   await expect
-    .poll(() => JSON.parse(fake.repo(REPO).read('.yeraz.json') ?? '{}').trees)
+    .poll(() => JSON.parse(fake.repo(REPO).read('.yeraz.json') ?? '{}').linkColor)
     .toBeUndefined()
+})
+
+test('Rearrange lays the map out again without writing anything', async ({ page, fake }) => {
+  await page.goto(`./#/tree/${REPO}`)
+  await signInHere(page)
+  const dot = page.locator('[data-map] [data-node]').first()
+  await expect(dot).toBeVisible()
+  const before = await page.locator('[data-map] svg').first().innerHTML()
+  fake.resetLog()
+  await page.getByRole('button', { name: 'Rearrange' }).click()
+  await expect.poll(() => page.locator('[data-map] svg').first().innerHTML()).not.toBe(before)
+  expect(fake.log.filter((e) => e.operation === 'mutation')).toHaveLength(0)
 })
 
 for (const view of VIEW_IDS.filter((v) => v !== 'map')) {
@@ -246,7 +253,7 @@ for (const view of VIEW_IDS.filter((v) => v !== 'map')) {
   })
 }
 
-test('the Views and Tree colours settings have no accessibility violations', async ({ page }) => {
+test('the Views and Family colours settings have no accessibility violations', async ({ page }) => {
   await page.goto('./#/settings/views')
   await signInHere(page)
   for (const settings of ['views', 'colours', 'hidden', 'menu']) {

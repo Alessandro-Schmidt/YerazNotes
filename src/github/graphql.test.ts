@@ -72,9 +72,12 @@ describe('markerFields', () => {
     const hostile = 'x, url(https://evil.example/p)'
     const marker = JSON.stringify({
       color: hostile,
-      trees: { Identity: 'amber', Away: hostile, Red: 'red' },
+      linkColor: hostile,
+      trees: { Identity: 'amber' },
     })
-    expect(markerFields(marker)).toEqual({ trees: { Identity: 'amber' } })
+    // `trees` (each Tree's colour) is ignored now: one colour per Family, one for its links.
+    expect(markerFields(marker)).toEqual({})
+    expect(markerFields('{"linkColor":"amber"}')).toEqual({ linkColor: 'amber' })
     expect(markerFields('{"color":"violet"}')).toEqual({ color: 'violet' })
   })
 })

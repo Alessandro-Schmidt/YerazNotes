@@ -136,7 +136,7 @@ export function Appearance() {
               ))}
             </div>
             <p className={styles.note}>
-              Tree and leaf colours are named colours, so they follow whichever base you pick.
+              Project and note colours are named colours, so they follow whichever base you pick.
             </p>
           </fieldset>
 
@@ -201,7 +201,7 @@ export function Appearance() {
                 <p>Dried sheets last for months, and a sprinkle of water softens them again.</p>
               </div>
               <div className={styles.buttons} aria-hidden="true">
-                <span className={controls.primary}>New leaf</span>
+                <span className={controls.primary}>New note</span>
                 <span className={controls.ghost}>Add cover</span>
               </div>
             </div>

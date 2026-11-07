@@ -3,7 +3,7 @@
 
 .editor :global(.cm-editor) {
   background: transparent;
-  color: var(--leaf-text, var(--text-body));
+  color: var(--text-body);
   font-size: 15.5px;
 }
 .editor :global(.cm-editor.cm-focused) {
@@ -17,13 +17,13 @@
 .editor :global(.cm-content) {
   padding: 0 0 40vh;
   /* The caret is the text's colour (issue #68). */
-  caret-color: var(--leaf-text, var(--text-body));
+  caret-color: var(--text-body);
 }
 .editor :global(.cm-line) {
   padding: 0;
 }
 .editor :global(.cm-cursor) {
-  border-left-color: var(--leaf-text, var(--text-body));
+  border-left-color: var(--text-body);
 }
 .editor :global(.cm-selectionBackground),
 .editor :global(.cm-focused .cm-selectionBackground),
@@ -80,7 +80,7 @@
 .editor :global(.cm-line.cm-h6) {
   font-family: var(--font-ui);
   font-weight: 600;
-  color: var(--leaf-heading, var(--tree, var(--accent)));
+  color: var(--tree, var(--accent));
   padding-top: 10px;
 }
 .editor :global(.cm-line.cm-h1:not(.cm-title)) {
@@ -164,7 +164,7 @@
 .editor :global(.cm-line.cm-callout) {
   --callout: var(--c-blue);
   border-left-color: var(--callout);
-  color: var(--leaf-text, var(--text-body));
+  color: var(--text-body);
 }
 .editor :global(.cm-line.cm-callout-tip) {
   --callout: var(--c-green);
@@ -474,15 +474,19 @@
   border-radius: 9px;
   background: var(--bg);
 }
+.editor :global(.favicon) {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: center / contain no-repeat;
+}
 /* A bookmark, as the read view's card: its title and address. */
 .editor :global(.cm-embed-bookmark) {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  width: fit-content;
-  min-width: 240px;
-  max-width: 100%;
-  padding: 12px 14px;
+  gap: 4px;
+  padding: 14px 16px;
   border: 1px solid var(--hair-strong);
   border-radius: 10px;
   background: var(--raised);
@@ -494,7 +498,17 @@
     border-color: var(--accent);
   }
 }
+.editor :global(.cm-embed-bookmark strong) {
+  font-size: 15px;
+}
+.editor :global(.cm-embed-bookmark .bookmark-desc) {
+  font-size: 13px;
+  color: var(--muted);
+}
 .editor :global(.cm-embed-bookmark span) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   overflow: hidden;
   font-family: var(--font-mono);
   font-size: 12px;

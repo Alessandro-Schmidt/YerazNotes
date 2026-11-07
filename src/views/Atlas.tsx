@@ -144,7 +144,7 @@ export default function Atlas({
               >
                 <path d="M6 1l5 9H1z" />
               </svg>
-              Peak: a leaf
+              Peak: a note
             </span>
             <span>
               <span className={styles.legendRoute} />
@@ -195,7 +195,7 @@ export default function Atlas({
             className={`${controls.ghost} ${styles.open}`}
             onClick={() => onOpen(node.id)}
           >
-            Open leaf
+            Open note
             <Icon name="arrowRight" size={15} />
           </button>
         </section>

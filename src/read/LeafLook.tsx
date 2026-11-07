@@ -9,12 +9,20 @@ export function Cover({
   repo,
   src,
   position = 50,
+  x = 50,
+  aspect,
+  radius,
   ...img
 }: {
   repo: string
   src: unknown
   /** Percent from the top, as coverPosition() reads it. */
   position?: number
+  /** Percent from the left (an image icon's `iconFocus`). */
+  x?: number
+  /** CSS aspect ratio, when not the stylesheet's. */
+  aspect?: string | null
+  radius?: string
 } & Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'>) {
   const own = typeof src === 'string' ? ownPath(src) : null
   const web = typeof src === 'string' && /^https:\/\//.test(src) ? src : null
@@ -39,7 +47,11 @@ export function Cover({
       decoding="async"
       {...img}
       src={shown}
-      style={{ objectPosition: `50% ${position}%` }}
+      style={{
+        objectPosition: `${x}% ${position}%`,
+        aspectRatio: aspect ?? undefined,
+        borderRadius: radius,
+      }}
     />
   )
 }

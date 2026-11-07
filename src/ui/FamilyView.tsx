@@ -4,7 +4,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocation } from 'wouter'
-import { familyLayout, treesOf } from '../map/family'
+import { familyLayout, newSeed, treesOf } from '../map/family'
 import { TreeMap } from '../map/TreeMap'
 import { byPlanted, compactWords, type Graph } from '../model/graph'
 import { ROOT } from '../model/tree'
@@ -22,14 +22,28 @@ import { Icon } from './icons'
 import { InlineName } from './InlineName'
 import { ConflictBanner } from './ConflictBanner'
 import { decodePath, treeHref } from './paths'
-import { parentFor, StructureDialog, type StructureAction } from './StructureDialogs'
+import { newNoteAction } from '../sync/structure'
+import {
+  parentFor,
+  StructureDialog,
+  useNewNoteKeys,
+  type StructureAction,
+} from './StructureDialogs'
 import { SaveAndRefresh } from './SaveAndRefresh'
 import { useDeleteKey } from './deleteKey'
 import { SyncStatus } from './SyncStatus'
 import { colorVar } from './theme'
 import { Divider, TopBar } from './TopBar'
 import styles from './FamilyView.module.css'
-import { SHEET_HEIGHT, widthStore, widthVars } from './panels'
+import {
+  SHEET_HEIGHT,
+  leftOf,
+  savePinSide,
+  savedPinSide,
+  widthOf,
+  widthStore,
+  widthVars,
+} from './panels'
 import { PHONE, useMedia } from './useMedia'
 import { Search, type Matches } from './Search'
 import { treeColor, usePlanted } from '../views/common'
@@ -56,6 +70,12 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
   const [created, setCreated] = useState<string | null>(null)
   /** Nodes kept open beside the selection, each in its own column (owner's request). */
   const [pinned, setPinned] = useState<string[]>([])
+  const [pinSide, setPinSide] = useState(savedPinSide)
+  const swapPinSide = () => {
+    const side = pinSide === 'left' ? 'right' : 'left'
+    savePinSide(side)
+    setPinSide(side)
+  }
   const unpin = (id: string) => setPinned((p) => p.filter((x) => x !== id))
   /** What the last search found: the map's Matches layer. */
   const [found, setFound] = useState<Matches | null>(null)
@@ -82,17 +102,23 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
   const graph = data?.graph ?? null
   // The map in the order its leaves were planted (Settings › Views); as named until known.
   const planted = usePlanted(repo, graph, view === 'map')
+  // Rearrange: a seed in memory only, so a reload shows the map as named again.
+  const [seed, setSeed] = useState(0)
   const family = useMemo(() => {
-    const laid = graph ? familyLayout(planted ? byPlanted(graph, planted) : graph) : null
+    const laid = graph ? familyLayout(planted ? byPlanted(graph, planted) : graph, seed) : null
     markNow('layout-done')
     return laid
-  }, [graph, planted])
+  }, [graph, planted, seed])
   // No path: nothing selected. An empty path (`/tree/o/n/`): the Family itself.
   const wanted = params['*'] === undefined ? null : decodePath(params['*'])
   const selected =
     graph && wanted !== null && (graph.nodes.has(wanted) || graph.ghosts.has(wanted))
       ? wanted
       : null
+  useNewNoteKeys((sub) => {
+    const a = graph && newNoteAction(graph, selected, sub)
+    if (a) setAction(a)
+  })
 
   // Arriving at a node's URL from outside (a link, the back button) shows its Peek.
   const [arrived, setArrived] = useState(wanted)
@@ -153,7 +179,14 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
     ? { bottom: peekShown ? SHEET_HEIGHT() : 0 }
     : panel === 'dock'
       ? { right: peekShown && !expanded ? widths.dock : 0 }
-      : { right: columns ? columns * widths.peek + 32 + (columns - 1) * 12 : 0 }
+      : {
+          right: columns
+            ? (peekShown && !expanded ? widths.peek : 0) +
+              stack.reduce((sum, _, i) => sum + widthOf(widths, `pin${i}`), 0) +
+              32 +
+              (columns - 1) * 12
+            : 0,
+        }
   const View = view === 'map' ? null : VIEW_COMPONENTS[view]
 
   return (
@@ -179,7 +212,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           <FamilyMenu current={repo} />
         </div>
         {!phone && <ViewSwitcher />}
-        <Search repo={repo} onMatches={setFound} />
+        <Search repo={repo} lit={!!found} onMatches={setFound} />
         <span className={styles.status}>
           <Status data={data} repo={repo} branch={tree?.branch ?? 'main'} />
         </span>
@@ -197,7 +230,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           <button
             type="button"
             className={controls.iconButton}
-            aria-label="Show leaf panel"
+            aria-label="Show note panel"
             aria-pressed={peekShown}
             onClick={() => {
               if (peekShown) {
@@ -216,11 +249,11 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
             <button
               type="button"
               className={`${controls.primary} ${styles.newLeaf}`}
-              aria-label="New leaf"
+              aria-label="New note"
               onClick={() => setAction({ kind: 'new-leaf', parent: parentFor(graph, selected) })}
             >
               <Icon name="plus" />
-              <span className={styles.newLeafText}>New leaf</span>
+              <span className={styles.newLeafText}>New note</span>
             </button>
           )}
         </div>
@@ -282,12 +315,15 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           ) : graph && family ? (
             <TreeMap
               treeKey={key}
+              arrangement={seed}
               graph={graph}
               family={family}
               imageUrl={imageUrl}
               title={tree?.title ?? repo}
               color={color}
               treeColors={treeColors}
+              linkColor={tree?.linkColor ? colorVar(tree.linkColor) : undefined}
+              onRearrange={() => setSeed(newSeed)}
               selected={selected}
               matches={matches}
               onClearMatches={() => setFound(null)}
@@ -303,8 +339,8 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           )}
           <Presence show={!!(graph && tree && (peekShown || stackShown))}>
             {graph && tree && (peekShown || stackShown) && (
-              <div className={stackShown ? styles.stack : undefined}>
-                {stack.map((id) => (
+              <div className={stackShown ? styles.stack : undefined} data-side={pinSide}>
+                {stack.map((id, slot) => (
                   <Peek
                     key={id}
                     tree={tree}
@@ -312,6 +348,8 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
                     id={id}
                     expanded={false}
                     pinned
+                    slot={slot}
+                    partner={leftOf(pinSide, stack.length, slot)}
                     href={href}
                     onSelect={select}
                     onExpand={() => {
@@ -319,6 +357,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
                       setExpanded(true)
                     }}
                     kept
+                    onSwap={swapPinSide}
                     onPin={unpin}
                     onClose={() => unpin(id)}
                     onAction={setAction}
@@ -337,6 +376,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
                     docked={panel === 'dock'}
                     created={created === selected}
                     pinned={stackShown}
+                    partner={stackShown ? leftOf(pinSide, stack.length) : undefined}
                     kept={pinned.includes(selected!)}
                     onPin={
                       phone || panel !== 'float'
@@ -386,7 +426,7 @@ function Status({
   if (data.status === 'loading') {
     return (
       <span role="status">
-        {data.total > 0 ? `Loading ${data.fetched}/${data.total} leaves…` : 'Loading…'}
+        {data.total > 0 ? `Loading ${data.fetched}/${data.total} notes…` : 'Loading…'}
       </span>
     )
   }

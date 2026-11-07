@@ -98,7 +98,7 @@ describe('completeMention', () => {
     }
     const fresh = at('See @Tokens')
     const last = fresh.options.at(-1)!
-    expect(last.displayLabel).toBe('New leaf “Tokens”')
+    expect(last.displayLabel).toBe('New note “Tokens”')
     expect(last.boost).toBe(-99)
     // Picking it writes a link to where the leaf would be: a ghost until it is written.
     const state = EditorState.create({ doc: 'See @Tokens', extensions: [mentionSource.of(here)] })
@@ -111,11 +111,31 @@ describe('completeMention', () => {
     expect(inserted).toBe('[Tokens](/identity/Tokens.md)')
     // A leaf of that name exists (any case): nothing to make; nor without a query.
     expect(at('See @keycloak').options.map((o) => o.displayLabel)).not.toContain(
-      'New leaf “keycloak”',
+      'New note “keycloak”',
     )
     expect(at('See @').options.some((o) => o.detail === 'not written yet')).toBe(false)
     // Without a file being written (no `here`), there is no beside.
     expect(complete('See @Tokens')!.options.some((o) => o.detail === 'not written yet')).toBe(false)
+  })
+
+  it('writes a new name now, as a sub-note, when the source can', () => {
+    const made: string[] = []
+    const here = {
+      ...source,
+      here: () => 'identity/keycloak.md',
+      create: (title: string) => (made.push(title), `identity/keycloak/${title}.md`),
+    }
+    const state = EditorState.create({ doc: 'See @Tokens', extensions: [mentionSource.of(here)] })
+    const last = completeMention(new CompletionContext(state, 11, false))!.options.at(-1)!
+    expect(last.displayLabel).toBe('New sub-note “Tokens”')
+    let inserted = ''
+    const view = {
+      state,
+      dispatch: (tr: { changes: { insert: string } }) => (inserted = tr.changes.insert),
+    }
+    ;(last.apply as (v: unknown, c: unknown, from: number, to: number) => void)(view, last, 5, 11)
+    expect(made).toEqual(['Tokens'])
+    expect(inserted).toBe('[Tokens](/identity/keycloak/Tokens.md)')
   })
 })
 

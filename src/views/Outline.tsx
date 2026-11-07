@@ -26,7 +26,7 @@ import { ThreadIcon } from './parts'
 
 type Order = 'tree' | 'words' | 'threads' | 'name'
 const ORDERS: Record<Order, string> = {
-  tree: 'Tree order',
+  tree: 'Project order',
   words: 'Most words',
   threads: 'Most threads',
   name: 'A to Z',

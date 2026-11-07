@@ -2,11 +2,20 @@
 // sheet (ARCHITECTURE.md §7). Cover, icon and colours above the text; the text is the file.
 // A branch's text (its folder's README.md) is written here too, without a look of its own.
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { fileUrl, inFamily } from '../github/graphql'
 import { iconImage, textFile, threadEnd, type Graph, type GraphNode } from '../model/graph'
 import { parseLeaf, parseMeta, repairHeader, type LeafMeta } from '../model/parse'
-import { leafColors } from '../read/colors'
 import { Cover } from '../read/LeafLook'
 import { mentionLink } from '../model/links'
 import { session, useSession } from '../store/session'
@@ -14,14 +23,14 @@ import controls from '../ui/controls.module.css'
 import { Icon } from '../ui/icons'
 import { treeHref } from '../ui/paths'
 import { ROOT } from '../model/tree'
-import { planBranchText } from '../sync/structure'
+import { planBranchText, planNewLeaf } from '../sync/structure'
 import { parentFor, StructureDialog, type StructureAction } from '../ui/StructureDialogs'
-import { ACCENT_IDS } from '../ui/theme'
 import { focusFirst, menuKeys } from '../ui/menuKeys'
 import { attach, attachmentMarkdown } from './attach'
 import type { EditorHandle } from './Editor'
 import styles from './LeafEditor.module.css'
-import { EditableCover } from './EditableCover'
+import { EditableCover, IconMover } from './EditableCover'
+import { iconFocus, iconShape } from '../read/cover'
 import { IconPicker } from './IconPicker'
 import type { InsertHost } from './insertMenu'
 import type { MentionLeaf, MentionSource } from './mentions'
@@ -41,6 +50,7 @@ export function LeafEditor({
   source,
   autoFocus,
   onOpen,
+  heading,
 }: {
   repo: string
   path: string
@@ -50,6 +60,8 @@ export function LeafEditor({
   autoFocus?: boolean | undefined
   /** Opens another leaf: an @ mention was clicked. */
   onOpen(id: string): void
+  /** A branch's name (and what goes with it), drawn here so its icon can sit beside it. */
+  heading?: ReactNode
 }) {
   const key = repo.toLowerCase()
   const tree = useSession((s) => s.trees.find((t) => t.repo.toLowerCase() === key))
@@ -78,7 +90,7 @@ export function LeafEditor({
         const file = n.kind === 'leaf' || n.kind === 'branch' ? textFile(graph, n.id) : null
         const to = file && url(file)
         if (!to || file === path) return []
-        const kind = n.kind === 'branch' ? (n.parent === ROOT ? 'Tree' : 'Branch') : undefined
+        const kind = n.kind === 'branch' ? (n.parent === ROOT ? 'Project' : 'Group') : undefined
         const detail = [where, kind].filter(Boolean).join(' · ') || undefined
         return [{ path: to, title: n.title, icon: n.icon, detail }]
       })
@@ -115,6 +127,13 @@ export function LeafEditor({
       open: (id) => openRef.current(id),
       // A template is nowhere on the map: a leaf mentioned from it is made at the root.
       here: () => (graphRef.current?.nodes.has(path) ? path : ''),
+      // A name no note has yet: written now, as a sub-note of this one (a branch's: in it).
+      create: (title) => {
+        const graph = graphRef.current!
+        const change = planNewLeaf(graph, threadEnd(graph, path) ?? path, title)
+        void session.getState().apply(repo, [change])
+        return change.path
+      },
       // Dragged text dropped on a chip: at the end of that leaf, as a paragraph of its own.
       append: async (id, text) => {
         const { getState } = session
@@ -182,6 +201,7 @@ export function LeafEditor({
   const coverPicker = useRef<HTMLInputElement>(null)
   const iconFile = useRef<HTMLInputElement>(null)
   const [repositioning, setRepositioning] = useState(false)
+  const [movingIcon, setMovingIcon] = useState(false)
   const [picking, setPicking] = useState(false)
   /** One icon at a time: an emoji (line 1) or an image (line 2's `icon`). */
   const setEmoji = (icon: string | null) => {
@@ -280,9 +300,136 @@ export function LeafEditor({
     }
   }
 
+  // Line 2's `iconInline`: the icon on the title's line, beside it (a branch's: beside its name).
+  const inline = meta?.iconInline === true
+  const shape = iconShape(meta)
+  const focus = iconFocus(meta)
+  // The title starts after the icon: 36 px high in its frame, or an emoji's width.
+  const [w, h] = shape.aspect.split(' / ').map(Number)
+  const inlineWidth = image ? Math.round((36 * w!) / h!) + 14 : 50
+  /** A choice that sets one line-2 field, or removes it for the usual look. */
+  const choose = (key: string, value: unknown) =>
+    changeLook((m) => {
+      const rest = { ...m }
+      delete rest[key]
+      return value === undefined ? rest : { ...rest, [key]: value }
+    })
+  const iconRow = (owned?.icon || image) && (
+    <div
+      className={styles.iconRow}
+      data-position={inline ? 'left' : iconPlace(meta)}
+      data-inline={inline && branch === null ? '' : undefined}
+      // Over the cover's lower edge; not while the cover is being moved.
+      data-over-cover={meta?.cover && !repositioning && !inline ? '' : undefined}
+    >
+      {movingIcon && image ? (
+        <IconMover
+          repo={repo}
+          src={image}
+          meta={meta}
+          onSave={(iconFocus) => {
+            choose('iconFocus', iconFocus)
+            setMovingIcon(false)
+          }}
+          onCancel={() => setMovingIcon(false)}
+        />
+      ) : (
+        // The icon's choices open from the icon itself (owner's request).
+        <Menu
+          label={image ? 'Change icon (an image)' : `Change icon ${owned?.icon}`}
+          className={styles.iconButton}
+          iconTrigger
+          trigger={
+            image ? (
+              <Cover
+                repo={repo}
+                src={image}
+                x={focus[0]}
+                position={focus[1]}
+                aspect={shape.aspect}
+                radius={shape.radius}
+                className={styles.iconImage}
+                loading="lazy"
+                fetchPriority="auto"
+              />
+            ) : (
+              <span className={styles.icon}>{owned?.icon}</span>
+            )
+          }
+        >
+          {iconChoices}
+          <button
+            type="button"
+            role="menuitemcheckbox"
+            aria-checked={inline}
+            onClick={() => choose('iconInline', inline ? undefined : true)}
+          >
+            Beside the title
+          </button>
+          {!inline && (
+            <>
+              <span className={styles.menuLabel} role="presentation">
+                Position
+              </span>
+              {PLACES.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={iconPlace(meta) === id}
+                  onClick={() => choose('iconPosition', id === 'left' ? undefined : id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </>
+          )}
+          {image && (
+            <>
+              <span className={styles.menuLabel} role="presentation">
+                Shape
+              </span>
+              {SHAPES.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={(meta?.iconShape ?? 'circle') === id}
+                  onClick={() => choose('iconShape', id === 'circle' ? undefined : id)}
+                >
+                  {label}
+                </button>
+              ))}
+              <button type="button" role="menuitem" onClick={() => setMovingIcon(true)}>
+                Reposition
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            data-danger=""
+            onClick={() => {
+              changeLook(withoutImageIcon)
+              handle.current?.setIcon(null)
+            }}
+          >
+            Remove icon
+          </button>
+        </Menu>
+      )}
+    </div>
+  )
+
   if (text?.path !== path) return <div className={styles.loading} aria-busy="true" />
   return (
-    <div className={styles.leaf} style={leafColors(meta)} data-leaf="">
+    <div className={styles.leaf} data-leaf="">
+      {heading && (
+        <div className={styles.headingRow}>
+          {inline && iconRow}
+          <div className={styles.heading}>{heading}</div>
+        </div>
+      )}
       <EditableCover
         key={`${path} ${repositioning}`}
         repo={repo}
@@ -297,66 +444,7 @@ export function LeafEditor({
       {/* The header's controls change the editor's text, so they appear with it. */}
       <Suspense fallback={<div className={styles.loading} aria-busy="true" />}>
         <div className={styles.header}>
-          {(owned?.icon || image) && (
-            <div
-              className={styles.iconRow}
-              data-position={iconPlace(meta)}
-              // Over the cover's lower edge; not while the cover is being moved.
-              data-over-cover={meta?.cover && !repositioning ? '' : undefined}
-            >
-              {/* The icon's choices open from the icon itself (owner's request). */}
-              <Menu
-                label={image ? 'Change icon (an image)' : `Change icon ${owned?.icon}`}
-                className={styles.iconButton}
-                iconTrigger
-                trigger={
-                  image ? (
-                    <Cover
-                      repo={repo}
-                      src={image}
-                      className={styles.iconImage}
-                      loading="lazy"
-                      fetchPriority="auto"
-                    />
-                  ) : (
-                    <span className={styles.icon}>{owned?.icon}</span>
-                  )
-                }
-              >
-                {iconChoices}
-                <span className={styles.menuLabel} role="presentation">
-                  Position
-                </span>
-                {PLACES.map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={iconPlace(meta) === id}
-                    onClick={() =>
-                      changeLook((m) => ({
-                        ...withoutPlace(m),
-                        ...(id !== 'left' && { iconPosition: id }),
-                      }))
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  role="menuitem"
-                  data-danger=""
-                  onClick={() => {
-                    changeLook(withoutImageIcon)
-                    handle.current?.setIcon(null)
-                  }}
-                >
-                  Remove icon
-                </button>
-              </Menu>
-            </div>
-          )}
+          {(!inline || (branch !== null && !heading)) && iconRow}
           <LeafStyle
             meta={meta}
             iconChoices={owned?.icon || image ? null : iconChoices}
@@ -408,21 +496,28 @@ export function LeafEditor({
               )
           }}
         />
-        <Editor
-          initial={text.text}
-          source={source}
-          onChange={onChange}
-          handleRef={handle}
-          mentionsFrom={mentionsFrom}
-          onInsert={onInsert}
-          onFiles={(files) => void addFiles(files)}
-          assetUrl={assetUrl}
-          files={() => session.getState().files(repo)}
-          fileSize={(p) => session.getState().fileSize(repo, p)}
-          autoFocus={autoFocus}
-          titleHidden={branch !== null}
-          untitled={branch?.title}
-        />
+        <div
+          className={styles.body}
+          data-icon-inline={inline && branch === null ? '' : undefined}
+          style={inline ? ({ '--inline-icon-w': `${inlineWidth}px` } as CSSProperties) : undefined}
+        >
+          {inline && branch === null && iconRow}
+          <Editor
+            initial={text.text}
+            source={source}
+            onChange={onChange}
+            handleRef={handle}
+            mentionsFrom={mentionsFrom}
+            onInsert={onInsert}
+            onFiles={(files) => void addFiles(files)}
+            assetUrl={assetUrl}
+            files={() => session.getState().files(repo)}
+            fileSize={(p) => session.getState().fileSize(repo, p)}
+            autoFocus={autoFocus}
+            titleHidden={branch !== null}
+            untitled={branch?.title}
+          />
+        </div>
       </Suspense>
       {/* Images or any file: onInsert sets what it accepts. */}
       <input
@@ -457,9 +552,6 @@ function secondLine(text: string): string | undefined {
   return text.slice(start + 1, end < 0 ? undefined : end)
 }
 
-const COLORS = ['', ...ACCENT_IDS] as const
-const colorName = (id: string) => (id ? id[0]!.toUpperCase() + id.slice(1) : 'Default')
-
 /** Line 2 without the cover and its position. */
 function withoutCover(meta: LeafMeta): LeafMeta {
   const rest = { ...meta }
@@ -473,15 +565,24 @@ function withoutImageIcon(meta: LeafMeta): LeafMeta {
   const rest = { ...meta }
   delete rest.icon
   delete rest.iconPosition
+  delete rest.iconShape
+  delete rest.iconFocus
   return rest
 }
 
-/** Line 2 without the icon's place. */
-function withoutPlace(meta: LeafMeta): LeafMeta {
-  const rest = { ...meta }
-  delete rest.iconPosition
-  return rest
-}
+const SHAPES = [
+  ['circle', 'Circle'],
+  ['rounded', 'Rounded'],
+  ['square', 'Square'],
+  ['3:2', 'Wide'],
+  ['2:3', 'Tall'],
+] as const
+
+const COVER_FORMATS = [
+  ['slim', 'Slim'],
+  ['default', 'Default'],
+  ['tall', 'Tall'],
+] as const
 
 const PLACES = [
   ['left', 'Left'],
@@ -511,13 +612,6 @@ function LeafStyle({
   onCover(): void
   onReposition(): void
 }) {
-  const setColor = (part: 'heading' | 'text', value: string) =>
-    onChange(({ color, ...rest }) => {
-      const next = { ...color, [part]: value || undefined }
-      if (!next.heading) delete next.heading
-      if (!next.text) delete next.text
-      return Object.keys(next).length ? { ...rest, color: next } : rest
-    })
   return (
     <div className={styles.look}>
       {iconChoices && (
@@ -545,47 +639,42 @@ function LeafStyle({
               Reposition
             </button>
           )}
+          <span className={styles.menuLabel} role="presentation">
+            Format
+          </span>
+          {COVER_FORMATS.map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={(meta.coverAspect ?? 'default') === id}
+              onClick={() =>
+                onChange((m) => {
+                  const rest = { ...m }
+                  delete rest.coverAspect
+                  return id === 'default' ? rest : { ...rest, coverAspect: id }
+                })
+              }
+            >
+              {label}
+            </button>
+          ))}
           <button
             type="button"
             role="menuitem"
             data-danger=""
-            onClick={() => onChange(withoutCover)}
+            onClick={() =>
+              onChange((m) => {
+                const rest = withoutCover(m)
+                delete rest.coverAspect
+                return rest
+              })
+            }
           >
             Remove cover
           </button>
         </Menu>
       )}
-      {(['heading', 'text'] as const).map((part) => {
-        const current = typeof meta?.color?.[part] === 'string' ? meta.color[part] : ''
-        return (
-          <Menu
-            key={part}
-            label={part === 'heading' ? 'Heading colour' : 'Text colour'}
-            icon={
-              <span className={styles.swatch} data-part={part} aria-hidden="true">
-                {part === 'heading' ? 'H' : 'T'}
-              </span>
-            }
-          >
-            {COLORS.map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="menuitemradio"
-                aria-checked={current === id}
-                onClick={() => setColor(part, id)}
-              >
-                <span
-                  className={styles.dot}
-                  style={{ background: id ? `var(--c-${id})` : 'var(--text)' }}
-                  aria-hidden="true"
-                />
-                {colorName(id)}
-              </button>
-            ))}
-          </Menu>
-        )
-      })}
     </div>
   )
 }

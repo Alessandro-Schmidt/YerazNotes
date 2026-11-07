@@ -46,13 +46,9 @@ test('switches theme through the data attributes alone', async ({ page }) => {
   const result = await page.evaluate(() => ({
     body: getComputedStyle(document.body).backgroundColor,
     accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
-    darkMark: getComputedStyle(document.querySelectorAll('header img')[0]!).display,
-    lightMark: getComputedStyle(document.querySelectorAll('header img')[1]!).display,
   }))
   expect(result.body).toBe('rgb(243, 241, 235)')
   expect(result.accent.toUpperCase()).toBe('#6743C4')
-  expect(result.darkMark).toBe('none')
-  expect(result.lightMark).toBe('block')
 })
 
 test('loads the Geist interface font', async ({ page }) => {

@@ -195,7 +195,7 @@ export function Explorer({
         <div
           ref={listRef}
           role="tree"
-          aria-label="Branches and leaves"
+          aria-label="Groups and notes"
           className={styles.rows}
           onKeyDown={onKeyDown}
         >
@@ -292,7 +292,7 @@ export function Explorer({
           onClick={() => onAction({ kind: 'new-branch', parent })}
         >
           <span className={controls.glyph} data-kind="branch" aria-hidden="true" />
-          {parent === ROOT ? 'New tree' : 'New branch'}
+          {parent === ROOT ? 'New project' : 'New group'}
         </button>
         <button
           type="button"
@@ -300,7 +300,7 @@ export function Explorer({
           onClick={() => onAction({ kind: 'new-leaf', parent })}
         >
           <span className={controls.glyph} data-kind="leaf" aria-hidden="true" />
-          New leaf
+          New note
         </button>
       </div>
     </aside>

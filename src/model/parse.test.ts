@@ -278,3 +278,19 @@ describe('repairHeader: a header repeated, or pushed below line 2', () => {
     expect(repairHeader(text)).toBe(text)
   })
 })
+
+describe('line 2: the icon’s and cover’s formats', () => {
+  it('round-trips iconInline, iconShape, iconFocus and coverAspect through withMeta and parseLeaf', () => {
+    const meta = {
+      icon: '/assets/me.png',
+      iconInline: true,
+      iconShape: '3:2',
+      iconFocus: [20, 70],
+      cover: '/assets/c.png',
+      coverAspect: 'slim',
+    }
+    const text = withMeta('# Me\n\nBody\n', meta)
+    expect(text).toBe(`# Me\n<!-- yeraz ${JSON.stringify(meta)} -->\n\nBody\n`)
+    expect(parseLeaf(text).meta).toEqual(meta)
+  })
+})

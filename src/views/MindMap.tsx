@@ -144,7 +144,7 @@ export default function MindMap({
           </span>
           <span>
             <span className={controls.glyph} data-kind="sprout" />
-            With sub-leaves
+            With sub-notes
           </span>
           <span>
             <span className={controls.glyph} data-kind="branch" />
