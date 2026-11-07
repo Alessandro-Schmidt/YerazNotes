@@ -59,7 +59,7 @@ test.describe('desktop', () => {
       if (theme) await withTheme(page, theme)
       await signIn(page)
       await page.goto(`./#/tree/you/engineering/${KEYCLOAK}`)
-      await expect(page.getByRole('region', { name: 'Leaf preview' })).toBeVisible()
+      await expect(page.getByRole('region', { name: 'Note preview' })).toBeVisible()
       await expect(page.locator('.cm-mention').first()).toBeVisible()
       await expect(page.getByRole('status')).toHaveText('Synced to main')
       await matches(page, name)
@@ -88,7 +88,7 @@ test.describe('phone', () => {
   test('a leaf on the phone', async ({ page }) => {
     await signIn(page)
     await page.goto(`./#/tree/you/engineering/${KEYCLOAK}`)
-    await expect(page.getByRole('region', { name: 'Leaf preview' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Note preview' })).toBeVisible()
     await expect(page.getByRole('status')).toHaveText('Synced to main')
     await matches(page, 'phone')
   })

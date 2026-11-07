@@ -10,13 +10,13 @@ export const BUILT_IN: readonly { kind: InsertKind; label: string }[] = [
   { kind: 'todo', label: 'To-do list' },
   { kind: 'ordered', label: 'Numbered list' },
   { kind: 'bullet', label: 'Bullet list' },
-  { kind: 'mention', label: 'Mention a leaf' },
+  { kind: 'mention', label: 'Mention a note' },
   { kind: 'table', label: 'Table' },
   { kind: 'code', label: 'Code block' },
   { kind: 'image', label: 'Image from files' },
   { kind: 'file', label: 'Attach a file' },
-  { kind: 'leaf', label: 'New leaf' },
-  { kind: 'branch', label: 'New branch' },
+  { kind: 'leaf', label: 'New note' },
+  { kind: 'branch', label: 'New group' },
 ]
 
 /** A named block of Markdown, inserted as it is written. */

@@ -4,7 +4,10 @@
 
 import './print.css'
 
-export function printLeaf(leaf: HTMLElement): void {
+export function printLeaf(leaf: HTMLElement, title: string): void {
+  // The PDF is named after the page's title: the leaf's while it prints.
+  const before = document.title
+  document.title = title
   const root = document.createElement('div')
   root.id = 'print-root'
   root.className = 'reading'
@@ -12,6 +15,7 @@ export function printLeaf(leaf: HTMLElement): void {
   document.body.append(root)
   const done = () => {
     root.remove()
+    document.title = before
     window.removeEventListener('afterprint', done)
   }
   window.addEventListener('afterprint', done)

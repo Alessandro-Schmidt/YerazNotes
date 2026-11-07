@@ -47,7 +47,8 @@ import {
   type Embed,
 } from '../model/embeds'
 import { leadingIcon, linkTarget, ownPath } from '../model/parse'
-import { downloadAsset, fileCardHtml } from '../read/files'
+import { downloadAsset, favicon, fileCardHtml } from '../read/files'
+import { fillBookmark } from '../read/linkMeta'
 import { playYouTube, youtubeButtonHtml } from '../read/youtube'
 import { encodePath } from '../ui/paths'
 import {
@@ -385,10 +386,12 @@ class EmbedWidget extends WidgetType {
       const title = document.createElement('strong')
       const url = document.createElement('span')
       title.textContent = embed.title
-      url.textContent = shortUrl(embed.url)
+      url.innerHTML = favicon(embed.url)
+      url.append(shortUrl(embed.url))
       url.dataset.href = embed.url
       box.title = embed.url
       box.append(title, url)
+      fillBookmark(box, embed.url)
       return box
     }
     if (embed.kind === 'youtube') {

@@ -201,7 +201,7 @@ export default function Treemap({
             <span>
               <span className={styles.areaBig} />
               <span className={styles.areaSmall} />
-              Area: {sizeBy === 'words' ? 'words written' : 'one per leaf'}
+              Area: {sizeBy === 'words' ? 'words written' : 'one per note'}
             </span>
             {glowBy === 'threads' && (
               <span>

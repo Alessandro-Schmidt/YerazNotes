@@ -29,15 +29,15 @@ test('a link to a leaf not written yet is a ghost on the map and in the Peek', a
   await expect(map(page).locator('[data-node][data-ghost]')).toHaveCount(1)
 
   // Threads out names it as not written yet; it opens its own Peek.
-  const leaf = page.getByRole('region', { name: 'Leaf preview' })
+  const leaf = page.getByRole('region', { name: 'Note preview' })
   const out = leaf.getByRole('link', { name: /Oauth.*Not written yet/ })
   await expect(out).toBeVisible()
   await out.click()
-  const ghost = page.getByRole('region', { name: 'Leaf not written yet' })
+  const ghost = page.getByRole('region', { name: 'Note not written yet' })
   await expect(ghost.getByRole('heading', { name: 'Oauth', level: 2 })).toBeVisible()
   await expect(ghost.getByRole('link', { name: /Keycloak/ })).toBeVisible()
   await expect(ghost.getByRole('link', { name: /OIDC/ })).toBeVisible()
-  await expect(ghost.getByRole('button', { name: 'Write this leaf' })).toBeVisible()
+  await expect(ghost.getByRole('button', { name: 'Write this note' })).toBeVisible()
   // Scanned once the sheet has come in: axe reads a fading sheet's colours as blended, and
   // fails the contrast of its button (CI run 40500151278).
   await ghost.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
@@ -45,7 +45,7 @@ test('a link to a leaf not written yet is a ghost on the map and in the Peek', a
 
   // A linker opens from there; the ghost's dot on the map opens it again.
   await ghost.getByRole('link', { name: /OIDC/ }).click()
-  await expect(page.getByRole('region', { name: 'Leaf preview' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Note preview' })).toBeVisible()
   await map(page).locator(`[data-node][data-id="${GHOST}"]`).dispatchEvent('click')
   await expect(ghost).toBeVisible()
 })
@@ -60,8 +60,8 @@ test.describe('writing a ghost', () => {
     await page.goto(`./#/tree/${REPO}/${GHOST}`)
     await signInHere(page)
     await page
-      .getByRole('region', { name: 'Leaf not written yet' })
-      .getByRole('button', { name: 'Write this leaf' })
+      .getByRole('region', { name: 'Note not written yet' })
+      .getByRole('button', { name: 'Write this note' })
       .click()
     await expect(page.locator('.cm-title')).toContainText('OAuth 2.0 flows')
     // Written: a leaf on the map, and the threads to it are threads like any other.

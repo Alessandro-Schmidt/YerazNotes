@@ -1,11 +1,11 @@
-// Settings › Tree colours: the Family's colour and each Tree's, as colour names written
-// to the repository's `.yeraz.json` (ARCHITECTURE.md §4, §13), so every device shows the
-// same. Names follow the theme: an amber Tree is the theme's amber on every base.
+// Settings › Family colours: the Family's colour (the rings around its Trees) and its links'
+// (the threads between notes), as colour names written to the repository's `.yeraz.json`
+// (ARCHITECTURE.md §4, §13), so every device shows the same. Names follow the theme: an
+// amber Family is the theme's amber on every base. Nothing else has a colour of its own.
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import themes from '../../design/themes/themes.json'
 import type { TreeRef } from '../github/graphql'
-import { treesOf } from '../map/family'
 import { session, useSession } from '../store/session'
 import { lastFamily } from './FamilyMenu'
 import styles from './Appearance.module.css'
@@ -14,7 +14,7 @@ import controls from './controls.module.css'
 import { SettingsShell } from './Settings'
 import { ACCENT_IDS, colorVar } from './theme'
 
-export function TreeColours() {
+export function FamilyColours() {
   const trees = useSession((s) => s.trees)
   const [chosen, setChosen] = useState<string | null>(null)
   const last = lastFamily()?.toLowerCase()
@@ -25,7 +25,7 @@ export function TreeColours() {
     <SettingsShell page="colours">
       <main id="main" tabIndex={-1} className={`${styles.main} ${own.single}`}>
         <div>
-          <h1 className={styles.title}>Tree colours</h1>
+          <h1 className={styles.title}>Family colours</h1>
           <p className={styles.lede}>
             Saved in the Family’s repository, so every device shows the same colours. The interface
             colours are under Appearance.
@@ -47,7 +47,7 @@ export function TreeColours() {
             </label>
           )}
           {family ? (
-            <FamilyColours key={family.repo} family={family} />
+            <Colours key={family.repo} family={family} />
           ) : (
             <p className={styles.note}>Connect a Family first.</p>
           )}
@@ -57,17 +57,15 @@ export function TreeColours() {
   )
 }
 
-function FamilyColours({ family }: { family: TreeRef }) {
+function Colours({ family }: { family: TreeRef }) {
   const key = family.repo.toLowerCase()
-  const graph = useSession((s) => s.data[key]?.graph ?? null)
   const [error, setError] = useState<string | null>(null)
-  useEffect(() => void session.getState().open(family.repo), [family.repo])
 
-  const set = (color: string | null, tree?: string) => {
+  const set = (color: string | null, field?: 'linkColor') => {
     setError(null)
     session
       .getState()
-      .setColor(family.repo, color, tree)
+      .setColor(family.repo, color, field)
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
   }
 
@@ -85,26 +83,15 @@ function FamilyColours({ family }: { family: TreeRef }) {
         />
       </fieldset>
       <fieldset className={styles.group}>
-        <legend className={controls.eyebrow}>Each Tree</legend>
-        {!graph ? (
-          <p className={styles.note} aria-busy="true">
-            Opening the Family…
-          </p>
-        ) : (
-          <div className={own.rows}>
-            {treesOf(graph).map((id) => (
-              <Swatches
-                key={id}
-                name={`tree-${key}-${id}`}
-                label={graph.nodes.get(id)!.title}
-                value={family.trees?.[id] ?? null}
-                fallback="Family"
-                fallbackColor={colorVar(family.color)}
-                onChange={(c) => set(c, id)}
-              />
-            ))}
-          </div>
-        )}
+        <legend className={controls.eyebrow}>Link colour</legend>
+        <Swatches
+          name={`links-${key}`}
+          label="Links"
+          value={family.linkColor ?? null}
+          fallback="Family"
+          fallbackColor={colorVar(family.color)}
+          onChange={(c) => set(c, 'linkColor')}
+        />
         {error && (
           <p className={controls.error} role="alert">
             {error}

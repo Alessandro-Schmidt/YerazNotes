@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coverPosition, dragCover } from './cover'
+import { coverAspect, coverPosition, dragCover, dragSideways, iconFocus, iconShape } from './cover'
 
 describe('coverPosition', () => {
   it('reads line 2’s position, a percentage from the top, centred by default', () => {
@@ -29,5 +29,35 @@ describe('dragCover', () => {
 
   it('does nothing when the image has no hidden height', () => {
     expect(dragCover(50, 80, box, { width: 3000, height: 500 })).toBe(50)
+  })
+})
+
+describe('cover and icon formats (line 2)', () => {
+  it('reads coverAspect: named, a ratio, or the usual one', () => {
+    expect(coverAspect({ coverAspect: 'slim' })).toBe('5 / 1')
+    expect(coverAspect({ coverAspect: 'tall' })).toBe('2 / 1')
+    expect(coverAspect({ coverAspect: '4:1' })).toBe('4 / 1')
+    expect(coverAspect({ coverAspect: '0:1' })).toBeNull()
+    expect(coverAspect({ coverAspect: 'huge' })).toBeNull()
+    expect(coverAspect({})).toBeNull()
+  })
+
+  it('reads iconShape: a circle unless chosen', () => {
+    expect(iconShape({})).toEqual({ radius: '50%', aspect: '1 / 1' })
+    expect(iconShape({ iconShape: 'square' })).toEqual({ radius: '0', aspect: '1 / 1' })
+    expect(iconShape({ iconShape: 'rounded' }).radius).toBe('22%')
+    expect(iconShape({ iconShape: '3:2' }).aspect).toBe('3 / 2')
+  })
+
+  it('reads iconFocus as [x, y] percentages, centred by default', () => {
+    expect(iconFocus({ iconFocus: [10, 90] })).toEqual([10, 90])
+    expect(iconFocus({ iconFocus: [-5, 'a'] })).toEqual([0, 50])
+    expect(iconFocus(null)).toEqual([50, 50])
+  })
+
+  it('drags sideways as the cover drags down', () => {
+    // A 1000 × 1500 picture in a 200 × 600 slot: dragCover's case, turned.
+    const box = { width: 200, height: 600 }
+    expect(dragSideways(50, 100, box, { width: 1000, height: 1500 })).toBe(0)
   })
 })

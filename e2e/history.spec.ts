@@ -24,7 +24,7 @@ test('lists past versions, compares one with now, and restores it as a new commi
 
   await page.goto(`./#/tree/${REPO}/${leaf.id}`)
   await signInHere(page)
-  const panel = page.getByRole('region', { name: 'Leaf preview' })
+  const panel = page.getByRole('region', { name: 'Note preview' })
   await expect(panel.locator('.cm-content')).toContainText('Rewritten elsewhere.')
   await panel.getByRole('button', { name: 'Options' }).click()
   await page.getByRole('menuitem', { name: 'History' }).click()
@@ -58,7 +58,7 @@ test('the history has no accessibility violations', async ({ page, graph }) => {
   const leaf = [...graph.nodes.values()].find((n) => n.kind === 'leaf')!
   await page.goto(`./#/tree/${REPO}/${leaf.id}`)
   await signInHere(page)
-  const panel = page.getByRole('region', { name: 'Leaf preview' })
+  const panel = page.getByRole('region', { name: 'Note preview' })
   await panel.getByRole('button', { name: 'Options' }).click()
   await page.getByRole('menuitem', { name: 'History' }).click()
   await expect(panel.getByRole('region', { name: 'History' }).getByRole('listitem')).toHaveCount(1)

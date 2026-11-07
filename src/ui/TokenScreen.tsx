@@ -142,8 +142,8 @@ function Welcome({ choose }: { choose(step: Step): void }) {
         </dd>
         <dt>The map</dt>
         <dd>
-          Folders are branches, notes are leaves, and a link from one note to another is a thread.
-          The main screen draws them all as one map.
+          Folders are groups of notes, and a link from one note to another is a thread. The main
+          screen draws them all as one map.
         </dd>
         <dt>Writing</dt>
         <dd>
@@ -372,7 +372,7 @@ function GitHub({
       ) : (
         <p className={styles.fine}>
           A Family is any repository with a <code>.yeraz.json</code> file at its root, and every
-          folder or leaf at its top is a Tree. The app opens on yours next.
+          folder or note at its top is a project. The app opens on yours next.
         </p>
       )}
     </form>

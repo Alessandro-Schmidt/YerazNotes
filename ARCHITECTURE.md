@@ -62,10 +62,10 @@ These rules are the only thing that must stay stable across versions. Tests lock
 |---|---|
 | A leaf is a `.md` file. **Line 1 is the title.** | `# Keycloak` |
 | An emoji at the start of the title is the leaf's icon. | `# 🔐 Keycloak` |
-| Optional **line 2** is a metadata comment: cover and the part of it that shows (`coverPosition`, percent from the top, centred when absent), an image icon (`icon`: `/assets/…` or an https address, in place of the title's emoji; shown on the map in its dot), where the icon sits over the cover (`iconPosition`: `center` or `right`, left when absent), colours. It is invisible when GitHub renders the file. Colours are **named** (`green`, `amber`, `blue`, `violet`…), so they adapt to every theme (§13). `"hidden": true` takes the leaf off the map and out of every view, searches and threads, with everything under it (in a branch's `README.md`, the branch or Tree). It stays listed, muted and marked hidden, in what holds it: the Explorer (its eye shows it again) and the Peek of its branch, leaf or Family (a click shows it again); Settings › Hidden lists them all. | `<!-- yeraz {"cover":"https://…","coverPosition":30,"color":{"heading":"amber"}} -->` |
+| Optional **line 2** is a metadata comment: cover and the part of it that shows (`coverPosition`, percent from the top, centred when absent), an image icon (`icon`: `/assets/…` or an https address, in place of the title's emoji; shown on the map in its dot), where the icon sits over the cover (`iconPosition`: `center` or `right`, left when absent), the icon on the title's own line instead (`iconInline`: `true`), an image icon's frame (`iconShape`: `rounded`, `square` or a ratio `"3:2"`; a circle when absent) and the part of it that shows (`iconFocus`: `[x, y]`, percents, centred when absent), the cover's format (`coverAspect`: `slim`, `tall` or a ratio `"4:1"`; 3:1 when absent). It is invisible when GitHub renders the file. A `color` written by older versions stays in the file but is ignored: a leaf, branch or Tree has no colour of its own (§13). `"hidden": true` takes the leaf off the map and out of every view, searches and threads, with everything under it (in a branch's `README.md`, the branch or Tree). It stays listed, muted and marked hidden, in what holds it: the Explorer (its eye shows it again) and the Peek of its branch, leaf or Family (a click shows it again); Settings › Hidden lists them all. | `<!-- yeraz {"cover":"https://…","coverPosition":30} -->` |
 | A leaf's sub-leaves and sub-branches live in a **sibling folder with the same name**. | `identity/keycloak.md` + `identity/keycloak/realms.md` |
 | A branch is a folder with no sibling `.md` file of the same name. Its name is the folder name, kept as typed. Git stores no empty folders, so a new branch is created with its first leaf. | `AI Agents/` |
-| A branch's **text** is the `README.md` in its folder (that name exactly, case included), which GitHub shows under the folder's files. It is not a leaf: no node, no words in the totals, and its line 1 doesn't rename the branch. Its look is the branch's, as a leaf's is its own: line 1's leading emoji is the branch's icon, and line 2 gives its cover, image icon and colours (a Tree's icon shows on its core). A folder holding only its `README.md` is still a branch. The root's `README.md`, and one in a leaf's sibling folder, stay ordinary leaves. Links in a branch's text are threads from the branch; a link to it is a thread to the branch. | `AI Agents/README.md` |
+| A branch's **text** is the `README.md` in its folder (that name exactly, case included), which GitHub shows under the folder's files. It is not a leaf: no node, no words in the totals, and its line 1 doesn't rename the branch. Its look is the branch's, as a leaf's is its own: line 1's leading emoji is the branch's icon, and line 2 gives its cover and image icon (a Tree's icon shows on its core). A folder holding only its `README.md` is still a branch. The root's `README.md`, and one in a leaf's sibling folder, stay ordinary leaves. Links in a branch's text are threads from the branch; a link to it is a thread to the branch. | `AI Agents/README.md` |
 | A thread is a normal Markdown link with a **root-relative** path. GitHub resolves paths starting with `/` from the repository root, so threads also work on github.com. | `[Keycloak](/identity/keycloak.md)` |
 | A thread to another Family is a full GitHub URL to a file in a connected repository. Any other `github.com/owner/repo` URL renders as a repository card. | `https://github.com/user/art-history/blob/main/baroque.md` |
 | Images and attachments live in `assets/` at the root, at full quality. An image is committed unchanged unless its long edge is over 4096 px (§8). | `assets/2026-10-14-realm-diagram.png` |
@@ -73,7 +73,7 @@ These rules are the only thing that must stay stable across versions. Tests lock
 | A paragraph that is only a link to a YouTube video, or to a PDF or video (`.mp4`, `.webm`) in `assets/`, shows as a player; one to any other file in `assets/` shows as a card that downloads it. On GitHub it stays a link. A video's subtitles are `name.<lang>.vtt` files beside it. | `[OIDC spec](/assets/oidc.pdf)` · `assets/talk.mp4` + `assets/talk.en.vtt` · `[Q3 report.xlsx](/assets/2026-10-17-q3-report.xlsx)` |
 | A paragraph that is only a titled link to any other web page is a **bookmark**: a card with its title and address. A bare URL stays a plain link. On GitHub both are links. | `[Baroque](https://en.wikipedia.org/wiki/Baroque)` |
 | Math is `$inline$` and `$$display$$`, as GitHub writes it. | `$e^{i\pi} + 1 = 0$` |
-| `.yeraz.json` at the root marks a repository as a Family. Every other entry at the root is one of its Trees, except `assets/`, hidden files and the root's `README.md`: that stays a leaf, and the Family's Peek shows it as the Family's own text. Optional `trees` gives a Tree its own colour name, keyed by the Tree's entry at the root (folder name, or leaf file); a Tree without one takes the Family's `color`. | `{"name":"Engineering","color":"green","trees":{"Identity":"amber"}}` |
+| `.yeraz.json` at the root marks a repository as a Family. Every other entry at the root is one of its Trees, except `assets/`, hidden files and the root's `README.md`: that stays a leaf, and the Family's Peek shows it as the Family's own text. `color` is the Family's colour (its Trees' rings, edges and dots); optional `linkColor` is the colour of the threads between notes (absent: the Family's). Both are colour names. A `trees` (each Tree's colour) written by older versions stays in the file but is ignored. | `{"name":"Engineering","color":"green","linkColor":"amber"}` |
 | A **template** for new leaves is a `.md` file in `.yeraz/templates/` (issue #41): hidden from the map by the dot rule, readable on GitHub, and kept with the Family, so every device and everyone sharing the repository (or the folder) has it. Its line 1 is its name, and the emoji there is the icon a new leaf gets; its line 2 is the look the leaf gets; the rest is what the leaf starts with, where `{{title}}`, `{{date}}` (the day, `2026-10-27`) and `{{tree}}` (the Tree it is made in) are filled in. | `.yeraz/templates/meeting.md` · `# 📝 Meeting` … `{{title}}, {{date}}` |
 | The filename is fixed when the leaf is created (a slug of its first title). Changing the title does not rename the file. | Title "Keycloak (IdP)" stays in `keycloak.md` |
 
@@ -191,6 +191,7 @@ Issue #64: a Family can be a folder on this device instead of a repository, so n
   - Each Tree keeps its own size (layout units are the same for every Tree), and the Trees are placed with `d3.packSiblings`, largest in the middle. Each is drawn by the same geometry as a lone Tree, in a `<g>` moved to its place, so the drawing has one implementation.
   - A Tree's name is drawn under it, sized with the Tree, while the whole Family is in view; up close (`data-zoom="near"`) the core's title takes over.
   - **Threads between Trees** run from leaf to leaf through both cores, bowed to one side between the cores so the two directions don't overlap, with the same bundle curve as threads inside a Tree. Many threads between two Trees read as one thick cable: how strongly they relate.
+  - **Rearrange** (a button by the zoom): lays the map out again with a random seed (`layoutTree`'s and `layoutFamily`'s `seed`): each node's children shuffled, each Tree turned, the Trees packed in another order. Rings, parents among their children and the label rules stay; the same seed gives the same map (tested). The seed lives in memory only: nothing is written, and a reload shows the map as named.
   - **Opening:** the whole Family is fitted; a link to a node fits that node's Tree instead. **Selecting a Tree** (its core, its Explorer row) fits the camera to it: the Tree as it is. "Fit all trees" zooms back out.
   - **Every dot is one click from the Peek**, at any zoom: a click on no dot reaches the one whose edge is nearest the pointer, within 10 px (18 px for touch). `familyNodeAt` searches in layout units through the camera's screen transform, so no hit area is added per dot.
 - **Every Family on one map** (issue #69, `map/families.ts`, `ui/AllView.tsx`, `#/all`): what `#/` opens on when there is more than one Family, unless Settings › Views says *The last Family* (per device, `localStorage` `yeraz-open`).
@@ -212,7 +213,7 @@ Next to the radial map, a Family can be shown seven other ways (design: `design/
 - **Graph:** each Tree is laid out on its own (sunflower start, then a small force simulation of our own up to 250 leaves), scaled to 34·√n + 20, placed around the Tree most cross-Tree threads run through, and turned so its threaded leaves face it. Hulls are smoothed convex hulls.
 - **Growth rings** need when each leaf was planted: the oldest commit among its lines, by GraphQL `blame` (§5.5). Ring width = 9 px + the words of the leaves planted that month (the owner chose this over words written per month, which would need every file's size at every commit).
 - **Atlas:** islands are placed by packing (each Tree's leaves packed, then the islands with open sea between, `d3.packSiblings`); each island has its own elevation field on a grid (2 px for a small Family, coarser for a large one), contoured with `d3-contour`. About 0.3 s for 1,000 leaves, once per graph.
-- **Tree colours** colour a Tree in every view and on the map (`--tree` on its group).
+- **The Family's colour** colours its Trees in every view and on the map (`--tree`); its **link colour** the map's threads (`--link`).
 
 ## 7. Editor
 
@@ -235,7 +236,7 @@ Next to the radial map, a Family can be shown seven other ways (design: `design/
   - Phones have no Ctrl key: a long-press or typing `/` opens the same menu.
 - **Pasting a URL** (one http(s) address, into a plain paragraph) inserts it as it is and offers *Keep as link* or *Bookmark*. A bookmark rewrites it as `[Title](url)` in a paragraph of its own; the title comes from the URL's last path segment, or its site, since the browser can't fetch other sites' pages. Typing, moving away or Escape keeps the link.
 - **Code blocks** use CodeMirror's nested languages from `@codemirror/language-data`, loaded per language on demand. The read view highlights with the same Lezer parsers (`highlightCode`), so there is one highlighting system, not two.
-- **The header above the text** (cover, icon, colours) is drawn from line 1 and line 2. Colours are applied as CSS variables on the leaf container: `--leaf-text` and `--leaf-heading`, with headings in the theme's accent by default.
+- **The header above the text** (cover, icon) is drawn from line 1 and line 2. Headings are in the Family's colour (`--tree`), else the theme's accent; a leaf has no colour of its own.
   - In the live preview, line 2 is hidden and kept whole (`metaLine.ts`): typing never enters it, and Enter after the title starts line 3. Only the header's controls (and Undo) change it.
   - A header damaged before (repeated below itself, or its comment pushed below line 2) shows repaired, and the leaf's next save writes the repair: one title line, one metadata line, a repeated header's metadata winning (`repairHeader`).
 - **A branch's text** (`folder/README.md`) is edited in the same editor, at its path, without that header. Before it exists, the branch's Peek offers *Add text*: the editor starts from `# Branch name` and the first save creates the file, committed like any edit.
@@ -375,10 +376,10 @@ src/
             emoji.ts (every emoji, names and keywords, for the icon picker; lazy)
   read/     render.ts (markdown-it) · rich.ts (math, code, embeds) · Peek.tsx · print.css
             History.tsx (a leaf's past versions, compared and restored)
-            LeafLook.tsx (cover, colours) · cover.ts (cover position) · files.ts (file cards)
+            LeafLook.tsx (cover) · cover.ts (cover position) · files.ts (file cards)
   ui/       App.tsx (routes) · Start.tsx (`#/`) · AllView.tsx (`#/all`) · TopBar.tsx · TokenScreen.tsx
             FamilyView.tsx (Explorer | map or a view | Peek) · FamilyMenu.tsx · Explorer.tsx · Appearance.tsx
-            Settings.tsx (the settings frame) · ViewsSettings.tsx · TreeColours.tsx · Hidden.tsx
+            Settings.tsx (the settings frame) · ViewsSettings.tsx · FamilyColours.tsx · Hidden.tsx
   example/  files.ts (CLAUDE.md for AI agents, and the example Family, seeded into new Families)
             theme.ts (turns design/themes/themes.json into CSS, applies it)
             motion.tsx (exits, growing and settling: Web Animations; entrances are CSS)
@@ -416,14 +417,13 @@ Any combination works: 3 bases × 4 accents × 2 fonts gives 24 themes from 9 de
 
 - **Every built-in combination passes WCAG AA:** body text at least 7:1; secondary text, headings and button text at least 4.5:1; map dots at least 3:1.
 - `design/themes/check.py` checks the rules today; the app's unit tests run the same rules on every combination.
-- **Custom colours** (a custom theme, or a hex value in a leaf's metadata) are checked the same way. A colour that fails is adjusted in lightness until it passes, and the editor says so.
+- **Custom colours** (a custom theme) are checked the same way. A colour that fails is adjusted in lightness until it passes, and the editor says so.
 
-### Colours in Trees and leaves are names, not values
+### A Family's colours are names, not values
 
-- A leaf's heading colour or a Tree's colour is stored as a name, for example `"amber"`, and resolved through the current theme. An amber heading is the dark-mode amber on Vanta and the light-mode amber on Paper.
-- A raw hex value is still allowed and goes through the contrast adjustment: `read/colors.ts` keeps one adjusted value per mode on the leaf's container (`data-leaf`), and the theme CSS picks the mode's, so switching still re-renders nothing.
-- **Order of priority:** leaf colour → Tree colour (`.yeraz.json` `trees`) → Family colour (`color`) → theme accent.
-- Settings › Tree colours sets the Family's and each Tree's colour; Settings › Appearance the interface's.
+- Only two colours are chosen per Family, both in `.yeraz.json` as names (for example `"amber"`) resolved through the current theme: `color` (the rings around its Trees, else the theme accent) and `linkColor` (the threads, else the Family's colour). An amber Family is the dark-mode amber on Vanta and the light-mode amber on Paper.
+- Leaves, branches and Trees have no colour of their own (owner's decision): an older leaf's line-2 `color` or the marker's `trees` stay in the files, ignored.
+- Settings › Family colours sets both; Settings › Appearance the interface's.
 
 ### Saving the choice
 

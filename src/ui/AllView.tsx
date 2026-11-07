@@ -18,7 +18,7 @@ import {
   splitId,
   type FamilyGraph,
 } from '../map/families'
-import { treesOf, type FamilyLayout } from '../map/family'
+import { newSeed, treesOf, type FamilyLayout } from '../map/family'
 import { TreeMap } from '../map/TreeMap'
 import { byPlanted, type Graph } from '../model/graph'
 import { ROOT } from '../model/tree'
@@ -39,12 +39,18 @@ import { Presence } from './motion'
 import { allHref, decodePath } from './paths'
 import { SaveAndRefresh } from './SaveAndRefresh'
 import { Search, type Matches } from './Search'
-import { parentFor, StructureDialog, type StructureAction } from './StructureDialogs'
+import { newNoteAction } from '../sync/structure'
+import {
+  parentFor,
+  StructureDialog,
+  useNewNoteKeys,
+  type StructureAction,
+} from './StructureDialogs'
 import { useDeleteKey } from './deleteKey'
 import { colorVar } from './theme'
 import { ProjectTabs } from './ProjectTabs'
 import { Divider, TopBar } from './TopBar'
-import { SHEET_HEIGHT, widthStore, widthVars } from './panels'
+import { SHEET_HEIGHT, leftOf, savePinSide, savedPinSide, widthStore, widthVars } from './panels'
 import { PHONE, useMedia } from './useMedia'
 
 const TITLE = 'All projects'
@@ -87,6 +93,12 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
   const [found, setFound] = useState<Matches | null>(null)
   /** Nodes kept open beside the selection, by merged id: any Family's (as in FamilyView). */
   const [pinned, setPinned] = useState<string[]>([])
+  const [pinSide, setPinSide] = useState(savedPinSide)
+  const swapPinSide = () => {
+    const side = pinSide === 'left' ? 'right' : 'left'
+    savePinSide(side)
+    setPinSide(side)
+  }
   const unpin = (id: string) => setPinned((p) => p.filter((x) => x !== id))
 
   useEffect(() => {
@@ -106,9 +118,12 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
   const { merged, layout: named, ref: all } = useMemo(() => mapOf(families), [families])
   // The map in the order leaves were planted (Settings › Views); as named until known.
   const planted = usePlanted(ALL, families.length ? merged : null, view === 'map')
+  // Rearrange: a seed in memory only.
+  const [seed, setSeed] = useState(0)
   const layout = useMemo(
-    () => (planted ? familiesLayout(byPlanted(merged, planted)) : named),
-    [planted, merged, named],
+    () =>
+      planted || seed ? familiesLayout(planted ? byPlanted(merged, planted) : merged, seed) : named,
+    [planted, merged, named, seed],
   )
 
   // The selection, in its Family: `#/all/owner/name/path`.
@@ -202,6 +217,10 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
     : { right: peekShown && !expanded ? (panel === 'dock' ? widths.dock : widths.peek + 32) : 0 }
   // New leaf goes to the selection's Family, or the first one.
   const target = family ?? families[0]
+  useNewNoteKeys((sub) => {
+    const a = target && newNoteAction(target.graph, family ? path : null, sub)
+    if (a) setAction({ tree: target.ref, action: a })
+  })
   const View = view === 'map' ? null : VIEW_COMPONENTS[view]
 
   /** A view's action, on merged ids, as its Family's: the root's goes to `target`. */
@@ -222,14 +241,14 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           <FamilyMenu all />
         </div>
         {!phone && <ViewSwitcher />}
-        <Search repo={target?.ref.repo ?? ''} onMatches={setFound} />
+        <Search repo={target?.ref.repo ?? ''} lit={!!found} onMatches={setFound} />
         <div className={styles.toggles}>
           <SaveAndRefresh repos={trees.map((t) => t.repo)} />
           {target && (
             <button
               type="button"
               className={`${controls.primary} ${styles.newLeaf}`}
-              aria-label="New leaf"
+              aria-label="New note"
               onClick={() =>
                 setAction({
                   tree: target.ref,
@@ -238,7 +257,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
               }
             >
               <Icon name="plus" />
-              <span className={styles.newLeafText}>New leaf</span>
+              <span className={styles.newLeafText}>New note</span>
             </button>
           )}
         </div>
@@ -286,12 +305,14 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           ) : families.length ? (
             <TreeMap
               treeKey="all"
+              arrangement={seed}
               graph={merged}
               family={layout}
               imageUrl={imageUrl}
               title={TITLE}
               color={colorVar(null)}
               treeColors={treeColors}
+              onRearrange={() => setSeed(newSeed)}
               groupTitles={titles}
               selected={selected}
               matches={lit}
@@ -310,8 +331,8 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           )}
           <Presence show={peekShown || stackShown}>
             {(peekShown || stackShown) && (
-              <div className={stackShown ? styles.stack : undefined}>
-                {stack.map(({ id, family: f, path: p }) => (
+              <div className={stackShown ? styles.stack : undefined} data-side={pinSide}>
+                {stack.map(({ id, family: f, path: p }, slot) => (
                   <Peek
                     key={id}
                     tree={f.ref}
@@ -319,7 +340,10 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
                     id={p}
                     expanded={false}
                     pinned
+                    slot={slot}
+                    partner={leftOf(pinSide, stack.length, slot)}
                     kept
+                    onSwap={swapPinSide}
                     href={(id) => `#${allHref(f.ref.repo, id)}`}
                     onSelect={(id) => select(f.ref, id)}
                     onExpand={() => {
@@ -344,6 +368,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
                     docked={panel === 'dock'}
                     created={created === path}
                     pinned={stackShown}
+                    partner={stackShown ? leftOf(pinSide, stack.length) : undefined}
                     kept={pinned.includes(selected!)}
                     onPin={
                       phone || panel !== 'float'

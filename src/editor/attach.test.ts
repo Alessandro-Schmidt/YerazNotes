@@ -81,7 +81,7 @@ describe('attach', () => {
     const read = vi.spyOn(file, 'arrayBuffer')
     expect(await attach(file, h)).toBeNull()
     expect(h.told).toEqual([
-      'film.mov is 100.0\u00a0MB. GitHub doesn’t accept files over 100\u00a0MB, so it can’t be added to the Tree.',
+      'film.mov is 100.0\u00a0MB. GitHub doesn’t accept files over 100\u00a0MB, so it can’t be added to the project.',
     ])
     expect(read).not.toHaveBeenCalled()
     expect(h.save).not.toHaveBeenCalled()

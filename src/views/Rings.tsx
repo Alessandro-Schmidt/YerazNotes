@@ -35,7 +35,7 @@ export default function Rings(props: ViewProps) {
   if (!planted)
     return (
       <p className={styles.waiting} aria-busy={!error}>
-        {error ?? 'Reading when each leaf was planted…'}
+        {error ?? 'Reading when each note was planted…'}
       </p>
     )
   return <RingsView {...props} planted={planted.map} />
@@ -332,7 +332,7 @@ function Panel({
           </h2>
           <p>
             One ring for every month since your first leaf. Wide rings are months you planted a lot;
-            every leaf sits in the ring it was planted in.
+            every note sits in the ring it was planted in.
           </p>
         </div>
       }
@@ -385,7 +385,7 @@ function Panel({
       {leaf && dot && (
         <section
           className={styles.card}
-          aria-label="Selected leaf"
+          aria-label="Selected note"
           style={{ '--tree': treeColor(tree, dot.tree) } as CSSProperties}
         >
           <div className={styles.cardHead}>
@@ -430,7 +430,7 @@ function Panel({
             className={`${controls.ghost} ${styles.open}`}
             onClick={() => onOpen(leaf.id)}
           >
-            Open leaf
+            Open note
             <Icon name="arrowRight" size={15} />
           </button>
         </section>
@@ -438,7 +438,7 @@ function Panel({
 
       {!phone && (
         <section className={styles.section}>
-          <h3 className={controls.eyebrow}>Each Tree, month by month</h3>
+          <h3 className={controls.eyebrow}>Each project, month by month</h3>
           {trees.map((t, i) => (
             <div
               key={t.id}
@@ -475,7 +475,7 @@ function Panel({
           </span>
           <span>
             <span className={styles.raySwatch} />
-            Ray: between Trees
+            Ray: between projects
           </span>
           <span>
             <span className={styles.threadSwatch} />
@@ -586,7 +586,7 @@ function CoreSample({
 
 /** Where a leaf's sub-leaves grew, against the ring the leaf was planted in. */
 function subLeaves(months: number[], own: number): string {
-  const its = months.length === 1 ? 'Its sub-leaf' : `Its ${months.length} sub-leaves`
+  const its = months.length === 1 ? 'Its sub-note' : `Its ${months.length} sub-notes`
   if (months.every((m) => m > own)) return `${its} sprouted in the rings after.`
   if (months.every((m) => m === own)) return `${its} sprouted in the same ring.`
   if (months.every((m) => m < own)) return `${its} were planted before it.`

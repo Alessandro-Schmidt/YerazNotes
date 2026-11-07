@@ -38,7 +38,7 @@ export function topOf(graph: Graph, id: string): string | null {
   return node && node.id !== ROOT ? node.id : null
 }
 
-/** A Tree's colour: its own from `.yeraz.json`, else the Family's, else the accent. */
+/** A Tree's colour: its Family's (`.yeraz.json` `color`), else the accent; `trees` only in `allRef`. */
 export const treeColor = (ref: TreeRef, id: string | null): string =>
   colorVar((id !== null && ref.trees?.[id]) || ref.color)
 

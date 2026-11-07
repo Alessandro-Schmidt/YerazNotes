@@ -65,6 +65,18 @@
   }
 }
 
+.clear {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  height: 36px;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+}
+
 .dialog {
   width: min(600px, calc(100vw - 32px));
   max-height: min(560px, calc(100vh - 120px));
@@ -113,6 +125,13 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   min-height: 0;
+  position: relative; /* the results' offsetTop */
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  .results {
+    scroll-behavior: auto;
+  }
 }
 .result {
   display: grid;

@@ -7,7 +7,7 @@ import { packEnclose, packSiblings } from 'd3-hierarchy'
 import { curveBundle, line } from 'd3-shape'
 import type { Ghost, Graph, GraphNode, Thread } from '../model/graph'
 import { BRANCH_TEXT, ROOT } from '../model/tree'
-import { layoutTree, nodeAt, textWidth, type Box, type MapLayout } from './layout'
+import { layoutTree, nodeAt, random, shuffled, textWidth, type Box, type MapLayout } from './layout'
 
 export interface PlacedTree {
   /** The Tree's id in the Family: its top-level folder or leaf. */
@@ -122,7 +122,7 @@ export const FAMILY_TEXT = BRANCH_TEXT
 export const treesOf = (graph: Graph): string[] =>
   graph.nodes.get(ROOT)!.children.filter((id) => id !== FAMILY_TEXT)
 
-const families = new WeakMap<Graph, FamilyLayout>()
+const families = new WeakMap<Graph, { seed: number; family: FamilyLayout }>()
 
 /**
  * A Tree's layout, kept by what it was laid out from. A save makes a new Family graph in
@@ -150,11 +150,11 @@ function signature(tree: Graph): string {
   return parts.join('\n')
 }
 
-function treeLayout(tree: Graph): { graph: Graph; layout: MapLayout } {
-  const key = signature(tree)
+function treeLayout(tree: Graph, seed: number): { graph: Graph; layout: MapLayout } {
+  const key = `${seed}:${signature(tree)}`
   let kept = treeLayouts.get(key)
   if (!kept) {
-    const full = layoutTree(tree)
+    const full = layoutTree(tree, { seed })
     // A Tree of one leaf is its core alone: no rings around nothing.
     kept = { graph: tree, layout: full.nodes.length ? full : { ...full, rings: [] } }
     if (treeLayouts.size >= TREE_LAYOUTS) treeLayouts.delete(treeLayouts.keys().next().value!)
@@ -163,20 +163,31 @@ function treeLayout(tree: Graph): { graph: Graph; layout: MapLayout } {
   return kept
 }
 
-/** The layout of a Family's graph, computed once per graph object. */
-export function familyLayout(graph: Graph): FamilyLayout {
-  let family = families.get(graph)
-  if (!family) families.set(graph, (family = layoutFamily(graph)))
-  return family
+/** A new seed for Rearrange: never 0, which is the map as named. */
+export const newSeed = (): number => Math.floor(Math.random() * 0xfffffffe) + 1
+
+/** The layout of a Family's graph, computed once per graph object (and seed). */
+export function familyLayout(graph: Graph, seed = 0): FamilyLayout {
+  let kept = families.get(graph)
+  if (kept?.seed !== seed)
+    families.set(graph, (kept = { seed, family: layoutFamily(graph, undefined, seed) }))
+  return kept.family
 }
 
 /**
  * A Family's layout. With `groupOf`, the Trees of each group are packed together first,
- * then the groups (each Family of the map of every Family, families.ts).
+ * then the groups (each Family of the map of every Family, families.ts). A non-zero `seed`
+ * (Rearrange) lays each Tree out with its own seed and packs the Trees in a shuffled order.
  */
-export function layoutFamily(graph: Graph, groupOf?: (tree: string) => string): FamilyLayout {
+export function layoutFamily(
+  graph: Graph,
+  groupOf?: (tree: string) => string,
+  seed = 0,
+): FamilyLayout {
+  const next = seed ? random(seed) : null
   const trees: PlacedTree[] = treesOf(graph).map((id) => {
-    const { graph: tree, layout } = treeLayout(treeGraph(graph, id))
+    const own = next ? Math.floor(next() * 0xffffffff) + 1 : 0
+    const { graph: tree, layout } = treeLayout(treeGraph(graph, id), own)
     const { x0, y0, x1, y1 } = layout.bounds
     const reach = Math.max(-x0, x1, -y0, y1)
     const size = Math.round(Math.max(16, reach / 10))
@@ -187,7 +198,9 @@ export function layoutFamily(graph: Graph, groupOf?: (tree: string) => string): 
   })
 
   // The largest Trees first, so they sit in the middle.
-  const pack = (circles: { r: number }[]) => packSiblings([...circles].sort((a, b) => b.r - a.r))
+  // Rearranged: in a shuffled order instead.
+  const pack = (circles: { r: number }[]) =>
+    packSiblings(next ? shuffled(circles, next) : [...circles].sort((a, b) => b.r - a.r))
   const groups: TreeGroup[] = []
   if (groupOf) {
     const members = new Map<string, PlacedTree[]>()

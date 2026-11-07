@@ -19,7 +19,7 @@ const LABELS: Record<string, string> = {
   hair: 'Hairlines',
   'hair-strong': 'Strong lines',
   text: 'Text',
-  'text-body': 'Leaf text',
+  'text-body': 'Note text',
   muted: 'Secondary text',
   faint: 'Faint text',
   node: 'Map dots',

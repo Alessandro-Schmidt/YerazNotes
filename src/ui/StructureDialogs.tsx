@@ -2,7 +2,7 @@
 // Move, Delete and Create a new repository
 // (development-plan.md M2 steps 2 and 5). Plans come from sync/structure.ts.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { fileUrl, type TreeRef } from '../github/graphql'
 import { crumbs, type Graph, type Template } from '../model/graph'
 import { ROOT } from '../model/tree'
@@ -36,9 +36,33 @@ export function parentFor(graph: Graph, selected: string | null): string {
   return node.kind === 'branch' ? node.id : (node.parent ?? ROOT)
 }
 
+/**
+ * Ctrl/Cmd+Y or +N: a new note; Ctrl/Cmd+Shift+Y: a sub-note (`run(sub)`).
+ * Caught before the editor, so Ctrl+Y is not CodeMirror's redo (redo stays on Ctrl/Cmd+Shift+Z).
+ * Some browsers keep Ctrl+N for a new window; the desktop app gets it.
+ */
+export function useNewNoteKeys(run: (sub: boolean) => void) {
+  const latest = useRef(run)
+  useEffect(() => {
+    latest.current = run
+  })
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+      if (!(e.metaKey || e.ctrlKey) || e.altKey) return
+      if (!(key === 'y' || (key === 'n' && !e.shiftKey))) return
+      e.preventDefault()
+      e.stopPropagation()
+      latest.current(key === 'y' && e.shiftKey)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
+}
+
 const where = (graph: Graph, id: string, family = 'the Family') =>
   id === ROOT
-    ? `At the top of ${family}, as a Tree of its own`
+    ? `At the top of ${family}, as a project of its own`
     : [...crumbs(graph, id), graph.nodes.get(id)!.title].join(' / ')
 
 /** A file's address from another Family. */
@@ -133,15 +157,13 @@ export function StructureDialog({
       const titles = titlesIn(name)
       return (
         <Dialog
-          title={
-            sub ? (many ? 'New sub-leaves' : 'New sub-leaf') : many ? 'New leaves' : 'New leaf'
-          }
+          title={sub ? (many ? 'New sub-notes' : 'New sub-note') : many ? 'New notes' : 'New note'}
           submit={
             !many
-              ? 'Create leaf'
+              ? 'Create note'
               : titles.length === 1
-                ? 'Create 1 leaf'
-                : `Create ${titles.length} leaves`
+                ? 'Create 1 note'
+                : `Create ${titles.length} notes`
           }
           busy={busy}
           error={error}
@@ -192,7 +214,7 @@ export function StructureDialog({
           {templates.length > 0 && (
             <Field
               label="Start from"
-              hint="A template's text, with its title, the date and the Tree filled in. Settings › Templates keeps them."
+              hint="A template's text, with its title, the date and the project filled in. Settings › Templates keeps them."
             >
               <select
                 className={controls.input}
@@ -236,8 +258,8 @@ export function StructureDialog({
       const atTop = action.parent === ROOT
       return (
         <Dialog
-          title={atTop ? 'New tree' : 'New branch'}
-          submit={atTop ? 'Create tree' : 'Create branch'}
+          title={atTop ? 'New project' : 'New group'}
+          submit={atTop ? 'Create project' : 'Create group'}
           busy={busy}
           error={error}
           onClose={onClose}
@@ -250,7 +272,7 @@ export function StructureDialog({
           }
         >
           <Field
-            label={atTop ? 'Tree name' : 'Branch name'}
+            label={atTop ? 'Project name' : 'Group name'}
             hint={`${where(graph, action.parent)}. The folder keeps this name.`}
           >
             <input
@@ -264,8 +286,8 @@ export function StructureDialog({
             />
           </Field>
           <Field
-            label="First leaf"
-            hint={`A ${atTop ? 'tree' : 'branch'} starts with one leaf: git stores no empty folders.`}
+            label="First note"
+            hint={`A ${atTop ? 'project' : 'group'} starts with one note: git stores no empty folders.`}
           >
             <input
               className={controls.input}
@@ -334,14 +356,14 @@ export function StructureDialog({
         >
           <p className={styles.text}>
             {moved.kind === 'leaf'
-              ? 'Its sub-leaves move with it, and every link to them is updated in the same commit.'
+              ? 'Its sub-notes move with it, and every link to them is updated in the same commit.'
               : 'Everything in it moves with it, and every link to it is updated in the same commit.'}
           </p>
           <Field label="Where to">
             <input
               type="search"
               className={controls.input}
-              placeholder="A Family, Tree, branch or leaf"
+              placeholder="A Family, project, group or note"
               autoComplete="off"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -360,7 +382,7 @@ export function StructureDialog({
                       onChange={() => setDest(d)}
                     />
                     {d.label}
-                    {d.leaf && <span className={styles.hint}> · as a sub-leaf</span>}
+                    {d.leaf && <span className={styles.hint}> · as a sub-note</span>}
                   </label>
                 </li>
               ))}
@@ -379,7 +401,7 @@ export function StructureDialog({
       return (
         <Dialog
           title={`Delete ${node.title}`}
-          submit={leaves > 1 ? `Delete ${leaves} leaves` : leaves ? 'Delete leaf' : 'Delete branch'}
+          submit={leaves > 1 ? `Delete ${leaves} notes` : leaves ? 'Delete note' : 'Delete group'}
           danger
           busy={busy}
           error={error}
@@ -393,14 +415,14 @@ export function StructureDialog({
         >
           <p className={styles.text}>
             {tree.folder !== undefined
-              ? `This deletes ${leaves > 1 ? `${leaves} leaves` : 'it'} from the folder.`
+              ? `This deletes ${leaves > 1 ? `${leaves} notes` : 'it'} from the folder.`
               : leaves > 1
-                ? `This deletes ${leaves} leaves. GitHub keeps them in the repository’s history.`
+                ? `This deletes ${leaves} notes. GitHub keeps them in the repository’s history.`
                 : 'GitHub keeps it in the repository’s history.'}
           </p>
           {linkedFrom.length > 0 && (
             <p className={controls.error}>
-              {linkedFrom.length === 1 ? '1 leaf links' : `${linkedFrom.length} leaves link`} here:{' '}
+              {linkedFrom.length === 1 ? '1 note links' : `${linkedFrom.length} notes link`} here:{' '}
               {linkedFrom.map((p) => graph.nodes.get(p)!.title).join(', ')}. Those links will lead
               nowhere.
             </p>

@@ -16,7 +16,7 @@ const FILES = {
   'Cloud/docker.md': '# Docker\n\nSee [the agents](</AI Agents/README.md>).\n',
 }
 
-const peekOf = (page: Page, kind: 'Tree' | 'Leaf') =>
+const peekOf = (page: Page, kind: 'Project' | 'Note') =>
   page.getByRole('region', { name: `${kind} preview` })
 const mutations = (fake: FakeGitHub) => fake.log.filter((e) => e.operation === 'mutation')
 
@@ -29,14 +29,14 @@ test("a branch's README.md is its text, above what is inside, and never a leaf",
 }) => {
   await page.goto(`./#/tree/${REPO}/AI%20Agents`)
   await signInHere(page)
-  const peek = peekOf(page, 'Tree')
+  const peek = peekOf(page, 'Project')
   // The README's heading doesn't rename the branch: it keeps its folder's name.
   await expect(peek.getByRole('heading', { name: 'AI Agents', level: 2 })).toBeVisible()
   await expect(peek.getByText('Agents handbook')).toHaveCount(0)
   await expect(peek.locator('.cm-title')).toHaveCount(0)
   const text = peek.getByText('What this branch is for.')
   await expect(text).toBeVisible()
-  const inside = peek.getByRole('heading', { name: 'Inside this tree' })
+  const inside = peek.getByRole('heading', { name: 'Inside this project' })
   expect((await text.boundingBox())!.y).toBeLessThan((await inside.boundingBox())!.y)
   await expect(peek.getByRole('button', { name: 'Add text' })).toHaveCount(0)
   await expect(peek.locator('.cm-hint')).toHaveCount(0)
@@ -46,11 +46,11 @@ test("a branch's README.md is its text, above what is inside, and never a leaf",
 
   // A mention in the branch's text opens the leaf; a link to the README opens the branch.
   await peek.locator('.cm-mention', { hasText: 'Prompting' }).click()
-  await expect(peekOf(page, 'Leaf').getByRole('heading', { name: 'Prompting' })).toBeVisible()
+  await expect(peekOf(page, 'Note').getByRole('heading', { name: 'Prompting' })).toBeVisible()
   await page.goto(`./#/tree/${REPO}/Cloud/docker.md`)
   // The leaf is in its editor there, where the link is a chip.
-  await peekOf(page, 'Leaf').locator('.cm-mention', { hasText: 'the agents' }).click()
-  await expect(peekOf(page, 'Tree').getByText('What this branch is for.')).toBeVisible()
+  await peekOf(page, 'Note').locator('.cm-mention', { hasText: 'the agents' }).click()
+  await expect(peekOf(page, 'Project').getByText('What this branch is for.')).toBeVisible()
 })
 
 test.describe('writing a branch’s text', () => {
@@ -62,7 +62,7 @@ test.describe('writing a branch’s text', () => {
   }) => {
     await page.goto(`./#/tree/${REPO}/Cloud`)
     await signInHere(page)
-    const peek = peekOf(page, 'Tree')
+    const peek = peekOf(page, 'Project')
     await expect(peek.locator('.cm-hint')).toHaveText(
       /^→Click to write, hold (⌘|Ctrl) to see options$/,
     )

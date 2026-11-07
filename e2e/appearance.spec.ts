@@ -38,6 +38,8 @@ async function openAppearance(page: Page) {
 
 test('switching theme applies at once, re-renders nothing and is kept', async ({ page }) => {
   await openAppearance(page)
+  // Background loading settles first: only the switch is measured.
+  await page.waitForLoadState('networkidle')
   const before = await page.evaluate(() => window.__commits)
   expect(before).toBeGreaterThan(0) // the counter is live
 

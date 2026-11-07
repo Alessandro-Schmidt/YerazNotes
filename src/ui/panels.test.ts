@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  leftOf,
   clampWidth,
   PANELS,
+  PIN_SIDE_KEY,
+  savePinSide,
+  savedPinSide,
   saveWidth,
   savedWidths,
   widthStore,
@@ -47,5 +51,29 @@ describe('panel widths (issue #80)', () => {
       '--peek-w': '400px',
       '--dock-w': '700px',
     })
+  })
+})
+
+describe('pinned side', () => {
+  it('is left unless right was saved', () => {
+    const store = memory()
+    expect(savedPinSide(store)).toBe('left')
+    savePinSide('right', store)
+    expect(savedPinSide(store)).toBe('right')
+    expect(store.getItem(PIN_SIDE_KEY)).toBe('right')
+  })
+})
+
+describe('stacked columns', () => {
+  it('trade width with the column on their left; the leftmost has none', () => {
+    // Left: pin0 pin1 peek
+    expect(leftOf('left', 2, 0)).toBeUndefined()
+    expect(leftOf('left', 2, 1)).toBe('pin0')
+    expect(leftOf('left', 2)).toBe('pin1')
+    // Right: peek pin1 pin0
+    expect(leftOf('right', 2)).toBeUndefined()
+    expect(leftOf('right', 2, 1)).toBe('peek')
+    expect(leftOf('right', 2, 0)).toBe('pin1')
+    expect(leftOf('left', 0)).toBeUndefined()
   })
 })

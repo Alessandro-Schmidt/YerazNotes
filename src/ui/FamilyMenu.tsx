@@ -217,7 +217,7 @@ export function FamilyMenu({ current, all }: { current?: string; all?: boolean }
           </Link>
           <Link href="/settings/colours" role="menuitem" className={styles.muted}>
             <ViewIcon view="map" />
-            Tree colours
+            Family colours
           </Link>
           <Link href="/settings/hidden" role="menuitem" className={styles.muted}>
             <Icon name="eyeOff" size={15} />

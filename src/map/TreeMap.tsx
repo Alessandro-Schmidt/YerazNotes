@@ -37,6 +37,12 @@ export interface TreeMapProps {
   color: string
   /** Each Tree's colour, by its id: the `--tree` of its group. */
   treeColors: Record<string, string>
+  /** The threads' colour (`.yeraz.json` `linkColor`); none: each Tree's colour. */
+  linkColor?: string
+  /** Lays the map out again with another random arrangement (the Rearrange button). */
+  onRearrange?(): void
+  /** Rearrange's seed: when it changes, every node glides to its new place. */
+  arrangement?: number
   selected: string | null
   /** The Matches layer: the nodes a search found here, lit above the veil like a selection. */
   matches: { query: string; ids: readonly string[] } | null
@@ -85,6 +91,8 @@ const treeTransform = (t: PlacedTree) => `translate(${t.x} ${t.y})`
 const CORE = '\0core:'
 /** How many nodes at most glide to a new layout. */
 const GLIDES = 200
+// ponytail: SVG transforms animate on the main thread; above this Rearrange just appears.
+const REARRANGE_GLIDES = 1500
 /** Every node and core of the Family, in Family coordinates. */
 function positions(family: FamilyLayout) {
   const at = new Map<string, { x: number; y: number }>()
@@ -102,6 +110,9 @@ export function TreeMap({
   title,
   color,
   treeColors,
+  linkColor,
+  onRearrange,
+  arrangement = 0,
   selected,
   matches,
   onClearMatches,
@@ -217,12 +228,19 @@ export function TreeMap({
   // was written, moved or deleted): each node glides from where it was, new ones fade in,
   // and the lines are drawn again under them (issue #66). A layout with the same nodes (the
   // content arriving, sizing the dots) doesn't move: that would cost every open its frames.
-  const placed = useRef<{ key: string; at: Map<string, { x: number; y: number }> } | null>(null)
+  // Rearrange glides too, with a higher cap: that motion is the point of the button.
+  const placed = useRef<{
+    key: string
+    arrangement: number
+    at: Map<string, { x: number; y: number }>
+  } | null>(null)
   useLayoutEffect(() => {
     const at = positions(family)
     const was = placed.current?.key === treeKey ? placed.current.at : null
-    placed.current = { key: treeKey, at }
-    if (!was || (was.size === at.size && [...at.keys()].every((id) => was.has(id)))) return
+    const rearranged = placed.current?.arrangement !== arrangement
+    placed.current = { key: treeKey, arrangement, at }
+    if (!was || (!rearranged && was.size === at.size && [...at.keys()].every((id) => was.has(id))))
+      return
     const els = elements.current
     const element = (id: string) =>
       id.startsWith(CORE) ? els.cores.get(id.slice(CORE.length)) : els.nodes.get(id)
@@ -237,16 +255,16 @@ export function TreeMap({
         glides.push([el, from.x - p.x, from.y - p.y])
     }
     // Past this many, the frames cost more than the motion tells: the change just appears.
-    if (glides.length + fresh.length > GLIDES) return
+    if (glides.length + fresh.length > (rearranged ? REARRANGE_GLIDES : GLIDES)) return
     for (const [el, dx, dy] of glides)
       play(el, [{ transform: `translate(${dx}px, ${dy}px)` }, {}], {
-        duration: 300,
+        duration: rearranged ? 600 : 300,
         easing: EASE_MOVE,
       })
     for (const el of fresh) play(el, [{ opacity: 0 }, {}], { duration: 300 })
     for (const lines of svgRef.current!.querySelectorAll('[data-lines]'))
       play(lines, [{ opacity: 0 }, { opacity: 0 }, {}], { duration: 300 })
-  }, [family, treeKey])
+  }, [family, treeKey, arrangement])
 
   // Image icons: their addresses arrive after the geometry is drawn (private files come
   // through the blob cache), and are set on the drawing, never by rendering it again.
@@ -440,7 +458,7 @@ export function TreeMap({
     tip.querySelector('span')!.textContent = ghost
       ? `Not written yet · ${threads}`
       : node.parent === ROOT
-        ? `Tree · ${compactWords(node.total)} words`
+        ? `Project · ${compactWords(node.total)} words`
         : node.kind === 'leaf'
           ? `${node.words.toLocaleString('en-US')} words · ${threads}`
           : `${compactWords(node.total)} words inside · ${node.children.length} items`
@@ -484,7 +502,7 @@ export function TreeMap({
         data-map=""
         tabIndex={0}
         role="group"
-        aria-label={`Map of ${title}: arrow keys move between leaves, Enter opens one`}
+        aria-label={`Map of ${title}: arrow keys move between notes, Enter opens one`}
         onKeyDown={onKeyDown}
         onClick={(e) => {
           markNow('select')
@@ -500,7 +518,7 @@ export function TreeMap({
         onPointerLeave={() => {
           if (tipRef.current) tipRef.current.hidden = true
         }}
-        style={{ '--tree': color } as CSSProperties}
+        style={{ '--tree': color, ...(linkColor && { '--link': linkColor }) } as CSSProperties}
       >
         <svg
           ref={svgRef}
@@ -565,7 +583,7 @@ export function TreeMap({
           <button
             type="button"
             className={controls.iconButton}
-            aria-label="Fit all trees"
+            aria-label="Fit all projects"
             // The same fit as opening the Family: the panel insets plus the map's own margins.
             onClick={() => {
               target.current = null
@@ -575,6 +593,17 @@ export function TreeMap({
           >
             <Icon name="fit" />
           </button>
+          {onRearrange && (
+            <button
+              type="button"
+              className={controls.iconButton}
+              aria-label="Rearrange"
+              title="Rearrange the map"
+              onClick={onRearrange}
+            >
+              <Icon name="shuffle" />
+            </button>
+          )}
           <span ref={levelRef} className={ui.level}>
             Leaves
           </span>
@@ -586,7 +615,7 @@ export function TreeMap({
           </span>
           <span>
             <span className={controls.glyph} data-kind="sprout" />
-            Leaf with sub-leaves
+            Note with sub-notes
           </span>
           <span>
             <span className={controls.glyph} data-kind="branch" />

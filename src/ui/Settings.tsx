@@ -12,7 +12,7 @@ import { ViewIcon } from '../views/ViewSwitcher'
 const PAGES = [
   { id: 'appearance', label: 'Appearance', icon: <Icon name="contrast" size={18} /> },
   { id: 'views', label: 'Views', icon: <ViewIcon view="treemap" size={18} /> },
-  { id: 'colours', label: 'Tree colours', icon: <ViewIcon view="map" size={18} /> },
+  { id: 'colours', label: 'Family colours', icon: <ViewIcon view="map" size={18} /> },
   { id: 'hidden', label: 'Hidden', icon: <Icon name="eyeOff" size={18} /> },
   { id: 'templates', label: 'Templates', icon: <Icon name="template" size={18} /> },
   { id: 'menu', label: 'Insert menu', icon: <Icon name="list" size={18} /> },

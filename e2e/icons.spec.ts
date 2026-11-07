@@ -153,7 +153,7 @@ test.describe('a Tree’s icon and cover', () => {
       .children.find((id) => graph.nodes.get(id)!.kind === 'branch' && !graph.nodes.get(id)!.sha)!
     await page.goto(`./#/tree/${REPO}/${tree}`)
     await signInHere(page)
-    const peek = page.getByRole('region', { name: 'Tree preview' })
+    const peek = page.getByRole('region', { name: 'Project preview' })
     await peek.getByRole('button', { name: 'Add icon' }).click()
     await peek.getByRole('menuitem', { name: 'Choose an emoji' }).click()
     await peek.getByRole('searchbox', { name: 'Search emoji' }).fill('robot')

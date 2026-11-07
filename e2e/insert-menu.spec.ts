@@ -26,7 +26,7 @@ test('the menu follows Settings: order, hidden items, and a block inserted from 
   const grip = page.getByRole('button', { name: 'Reorder Code block' })
   const target = await items
     .getByRole('listitem')
-    .filter({ hasText: 'Mention a leaf' })
+    .filter({ hasText: 'Mention a note' })
     .boundingBox()
   await grip.hover()
   await page.mouse.down()
@@ -57,7 +57,7 @@ test('the menu follows Settings: order, hidden items, and a block inserted from 
   const labels = await menu.getByRole('menuitem').allTextContents()
   expect(labels.slice(0, 1)).toEqual(['Decisions'])
   expect(labels).not.toContain('Table')
-  expect(labels.indexOf('Code block')).toBeLessThan(labels.indexOf('Mention a leaf'))
+  expect(labels.indexOf('Code block')).toBeLessThan(labels.indexOf('Mention a note'))
   // The menu opens on its first item: Enter picks it.
   await expect(menu.getByRole('menuitem', { name: 'Decisions' })).toBeFocused()
   await page.keyboard.press('Enter')

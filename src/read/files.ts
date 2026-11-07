@@ -45,3 +45,14 @@ export async function downloadAsset(
   a.download = path.replace(/^.*\//, '')
   a.click()
 }
+
+/**
+ * A bookmark's site icon, its host's `/favicon.ico`, as a background: a site without one
+ * leaves the space blank, and no script (none may run inline) is needed to hide it.
+ */
+export function favicon(url: string): string {
+  const origin = URL.canParse(url) ? new URL(url).origin : ''
+  return /^https?:/.test(origin)
+    ? `<i class="favicon" style="background-image:url('${escape(origin)}/favicon.ico')"></i>`
+    : ''
+}

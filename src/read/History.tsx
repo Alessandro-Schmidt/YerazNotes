@@ -91,7 +91,7 @@ export function History({
 
   const back = (
     <button type="button" className={controls.ghost} onClick={onClose}>
-      Back to the leaf
+      Back to the note
     </button>
   )
   const failed = error && (

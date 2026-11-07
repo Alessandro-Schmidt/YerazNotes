@@ -15,7 +15,7 @@ test.describe('title search', () => {
       .filter((n) => n.kind === 'leaf')
       .sort((a, b) => b.title.length - a.title.length)[0]!
     await signIn(page)
-    if (isMobile) await page.getByRole('button', { name: /Search leaves/ }).click()
+    if (isMobile) await page.getByRole('button', { name: /Search notes/ }).click()
     else await page.keyboard.press('ControlOrMeta+k')
     const box = page.getByRole('combobox', { name: 'Search titles and text' })
     await expect(box).toBeFocused()
@@ -52,7 +52,7 @@ test.describe('title search', () => {
       ],
     })
     await signIn(page)
-    if (isMobile) await page.getByRole('button', { name: /Search leaves/ }).click()
+    if (isMobile) await page.getByRole('button', { name: /Search notes/ }).click()
     else await page.keyboard.press('ControlOrMeta+k')
     await page.getByRole('combobox', { name: 'Search titles and text' }).fill('zebrafish')
     const options = page.getByRole('option')

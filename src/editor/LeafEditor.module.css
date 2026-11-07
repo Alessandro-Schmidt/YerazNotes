@@ -61,8 +61,10 @@
 }
 .iconImage {
   display: block;
-  width: 72px;
+  /* Its frame's shape (line 2 `iconShape`) sets the width; a circle unless chosen. */
+  width: auto;
   height: 72px;
+  aspect-ratio: 1;
   border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 0 0 3px var(--bg);
@@ -272,31 +274,6 @@
   padding: 0 12px;
   color: var(--text-body);
 }
-/* A colour's button shows the colour it sets: the heading's or the text's, as chosen. */
-.swatch {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-}
-.swatch[data-part='heading'] {
-  color: var(--leaf-heading, var(--tree, var(--accent)));
-}
-.swatch[data-part='text'] {
-  color: var(--leaf-text, var(--text-body));
-}
-.dot {
-  width: 12px;
-  height: 12px;
-  margin-right: 8px;
-  border-radius: 50%;
-}
 /* A phone: the buttons are their icons, so the four fit in one row. */
 @media (max-width: 640px) {
   .look .lookButton {
@@ -327,4 +304,71 @@
   .header:focus-within .look {
     opacity: 1;
   }
+}
+
+/* The icon on the title's line (line 2 `iconInline`): the title moves over to make room. */
+.body {
+  position: relative;
+}
+.iconRow[data-inline] {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  height: 41px;
+  align-items: center;
+}
+.iconRow[data-inline] .icon {
+  font-size: 32px;
+}
+.iconRow[data-inline] .iconImage {
+  height: 36px;
+}
+.body[data-icon-inline] :global(.cm-line.cm-title) {
+  padding-left: var(--inline-icon-w, 56px);
+}
+
+/* The image icon while it is moved in its frame. */
+.iconMover {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+.iconMover .iconImage[data-moving] {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.iconBar {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+}
+
+/* A branch's name, with its icon beside it when line 2 says `iconInline`: the icon in the
+   first column, level with the name; the chips under the name. */
+.headingRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+.heading {
+  display: contents;
+}
+.heading > * {
+  grid-column: 2;
+}
+.headingRow > .iconRow {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0 12px 0 0;
+}
+.headingRow .icon {
+  font-size: 32px;
+}
+.headingRow .iconImage {
+  height: 36px;
 }

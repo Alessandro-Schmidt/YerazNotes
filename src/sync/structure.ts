@@ -321,3 +321,14 @@ export function planDelete(
   )
   return { changes: filesUnder(graph, id).map((path) => ({ path, text: null })), linkedFrom }
 }
+
+/** A new note beside `selected` (at the top when none), or (`sub`) under it: null when there is none. */
+export function newNoteAction(
+  graph: Graph,
+  selected: string | null,
+  sub: boolean,
+): { kind: 'new-leaf'; parent: string } | null {
+  const node = selected !== null ? graph.nodes.get(selected) : undefined
+  if (!node || node.kind === 'root') return sub ? null : { kind: 'new-leaf', parent: ROOT }
+  return { kind: 'new-leaf', parent: sub ? node.id : (node.parent ?? ROOT) }
+}

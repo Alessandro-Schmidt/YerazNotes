@@ -416,7 +416,7 @@ export function layoutRings(
       outerAt(th) + 1,
       1,
       `${growing ? 'Growing now' : 'As it was'} · ${LONG[(first + last) % 12]}`,
-      growing ? `${compact(m.words)} words so far` : `${shown.length} leaves then`,
+      growing ? `${compact(m.words)} words so far` : `${shown.length} notes then`,
       true,
     )
   }

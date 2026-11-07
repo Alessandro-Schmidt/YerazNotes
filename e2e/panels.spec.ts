@@ -37,7 +37,7 @@ test('the Explorer and the Peek resize by their edges, and keep their widths', a
 
   await drag(page, page.getByRole('separator', { name: 'Explorer width' }), 100)
   await expect.poll(() => width(explorer)).toBe(372)
-  await drag(page, page.getByRole('separator', { name: 'Leaf panel width' }), -150)
+  await drag(page, page.getByRole('separator', { name: 'Note panel width' }), -150)
   await expect.poll(() => width(peek)).toBe(570)
 
   // From the keyboard: arrows by 16 px, Home to the least.
@@ -53,7 +53,7 @@ test('the Explorer and the Peek resize by their edges, and keep their widths', a
   await expect.poll(() => width(peek)).toBe(570)
 
   // A double click puts a panel back as it was.
-  await page.getByRole('separator', { name: 'Leaf panel width' }).dblclick()
+  await page.getByRole('separator', { name: 'Note panel width' }).dblclick()
   await expect.poll(() => width(peek)).toBe(420)
 })
 
@@ -69,7 +69,7 @@ test('Keep open holds a leaf beside the next one picked; both are edited at once
   const [first, second] = [leaves[0]!, leaves[1]!]
   await page.goto(`./#/tree/you/engineering/${first.id}`)
   await signInHere(page)
-  const peeks = page.getByRole('region', { name: 'Leaf preview' })
+  const peeks = page.getByRole('region', { name: 'Note preview' })
   await expect(peeks).toHaveCount(1)
   await peeks.getByRole('button', { name: 'Keep open' }).click()
   await expect(peeks.getByRole('button', { name: 'Keep open' })).toHaveAttribute(
@@ -108,8 +108,43 @@ test('Keep open holds a leaf beside the next one picked; both are edited at once
   await expect.poll(() => fake.repo('you/engineering').read(first.id)).toContain('Kept.')
   await expect.poll(() => fake.repo('you/engineering').read(second.id)).toContain('Picked.')
 
+  // The kept one can move to the right of the new one; the side is saved on this device.
+  await peeks.nth(0).getByRole('button', { name: 'Pin on the other side' }).click()
+  const box = async (i: number) => (await peeks.nth(i).boundingBox())!
+  expect((await box(1)).x + (await box(1)).width).toBeLessThanOrEqual((await box(0)).x)
+  expect(await page.evaluate(() => localStorage.getItem('yeraz-pin-side'))).toBe('right')
+
   // Closing the kept one leaves the selection alone.
   await peeks.nth(0).getByRole('button', { name: 'Dismiss' }).click()
   await expect(peeks).toHaveCount(1)
   await expect(peeks.getByRole('heading', { level: 2 })).toHaveText(second.title)
+})
+
+test('a kept note and the opened one resize each on its own', async ({ page, graph }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  const leaves = [...graph.nodes.values()]
+    .filter((n) => n.kind === 'leaf' && n.parent !== '')
+    .sort((a, b) => a.id.localeCompare(b.id))
+  await page.goto(`./#/tree/you/engineering/${leaves[0]!.id}`)
+  await signInHere(page)
+  const peeks = page.getByRole('region', { name: 'Note preview' })
+  await peeks.getByRole('button', { name: 'Keep open' }).click()
+  await page.getByRole('treeitem', { name: new RegExp(leaves[1]!.title) }).click()
+  await expect(peeks).toHaveCount(2)
+  await expect.poll(() => width(peeks.nth(0))).toBe(420)
+  await expect.poll(() => width(peeks.nth(1))).toBe(420)
+
+  // The edge between them moves: the opened one gains what the kept one gives up.
+  await drag(page, peeks.nth(1).getByRole('separator', { name: 'Note panel width' }), -100)
+  await expect.poll(() => width(peeks.nth(1))).toBe(520)
+  await expect.poll(() => width(peeks.nth(0))).toBe(320)
+  // The kept one's outer edge widens it alone.
+  await drag(page, peeks.nth(0).getByRole('separator', { name: 'Note panel width' }), -60)
+  await expect.poll(() => width(peeks.nth(0))).toBe(380)
+  await expect.poll(() => width(peeks.nth(1))).toBe(520)
+
+  // Kept on this device, each its own.
+  await page.reload()
+  await expect(peeks).toHaveCount(1)
+  await expect.poll(() => width(peeks)).toBe(520)
 })
