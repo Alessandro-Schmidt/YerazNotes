@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import styles from './TopBar.module.css'
 
-
 /**
  * The 56 px bar: the leaf and "Yeraz", then whatever the screen puts after it. The leaf
  * opens the introduction (`#/welcome`); `home` shows it instead, where the address must stay.
