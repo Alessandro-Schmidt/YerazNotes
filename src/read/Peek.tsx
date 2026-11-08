@@ -171,12 +171,6 @@ export function Peek({
       : ancestors(graph, id)
   const away =
     node.kind === 'root' && tree.folder === undefined ? `https://github.com/${tree.repo}` : null
-  const path =
-    node.kind === 'root'
-      ? (tree.folder ?? `${tree.repo} @ ${tree.branch}`)
-      : node.kind === 'branch'
-        ? `${id}/`
-        : id
   const chips =
     node.kind === 'root'
       ? [
@@ -231,6 +225,7 @@ export function Peek({
       )}
       <PeekHead
         {...{ kind, crumb, away, href, onSelect, expanded, onClose, sheet, kept, onSwap }}
+        copy={node.kind === 'root' ? undefined : `/${id}${node.kind === 'branch' ? '/' : ''}`}
         onPin={onPin && node.kind !== 'root' && !expanded && !docked ? () => onPin(id) : undefined}
         onExpand={motion.expand}
       />
@@ -405,8 +400,6 @@ export function Peek({
       </div>
 
       <div className={styles.foot}>
-        <span className={`${controls.mono} ${styles.path}`}>{path}</span>
-        {node.kind !== 'root' && <CopyPath text={`/${id}${node.kind === 'branch' ? '/' : ''}`} />}
         {!expanded && node.kind === 'leaf' && (
           <button
             type="button"
@@ -560,7 +553,7 @@ export function Peek({
   )
 }
 
-/** Copies the node's path from the Family's root (owner's request), beside it in the foot. */
+/** Copies the node's path from the Family's root (owner's request), beside the breadcrumbs. */
 function CopyPath({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -609,6 +602,7 @@ function PeekHead({
   kind,
   crumb,
   away = null,
+  copy,
   onPin,
   kept,
   onSwap,
@@ -623,6 +617,8 @@ function PeekHead({
   /** The places above, each a link to it; or a line of text, linking `away` when given. */
   crumb: string | GraphNode[]
   away?: string | null
+  /** The node's path from the Family's root, for the copy button; none without it. */
+  copy?: string | undefined
   /** Keeps the node open beside the next selection; no button without it. */
   onPin?: (() => void) | undefined
   kept?: boolean | undefined
@@ -692,6 +688,7 @@ function PeekHead({
             ))
           )}
         </nav>
+        {copy && <CopyPath text={copy} />}
         {onSwap && (
           <button
             type="button"
@@ -972,9 +969,6 @@ function GhostPeek({
             />
           </article>
         </div>
-      </div>
-      <div className={styles.foot}>
-        <span className={`${controls.mono} ${styles.path}`}>{ghost.id}</span>
       </div>
     </section>
   )
