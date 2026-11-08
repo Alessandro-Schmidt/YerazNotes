@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import themes from './design/themes/themes.json'
+import desktop from './src-tauri/tauri.conf.json'
 
 // Serves MSW's worker script in `--mode fake` only, so it never ships in dist/.
 function mockServiceWorker(): Plugin {
@@ -113,6 +114,8 @@ function mermaidChunks(): Plugin {
 export default defineConfig(({ mode }) => ({
   // Relative asset paths: the same dist/ works on GitHub Pages (under /<repo>/) and in Tauri.
   base: './',
+  // The app's version (ui/update.ts): the desktop app's, bumped for each release.
+  define: { __YERAZ_VERSION__: JSON.stringify(desktop.version) },
   plugins: [
     react(),
     themeColor(),

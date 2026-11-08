@@ -28,6 +28,7 @@
     "scripts",
     "e2e",
     "test",
+    "src/vite-env.d.ts",
     "src/**/*.test.ts",
     "src/**/*.test.tsx"
   ]

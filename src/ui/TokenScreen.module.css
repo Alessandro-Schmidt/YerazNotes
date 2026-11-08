@@ -254,6 +254,22 @@
 }
 
 /* A button that reads as a link, inside a sentence. */
+/* The version in use and the update check, closing the introduction. */
+.version {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hair);
+}
+.version strong {
+  color: var(--text-body);
+  font-weight: 600;
+}
+.version a {
+  text-decoration: none;
+}
+
 .textButton {
   padding: 0;
   border: 0;
