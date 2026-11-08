@@ -34,13 +34,13 @@ test('removes the Family from this device: GitHub keeps it, and it is not found 
   await expect(page).toHaveURL(/#\/welcome$/)
   expect(fake.repo(REPO).read('.yeraz.json')).toContain('Engineering')
   await expect(page.getByRole('link', { name: 'Back to your notes' })).toHaveCount(0)
-  await expect(page.getByRole('status')).toContainText('No notes yet')
-  await expect(page.getByRole('status')).toContainText('no project folder on this device')
-  await expect(
-    page.getByRole('status').getByRole('button', { name: 'Create a repository' }),
-  ).toBeVisible()
+  // The notice, not the version line under it (also a status).
+  const notice = page.getByRole('status').filter({ hasNotText: 'Version' })
+  await expect(notice).toContainText('No notes yet')
+  await expect(notice).toContainText('no project folder on this device')
+  await expect(notice.getByRole('button', { name: 'Create a repository' })).toBeVisible()
   await page.getByRole('button', { name: 'GitHub', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('No notebook found')
+  await expect(notice).toContainText('No notebook found')
   await expect(
     page.getByRole('link', { name: "widen the token's repository access" }),
   ).toHaveAttribute('href', 'https://github.com/settings/personal-access-tokens')
