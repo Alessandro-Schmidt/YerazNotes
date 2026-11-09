@@ -297,14 +297,6 @@ export function Peek({
                 path={textFile(graph, id)!}
                 source={source}
                 onOpen={onSelect}
-                heading={
-                  <>
-                    <div className={styles.titleRow}>
-                      <Glyph node={node} />
-                      <h2 className={styles.title}>{node.title}</h2>
-                    </div>
-                  </>
-                }
               />
             )}
 

@@ -62,7 +62,6 @@ import {
   typingLine,
   sourceShown,
 } from './elements'
-import { titleShown } from './emptyText'
 import { askHost } from './insertMenu'
 import { CODE_ICON, languageIcon } from './languageIcons'
 import { logo, menu } from './menu'
@@ -778,10 +777,8 @@ function build(view: EditorView): Built {
   /** Where alerts' `[!NOTE]` markers start: they aren't links. */
   const markers = new Set<number>()
 
-  // Line 1 is the title, the leaf's heading; line 2's metadata is hidden by metaLine.
-  // A branch's text hides its heading instead (emptyText.ts): nothing of it is drawn.
-  const titled = state.facet(titleShown)
-  if (titled) decorations.push(title.range(0))
+  // Line 1 is the title, a leaf's or a branch's heading; line 2's metadata is hidden by metaLine.
+  decorations.push(title.range(0))
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -791,7 +788,6 @@ function build(view: EditorView): Built {
         const name = node.name
         const heading = /^ATXHeading(\d)$/.exec(name)
         if (heading) {
-          if (!titled && node.from === 0) return false
           decorations.push(line(`cm-h${heading[1]}`).range(state.doc.lineAt(node.from).from))
           return
         }

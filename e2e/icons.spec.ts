@@ -172,7 +172,7 @@ test.describe('a Tree’s icon and cover', () => {
     })
     await expect(peek.getByRole('button', { name: 'Change cover' })).toBeVisible()
     await page.keyboard.press('ControlOrMeta+s')
-    // The README starts from the branch's name; its line 1 never renames the branch.
+    // The README starts from the branch's name, its title.
     await expect
       .poll(() => fake.repo(REPO).read(`${tree}/README.md`))
       .toMatch(

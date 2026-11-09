@@ -1,6 +1,6 @@
-import { EditorState, Text, type TransactionSpec } from '@codemirror/state'
+import { Text } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
-import { bodyStart, hiddenTitle, hintParts, isEmpty } from './emptyText'
+import { bodyStart, hintParts, isEmpty } from './emptyText'
 
 const doc = (text: string) => Text.of(text.split('\n'))
 const META = '<!-- yeraz {"color":{"heading":"amber"}} -->'
@@ -31,35 +31,5 @@ describe('hintParts: the key to hold is the device’s own', () => {
     expect(hintParts(false, true).join('')).toBe('Click to write, hold ⌘ to see options')
     expect(hintParts(false, false).join('')).toBe('Click to write, hold Ctrl to see options')
     expect(hintParts(true, true).join('')).toBe('Tap to write, type / to see options')
-  })
-})
-
-describe('hiddenTitle: a branch’s text without its heading', () => {
-  const TEXT = '# Agents handbook\n\nWhat this branch is for.'
-  const BODY = TEXT.indexOf('What')
-  const start = (text = TEXT) => EditorState.create({ doc: text, extensions: hiddenTitle })
-  const typed = (state: EditorState, spec: TransactionSpec) =>
-    state.update({ userEvent: 'input.type', ...spec }).state
-
-  it('the cursor never rests in the hidden heading', () => {
-    expect(start().update({ selection: { anchor: 0 } }).state.selection.main.head).toBe(BODY)
-    expect(start().update({ selection: { anchor: 5 } }).state.selection.main.head).toBe(BODY)
-  })
-
-  it('edits inside the heading are dropped; the body is written as usual', () => {
-    expect(typed(start(), { changes: { from: 2, to: 8, insert: 'X' } }).doc.toString()).toBe(TEXT)
-    const state = typed(start(), { changes: { from: BODY, insert: 'Hello. ' } })
-    expect(state.doc.toString()).toBe('# Agents handbook\n\nHello. What this branch is for.')
-  })
-
-  it('a new branch text is written below its heading', () => {
-    const state = typed(start('# Cloud\n\n'), { changes: { from: 9, insert: 'Containers.' } })
-    expect(state.doc.toString()).toBe('# Cloud\n\nContainers.')
-  })
-
-  it('a text whose line 1 is not a heading hides nothing', () => {
-    expect(start('Just text.').update({ selection: { anchor: 0 } }).state.selection.main.head).toBe(
-      0,
-    )
   })
 })

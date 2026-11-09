@@ -518,7 +518,6 @@ export function LeafEditor({
             files={() => session.getState().files(repo)}
             fileSize={(p) => session.getState().fileSize(repo, p)}
             autoFocus={autoFocus}
-            titleHidden={branch !== null}
             untitled={branch?.title}
           />
         </div>
