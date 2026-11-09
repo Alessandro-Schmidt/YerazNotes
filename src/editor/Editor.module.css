@@ -134,8 +134,18 @@
 .editor :global(.cm-list-mark) {
   color: var(--muted);
 }
+/* A number is as wide as a bullet or a checkbox: a nested item starts where its text does. */
+.editor :global(.cm-number) {
+  display: inline-block;
+  min-width: 23px;
+}
 .editor :global(.cm-bullet) {
   color: var(--text-body);
+  display: inline-block;
+  width: 23px;
+}
+.editor :global(.cm-line.cm-nested) {
+  padding-left: calc(var(--depth) * (23px + 0.28em));
 }
 .editor :global(.cm-done) {
   color: var(--muted);

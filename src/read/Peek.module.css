@@ -547,37 +547,6 @@
   gap: 0;
   justify-content: center;
 }
-.label {
-  max-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  opacity: 0;
-  transition:
-    max-width 0.2s var(--ease-out),
-    opacity 0.2s var(--ease-out),
-    margin 0.2s var(--ease-out);
-}
-.square:hover .label,
-.square:focus-visible .label {
-  max-width: 220px;
-  margin-left: 8px;
-  opacity: 1;
-}
-/* The shortcut, beside the name. */
-.kbd {
-  margin-left: 6px;
-  padding: 1px 5px;
-  border: 1px solid var(--hair-strong);
-  border-radius: 4px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .label {
-    transition: none;
-  }
-}
 /* The menu sits above its button: a bridge over the gap keeps the hover between them. */
 .menu::after {
   content: '';

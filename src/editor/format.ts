@@ -4,7 +4,7 @@
 // `` ` ``, `~`, `[`, `(`, `"`) wraps it instead of replacing it: the way to format on a phone.
 
 import { indentLess, indentMore } from '@codemirror/commands'
-import { EditorSelection, type EditorState, type TransactionSpec } from '@codemirror/state'
+import { EditorSelection, Prec, type EditorState, type TransactionSpec } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 
 /** Each selection wrapped in `open`…`close`, or unwrapped where it already is. */
@@ -121,8 +121,31 @@ const indentListBy =
 export const indentCommand = indentListBy(1, indentMore)
 export const outdentCommand = indentListBy(-1, indentLess)
 
+const ITEM = /^\s*([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?/
+
+/**
+ * Backspace at the start of a list item's text takes its bullet, box or number away whole:
+ * the line goes on as text, its Markdown never shown. Null elsewhere.
+ */
+export function unlist(state: EditorState): TransactionSpec | null {
+  const { main } = state.selection
+  if (!main.empty) return null
+  const line = state.doc.lineAt(main.head)
+  const m = ITEM.exec(line.text)
+  if (!m || main.head !== line.from + m[0].length) return null
+  return { changes: { from: line.from, to: main.head } }
+}
+
 export const formatKeymap = keymap.of([
   { key: 'Tab', run: indentCommand, shift: outdentCommand },
+  {
+    key: 'Backspace',
+    run: (view) => {
+      const spec = unlist(view.state)
+      if (spec) view.dispatch({ ...spec, userEvent: 'delete.backward' })
+      return !!spec
+    },
+  },
   { key: 'Mod-b', run: run('**') },
   { key: 'Mod-i', run: run('*') },
   { key: 'Mod-e', run: run('`') },
@@ -159,4 +182,5 @@ export const wrapTyped = EditorView.inputHandler.of((view, from, to, text) => {
   return true
 })
 
-export const formatting = [formatKeymap, wrapTyped]
+// Above markdown()'s own Backspace (itself high), which would leave the item's indent showing.
+export const formatting = [Prec.highest(formatKeymap), wrapTyped]

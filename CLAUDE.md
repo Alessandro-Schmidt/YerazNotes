@@ -81,9 +81,9 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
   `coverAspect` is `slim`, `tall` or `"W:H"` (3:1 when absent);
   `hidden: true` takes the leaf (or, in a README.md, the branch or Tree) off the map with everything under it (still listed, marked, in the Explorer and its parent's Peek, where a click shows it again; Settings › Hidden too)
 - [ ] Sub-leaves live in a sibling folder with the same name (`keycloak.md` + `keycloak/`)
-- [ ] A branch is a folder without a same-named `.md`; its name is the folder name, as typed
-- [ ] A branch's text is `README.md` in its folder (exact name): not a leaf, never renames the branch, but its
-  line 1 emoji and line 2 are the branch's icon and look (a Tree's too); the root's `README.md` and one in a
+- [ ] A branch is a folder without a same-named `.md`; its folder name is kept as typed, and is its title until its text has a heading
+- [ ] A branch's text is `README.md` in its folder (exact name): not a leaf, but its line 1 is the branch's title
+  (its folder keeps its name, as a leaf's file does), its emoji and line 2 the branch's icon and look (a Tree's too); the root's `README.md` and one in a
   leaf's sibling folder stay leaves
 - [ ] Threads are root-relative Markdown links (`[Keycloak](/identity/keycloak.md)`)
 - [ ] An image's width ends its title: `![Realm](/assets/realm.png "width=50%")`, a percent of the column

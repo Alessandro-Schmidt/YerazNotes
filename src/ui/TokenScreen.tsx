@@ -15,12 +15,12 @@ import { Icon } from './icons'
 import { allHref, treeHref } from './paths'
 import { CreateTreeDialog } from './StructureDialogs'
 import styles from './TokenScreen.module.css'
+import { Mark } from './Mark'
 import { TopBar } from './TopBar'
 import { isNewer, latestRelease, reloadIntoUpdate, VERSION, type Release } from './update'
 
 const NEW_TOKEN = 'https://github.com/settings/personal-access-tokens/new'
 const TOKENS = 'https://github.com/settings/personal-access-tokens'
-const brand = (file: string) => `${import.meta.env.BASE_URL}brand/${file}`
 
 type Step = 'welcome' | 'github' | 'folder' | 'token'
 const STEPS: readonly string[] = ['github', 'folder', 'token']
@@ -122,13 +122,8 @@ function Welcome({ choose }: { choose(step: Step): void }) {
   return (
     <div className={styles.card}>
       <div className={styles.hero}>
-        {/* Both marks are present; CSS shows the one for the current mode, as in the top bar. */}
-        <img className={`${styles.logo} ${styles.logoDark}`} src={brand('yeraz-mark.svg')} alt="" />
-        <img
-          className={`${styles.logo} ${styles.logoLight}`}
-          src={brand('yeraz-mark-light.svg')}
-          alt=""
-        />
+        {/* The top bar's mark, the app's one everywhere. */}
+        <Mark className={styles.logo} size={72} />
         <h1 className={styles.name}>Yeraz</h1>
         <p className={styles.lead}>
           Yeraz is a note-taking app. Your notes are Markdown files you own, and the main screen is

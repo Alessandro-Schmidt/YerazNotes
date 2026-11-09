@@ -1,8 +1,7 @@
-// An empty text, in the editor: what to do with it, in place of a body (owner's wording),
-// and a branch's text without its heading, which the Peek already shows as the branch's name.
+// An empty text, in the editor: what to do with it, in place of a body (owner's wording).
 
 import { syntaxTree } from '@codemirror/language'
-import { EditorState, Facet, StateField, type Text } from '@codemirror/state'
+import type { Text } from '@codemirror/state'
 import {
   Decoration,
   EditorView,
@@ -119,38 +118,3 @@ export const newLineHint = ViewPlugin.fromClass(
 export const emptyHint = EditorView.decorations.compute(['doc'], (state) =>
   isEmpty(state.doc) ? Decoration.set(hint.range(state.doc.length)) : Decoration.none,
 )
-
-/** Whether line 1 is drawn as the title: not in a branch's text. */
-export const titleShown = Facet.define<boolean, boolean>({ combine: (v) => v.every(Boolean) })
-
-/** From the start to the body, when line 1 is a heading: a branch's text shows no title. */
-function titleRange(state: EditorState): number {
-  const { doc } = state
-  if (doc.lines < 2 || !HEADING.test(doc.line(1).text)) return 0
-  return doc.line(Math.min(bodyStart(doc), doc.lines)).from
-}
-
-const hide = Decoration.replace({})
-const decorate = (end: number): DecorationSet =>
-  end ? Decoration.set(hide.range(0, end)) : Decoration.none
-
-// Hiding line breaks changes the editor's lines, which only a state field may do.
-const hidden = StateField.define<DecorationSet>({
-  create: (state) => decorate(titleRange(state)),
-  update: (value, tr) => (tr.docChanged ? decorate(titleRange(tr.state)) : value),
-  provide: (field) => EditorView.decorations.from(field),
-})
-
-/** Edits inside the hidden title are dropped; the cursor never rests before the body. */
-const keep = EditorState.changeFilter.of((tr) => {
-  const end = titleRange(tr.startState)
-  return end ? [0, end] : true
-})
-const after = EditorState.transactionFilter.of((tr) => {
-  const end = titleRange(tr.state)
-  const sel = tr.selection
-  if (!end || !sel || sel.ranges.every((r) => r.from >= end)) return tr
-  return [tr, { selection: { anchor: Math.max(end, sel.main.head) }, sequential: true }]
-})
-
-export const hiddenTitle = [titleShown.of(false), hidden, keep, after]
