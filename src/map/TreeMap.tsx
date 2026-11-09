@@ -158,6 +158,8 @@ export function TreeMap({
   const followed = useRef<string | null>(null)
   /** The leaf last centred on a phone's screen. */
   const centred = useRef<string | null>(null)
+  /** The selection the veil last faded in for: a redraw (typing changes the graph) doesn't fade it again. */
+  const veiled = useRef<string | null>(null)
   // Panel insets, as plain values so effects re-run when a panel opens or closes.
   const {
     top: insetTop = 0,
@@ -347,7 +349,10 @@ export function TreeMap({
       }
     }
     const lit = matches?.ids ?? []
-    if ((!known || onCore) && !lit.length) return
+    if ((!known || onCore) && !lit.length) {
+      veiled.current = null
+      return
+    }
     stage.dataset.focus = ''
     // Copies keep their Tree's place: each Tree's go in a group moved like the Tree.
     const groups = new Map<PlacedTree, Element>()
@@ -377,6 +382,8 @@ export function TreeMap({
     veil.setAttribute('y', '-100000')
     veil.setAttribute('width', '200000')
     veil.setAttribute('height', '200000')
+    if (veiled.current === selected) veil.style.animation = 'none'
+    veiled.current = selected
     overlay.append(veil)
 
     for (const id of lit) add(id, els.nodes.get(id) ?? els.cores.get(id), 'data-match')
