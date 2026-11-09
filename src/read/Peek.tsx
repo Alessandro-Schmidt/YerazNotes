@@ -35,6 +35,7 @@ import controls from '../ui/controls.module.css'
 import { showAgain } from '../ui/Explorer'
 import { Glyph } from '../ui/Glyph'
 import { Icon } from '../ui/icons'
+import { isMac } from '../ui/platform'
 import { InlineName } from '../ui/InlineName'
 import { play } from '../ui/motion'
 import { ResizeHandle } from '../ui/ResizeHandle'
@@ -310,29 +311,6 @@ export function Peek({
               />
             )}
 
-            {(node.kind === 'leaf' || node.kind === 'branch') && (
-              <div className={styles.actions}>
-                <button
-                  type="button"
-                  className={controls.ghost}
-                  title="Ctrl/Cmd+N"
-                  onClick={() => onAction(newNoteAction(graph, id, false)!)}
-                >
-                  <Icon name="arrowRight" size={15} />
-                  New note
-                </button>
-                <button
-                  type="button"
-                  className={controls.ghost}
-                  title="Ctrl/Cmd+S"
-                  onClick={() => onAction(newNoteAction(graph, id, true)!)}
-                >
-                  <Icon name="arrowDown" size={15} />
-                  New sub-note
-                </button>
-              </div>
-            )}
-
             {children.length + hiddenKids.length > 0 && (
               <div className={styles.group}>
                 <h3 className={controls.eyebrow}>
@@ -411,10 +389,38 @@ export function Peek({
           </button>
         )}
         <div className={styles.actions}>
-          {node.kind !== 'leaf' && (
+          {(node.kind === 'leaf' || node.kind === 'branch') && (
+            <>
+              <button
+                type="button"
+                className={`${controls.ghost} ${styles.square}`}
+                aria-label="New note"
+                aria-keyshortcuts="Control+Y Meta+Y"
+                onClick={() => onAction(newNoteAction(graph, id, false)!)}
+              >
+                <Icon name="noteRight" size={20} />
+                <span className={styles.label}>
+                  New note <kbd className={styles.kbd}>{isMac ? '⌘Y' : 'Ctrl+Y'}</kbd>
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`${controls.ghost} ${styles.square}`}
+                aria-label="New sub-note"
+                aria-keyshortcuts="Control+Shift+Y Meta+Shift+Y"
+                onClick={() => onAction(newNoteAction(graph, id, true)!)}
+              >
+                <Icon name="noteDown" size={20} />
+                <span className={styles.label}>
+                  New sub-note <kbd className={styles.kbd}>{isMac ? '⇧⌘Y' : 'Ctrl+Shift+Y'}</kbd>
+                </span>
+              </button>
+            </>
+          )}
+          {node.kind !== 'leaf' && node.kind !== 'branch' && (
             <button
               type="button"
-              className={controls.ghost}
+              className={`${controls.ghost} ${styles.phoneless}`}
               onClick={() => onAction({ kind: 'new-leaf', parent: id })}
             >
               <Icon name="plus" size={15} />
@@ -432,16 +438,26 @@ export function Peek({
             </button>
           )}
           {node.kind !== 'root' && (
-            <div ref={menuHost} className={styles.menuHost}>
+            <div
+              ref={menuHost}
+              className={styles.menuHost}
+              onPointerEnter={(e) => e.pointerType === 'mouse' && setMenu(true)}
+              onPointerLeave={(e) => e.pointerType === 'mouse' && setMenu(false)}
+            >
               <button
                 type="button"
-                className={controls.ghost}
+                className={`${controls.ghost} ${styles.square}`}
+                aria-label="Options"
+                title="Options"
                 aria-haspopup="menu"
                 aria-expanded={menu}
-                onClick={() => setMenu((m) => !m)}
+                // A mouse already opened it on hover: its click keeps it open, keys and touch toggle it.
+                onClick={(e) => {
+                  const mouse = (e.nativeEvent as PointerEvent).pointerType === 'mouse'
+                  setMenu((m) => mouse || !m)
+                }}
               >
-                Options
-                <Icon name="chevronDown" size={15} />
+                <Icon name="more" size={20} />
               </button>
               {menu && (
                 <div
