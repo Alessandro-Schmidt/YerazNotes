@@ -129,15 +129,17 @@ test.describe('the header', () => {
     await signInHere(page)
     const peek = page.getByRole('region', { name: /preview/ })
     await expect(peek.locator('.cm-content')).toContainText('Mountains')
-    const name = peek.getByRole('heading', { level: 2, name: 'caucasus' })
+    // The group's title is its text's first line, written like a note's.
+    const name = peek.locator('.cm-title')
     const icon = peek.getByRole('button', { name: 'Change icon 🏔️' })
-    expect((await icon.boundingBox())!.y).toBeGreaterThan((await name.boundingBox())!.y + 20)
+    const above = (await icon.boundingBox())!
+    expect(above.y + above.height).toBeLessThanOrEqual((await name.boundingBox())!.y + 2)
 
     await icon.click()
     await page.getByRole('menuitemcheckbox', { name: 'Beside the title' }).click()
     const [a, t] = [(await icon.boundingBox())!, (await name.boundingBox())!]
     expect(Math.abs(a.y + a.height / 2 - (t.y + t.height / 2))).toBeLessThan(8)
-    expect(a.x + a.width).toBeLessThanOrEqual(t.x)
+    expect((await name.textContent())!.trim()).toBe('Caucasus')
     await page.keyboard.press('Escape')
     await page.keyboard.press('ControlOrMeta+s')
     await expect

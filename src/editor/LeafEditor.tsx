@@ -6,7 +6,6 @@ import {
   lazy,
   Suspense,
   type CSSProperties,
-  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -50,7 +49,6 @@ export function LeafEditor({
   source,
   autoFocus,
   onOpen,
-  heading,
 }: {
   repo: string
   path: string
@@ -60,8 +58,6 @@ export function LeafEditor({
   autoFocus?: boolean | undefined
   /** Opens another leaf: an @ mention was clicked. */
   onOpen(id: string): void
-  /** A branch's name (and what goes with it), drawn here so its icon can sit beside it. */
-  heading?: ReactNode
 }) {
   const key = repo.toLowerCase()
   const tree = useSession((s) => s.trees.find((t) => t.repo.toLowerCase() === key))
@@ -322,7 +318,7 @@ export function LeafEditor({
     <div
       className={styles.iconRow}
       data-position={inline ? 'left' : iconPlace(meta)}
-      data-inline={inline && branch === null ? '' : undefined}
+      data-inline={inline ? '' : undefined}
       // Over the cover's lower edge; not while the cover is being moved.
       data-over-cover={meta?.cover && !repositioning && !inline ? '' : undefined}
     >
@@ -428,33 +424,49 @@ export function LeafEditor({
   if (text?.path !== path) return <div className={styles.loading} aria-busy="true" />
   return (
     <div className={styles.leaf} data-leaf="">
-      {heading && (
-        <div className={styles.headingRow}>
-          {inline && iconRow}
-          <div className={styles.heading}>{heading}</div>
-        </div>
-      )}
-      <EditableCover
-        key={`${path} ${repositioning}`}
-        repo={repo}
-        meta={meta}
-        moving={repositioning}
-        onSave={(coverPosition) => {
-          changeLook((m) => ({ ...m, coverPosition }))
-          setRepositioning(false)
-        }}
-        onCancel={() => setRepositioning(false)}
-      />
-      {/* The header's controls change the editor's text, so they appear with it. */}
-      <Suspense fallback={<div className={styles.loading} aria-busy="true" />}>
-        <div className={styles.header}>
-          {(!inline || (branch !== null && !heading)) && iconRow}
-          <LeafStyle
+      {meta?.cover !== undefined && !repositioning ? (
+        // The cover's choices open from the cover itself (owner's request), as the icon's do.
+        <Menu
+          label="Change cover"
+          className={styles.coverButton}
+          trigger={
+            <EditableCover
+              repo={repo}
+              meta={meta}
+              moving={false}
+              onSave={() => {}}
+              onCancel={() => {}}
+            />
+          }
+        >
+          <CoverChoices
             meta={meta}
-            iconChoices={owned?.icon || image ? null : iconChoices}
             onChange={changeLook}
             onCover={() => coverPicker.current?.click()}
             onReposition={() => setRepositioning(true)}
+          />
+        </Menu>
+      ) : (
+        <EditableCover
+          key={`${path} ${repositioning}`}
+          repo={repo}
+          meta={meta}
+          moving={repositioning}
+          onSave={(coverPosition) => {
+            changeLook((m) => ({ ...m, coverPosition }))
+            setRepositioning(false)
+          }}
+          onCancel={() => setRepositioning(false)}
+        />
+      )}
+      {/* The header's controls change the editor's text, so they appear with it. */}
+      <Suspense fallback={<div className={styles.loading} aria-busy="true" />}>
+        <div className={styles.header}>
+          {!inline && iconRow}
+          <LeafStyle
+            meta={meta}
+            iconChoices={owned?.icon || image ? null : iconChoices}
+            onCover={() => coverPicker.current?.click()}
           />
           {picking && (
             <IconPicker
@@ -502,10 +514,10 @@ export function LeafEditor({
         />
         <div
           className={styles.body}
-          data-icon-inline={inline && branch === null ? '' : undefined}
+          data-icon-inline={inline ? '' : undefined}
           style={inline ? ({ '--inline-icon-w': `${inlineWidth}px` } as CSSProperties) : undefined}
         >
-          {inline && branch === null && iconRow}
+          {inline && iconRow}
           <Editor
             initial={text.text}
             source={source}
@@ -598,22 +610,18 @@ const iconPlace = (meta: LeafMeta | null): Place =>
   PLACES.some(([id]) => id === meta?.iconPosition) ? (meta!.iconPosition as Place) : 'left'
 
 /**
- * Icon, cover and colours: what lines 1 and 2 hold. Colours are names, so they follow
- * every theme. Each is one button's menu; on a phone the buttons are icons alone.
+ * Add icon and Add cover: once there, each opens its choices from itself. On a phone the
+ * buttons are icons alone.
  */
 function LeafStyle({
   meta,
   iconChoices,
-  onChange,
   onCover,
-  onReposition,
 }: {
   meta: LeafMeta | null
   /** "Add icon" and its choices; null once the leaf has an icon, whose own menu has them. */
   iconChoices: React.ReactNode
-  onChange(update: (meta: LeafMeta) => LeafMeta): void
   onCover(): void
-  onReposition(): void
 }) {
   return (
     <div className={styles.look}>
@@ -622,7 +630,7 @@ function LeafStyle({
           {iconChoices}
         </Menu>
       )}
-      {meta?.cover === undefined ? (
+      {meta?.cover === undefined && (
         <button
           type="button"
           className={`${controls.ghost} ${styles.lookButton}`}
@@ -632,53 +640,68 @@ function LeafStyle({
           <Icon name="image" size={18} />
           <span className={styles.word}>Add cover</span>
         </button>
-      ) : (
-        <Menu label="Change cover" icon={<Icon name="image" size={18} />}>
-          <button type="button" role="menuitem" onClick={onCover}>
-            Upload an image
-          </button>
-          {typeof meta.cover === 'string' && (
-            <button type="button" role="menuitem" onClick={onReposition}>
-              Reposition
-            </button>
-          )}
-          <span className={styles.menuLabel} role="presentation">
-            Format
-          </span>
-          {COVER_FORMATS.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              role="menuitemradio"
-              aria-checked={(meta.coverAspect ?? 'default') === id}
-              onClick={() =>
-                onChange((m) => {
-                  const rest = { ...m }
-                  delete rest.coverAspect
-                  return id === 'default' ? rest : { ...rest, coverAspect: id }
-                })
-              }
-            >
-              {label}
-            </button>
-          ))}
-          <button
-            type="button"
-            role="menuitem"
-            data-danger=""
-            onClick={() =>
-              onChange((m) => {
-                const rest = withoutCover(m)
-                delete rest.coverAspect
-                return rest
-              })
-            }
-          >
-            Remove cover
-          </button>
-        </Menu>
       )}
     </div>
+  )
+}
+
+/** A cover's choices, opened from the cover itself (as the icon's are). */
+function CoverChoices({
+  meta,
+  onChange,
+  onCover,
+  onReposition,
+}: {
+  meta: LeafMeta
+  onChange(update: (meta: LeafMeta) => LeafMeta): void
+  onCover(): void
+  onReposition(): void
+}) {
+  return (
+    <>
+      <button type="button" role="menuitem" onClick={onCover}>
+        Upload an image
+      </button>
+      {typeof meta.cover === 'string' && (
+        <button type="button" role="menuitem" onClick={onReposition}>
+          Reposition
+        </button>
+      )}
+      <span className={styles.menuLabel} role="presentation">
+        Format
+      </span>
+      {COVER_FORMATS.map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          role="menuitemradio"
+          aria-checked={(meta.coverAspect ?? 'default') === id}
+          onClick={() =>
+            onChange((m) => {
+              const rest = { ...m }
+              delete rest.coverAspect
+              return id === 'default' ? rest : { ...rest, coverAspect: id }
+            })
+          }
+        >
+          {label}
+        </button>
+      ))}
+      <button
+        type="button"
+        role="menuitem"
+        data-danger=""
+        onClick={() =>
+          onChange((m) => {
+            const rest = withoutCover(m)
+            delete rest.coverAspect
+            return rest
+          })
+        }
+      >
+        Remove cover
+      </button>
+    </>
   )
 }
 
