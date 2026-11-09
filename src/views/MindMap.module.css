@@ -64,6 +64,9 @@
   stroke-width: 4px;
   stroke-linejoin: round;
 }
+.node[data-sel] .label {
+  visibility: hidden;
+}
 .label[data-deep] {
   fill: var(--text-body);
 }

@@ -283,3 +283,14 @@ test('Atlas opens the selected leaf in the Peek beside it, to edit there', async
   await expect.poll(() => fake.repo(REPO).read(leaf.id)).toContain('Charted from the Atlas.')
   await expect(page.getByRole('region', { name: 'Selected peak' })).toHaveCount(0)
 })
+
+test('the Mind map draws a selected title once: the dimmed one under it gives way', async ({
+  page,
+  graph,
+}) => {
+  const leaf = leafOf(graph)
+  await openOn(page, 'mind', leaf.id)
+  const node = shown.mind(page).locator(`[data-id="${leaf.id}"]`)
+  await expect(node).toHaveAttribute('data-sel', '')
+  await expect(node.locator('text')).toBeHidden()
+})

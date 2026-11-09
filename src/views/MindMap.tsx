@@ -59,6 +59,9 @@ export default function MindMap({
         )
         return { x: n.x, y: n.y }
       }
+      // The label is drawn again above the veil: the one under it gives way, never doubled.
+      for (const el of layer.ownerSVGElement!.querySelectorAll(`[data-id="${CSS.escape(id)}"]`))
+        if (!layer.contains(el)) el.setAttribute('data-sel', '')
       svgEl('circle', { cx: n.x, cy: n.y, r: n.r + 7, class: styles.halo }, g)
       svgEl('circle', { cx: n.x, cy: n.y, r: n.r, class: styles.selDot }, g)
       const label = svgEl(
