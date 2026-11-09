@@ -77,7 +77,10 @@ test.describe('icon and cover', () => {
     await expect(mind.locator('image')).toHaveCount(2)
     for (const image of await mind.locator('image').all())
       await expect(image).toHaveAttribute('href', /^blob:/)
-    await page.getByRole('radiogroup', { name: 'View' }).getByRole('radio', { name: 'Map', exact: true }).click()
+    await page
+      .getByRole('radiogroup', { name: 'View' })
+      .getByRole('radio', { name: 'Map', exact: true })
+      .click()
 
     // Remove icon takes the image and its place away.
     await page.getByRole('button', { name: /^Change icon/ }).click()
