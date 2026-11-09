@@ -129,7 +129,9 @@ export const formatKeymap = keymap.of([
   { key: 'Mod-Shift-x', run: run('~~') },
   {
     key: 'Mod-k',
+    // Selected text becomes a link; with nothing selected the key is Search's (owner's request).
     run: (view) => {
+      if (view.state.selection.main.empty) return false
       view.dispatch(link(view.state))
       return true
     },
