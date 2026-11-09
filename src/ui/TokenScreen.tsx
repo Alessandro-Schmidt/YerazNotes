@@ -221,20 +221,26 @@ function Welcome({ choose }: { choose(step: Step): void }) {
           </button>
         ))}
       </div>
-      {github && (
-        <p className={styles.fine}>
-          GitHub is connected with a token kept on this device.{' '}
-          <button type="button" className={styles.textButton} onClick={() => choose('token')}>
-            Change token
-          </button>
-        </p>
-      )}
-      {families > 0 && (
-        <a className={styles.home} href={families > 1 ? `#${allHref()}` : '#/'}>
-          Back to your notes
-          <Icon name="arrowRight" />
-        </a>
-      )}
+      {/* One row: how GitHub is connected, and the way back (fits a laptop's height). */}
+      <div className={styles.homeRow}>
+        {github && (
+          <p className={styles.fine}>
+            GitHub is connected with a token kept on this device.{' '}
+            <button type="button" className={styles.textButton} onClick={() => choose('token')}>
+              Change token
+            </button>
+          </p>
+        )}
+        {families > 0 && (
+          <a
+            className={`${controls.ghost} ${styles.home}`}
+            href={families > 1 ? `#${allHref()}` : '#/'}
+          >
+            Back to your notes
+            <Icon name="arrowRight" />
+          </a>
+        )}
+      </div>
       <AppVersion />
     </div>
   )
