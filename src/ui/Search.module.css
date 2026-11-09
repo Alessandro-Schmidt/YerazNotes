@@ -2,33 +2,24 @@
 .box {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1 1 200px;
-  max-width: 420px;
-  /* Wide enough for its icon, a word and its key; narrower windows show the icon alone. */
-  min-width: 150px;
+  gap: 8px;
+  /* A button its own size, by Save (owner's request): its icon and its key; narrower
+     windows show the icon alone. */
+  flex: none;
   height: 36px;
-  margin: 0 auto;
-  padding: 0 8px 0 12px;
+  padding: 0 6px 0 10px;
   border: 1px solid var(--hair);
   border-radius: 9px;
   background: var(--panel);
   color: var(--muted);
   font: inherit;
-  font-size: 13.5px;
-  cursor: text;
+  font-size: 13px;
+  cursor: pointer;
 }
 @media (hover: hover) and (pointer: fine) {
   .box:hover {
     border-color: var(--hair-strong);
   }
-}
-.placeholder {
-  flex: 1;
-  overflow: hidden;
-  text-align: left;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 .key {
   padding: 2px 6px;
@@ -44,10 +35,8 @@
     flex: 0 0 36px;
     min-width: 0;
     justify-content: center;
-    margin: 0;
     padding: 0;
   }
-  .placeholder,
   .key {
     display: none;
   }
@@ -56,10 +45,8 @@
   .box {
     flex: 0 0 44px;
     justify-content: center;
-    margin: 0 0 0 auto;
     padding: 0;
   }
-  .placeholder,
   .key {
     display: none;
   }
