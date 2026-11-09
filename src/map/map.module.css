@@ -35,6 +35,8 @@
    re-rasterising it (select budget: < 50 ms). */
 .stage > .svg {
   will-change: transform;
+  /* A gesture moves these layers (useZoom): about their top-left corner, like the camera. */
+  transform-origin: 0 0;
 }
 .selection {
   pointer-events: none;
