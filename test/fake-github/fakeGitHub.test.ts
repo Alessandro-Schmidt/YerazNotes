@@ -593,6 +593,31 @@ describe('PATCH /repos/{owner}/{name}', () => {
   })
 })
 
+describe('GET /repos/{owner}/{name}/releases/latest', () => {
+  it('answers the newest published release, without a token; drafts and pre-releases skipped', async () => {
+    fake.addRelease('yeraz/app', 'v0.3.0')
+    fake.addRelease('yeraz/app', 'v0.4.0')
+    fake.addRelease('yeraz/app', 'v0.5.0-beta', { prerelease: true })
+    fake.addRelease('yeraz/app', 'v0.5.0', { draft: true })
+    const res = await request(fake, 'GET', '/repos/yeraz/app/releases/latest', { token: null })
+    expect(res.status).toBe(200)
+    expect(res.headers['access-control-allow-origin']).toBe('*')
+    expect(JSON.parse(res.body!)).toMatchObject({
+      tag_name: 'v0.4.0',
+      html_url: 'https://github.com/yeraz/app/releases/tag/v0.4.0',
+      draft: false,
+      prerelease: false,
+    })
+    expect(fake.log.at(-1)!.kind).toBe('release')
+  })
+
+  it('answers 404 when nothing is published', async () => {
+    fake.addRelease('yeraz/app', 'v0.1.0', { draft: true })
+    expect((await request(fake, 'GET', '/repos/yeraz/app/releases/latest')).status).toBe(404)
+    expect((await request(fake, 'GET', '/repos/you/engineering/releases/latest')).status).toBe(404)
+  })
+})
+
 describe('faults and protocol', () => {
   it('fails as a network error when offline, and logs the attempt', async () => {
     fake.faults.offline = true

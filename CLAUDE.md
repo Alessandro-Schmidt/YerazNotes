@@ -43,6 +43,8 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
 - `src/views/` the other views (`design/views/`): `views.ts` (ids, saved per device), `ViewSwitcher.tsx`, `index.ts` (lazy chunks),
   `Canvas.tsx` (drawn views' stage: camera, selection layer), one file per view, pure layouts in `layout/`;
   Settings › Views (`ui/ViewsSettings.tsx`) and › Family colours (`ui/FamilyColours.tsx`, `.yeraz.json` `color`, `linkColor`)
+- `src/ui/update.ts` the version (`src-tauri/tauri.conf.json`'s, through vite.config.ts) and *Check for updates* on the introduction
+  (the latest GitHub Release, no token; the web reloads into it, the desktop links to the installers)
 - `src/read/` `render.ts` (markdown-it, lazy) · `Peek.tsx` · `History.tsx` (past versions, diff, restore) · `src/ui/` App, FamilyView, FamilyMenu, Start, Explorer, TokenScreen,
   theme (saved per device in `localStorage`, applied before paint by `index.html`), `panels.ts` + `ResizeHandle.tsx` (Explorer and Peek widths, per device), Appearance (`#/settings/appearance`),
   `customTheme.ts` + `ThemeEditor.tsx` (custom themes), `contrast.ts` (`readable` adjusts a failing colour), `Hidden.tsx` (Settings › Hidden),

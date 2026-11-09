@@ -8,6 +8,7 @@ import { useLocation } from 'wouter'
 import type { TreeRef } from '../github/graphql'
 import { isFolder } from '../local/folder'
 import { session, useSession } from '../store/session'
+import { desktopInvoke } from '../store/token'
 import controls from './controls.module.css'
 import { ConnectDialog } from './FamilyMenu'
 import { Icon } from './icons'
@@ -15,6 +16,7 @@ import { allHref, treeHref } from './paths'
 import { CreateTreeDialog } from './StructureDialogs'
 import styles from './TokenScreen.module.css'
 import { TopBar } from './TopBar'
+import { isNewer, latestRelease, reloadIntoUpdate, VERSION, type Release } from './update'
 
 const NEW_TOKEN = 'https://github.com/settings/personal-access-tokens/new'
 const TOKENS = 'https://github.com/settings/personal-access-tokens'
@@ -233,6 +235,70 @@ function Welcome({ choose }: { choose(step: Step): void }) {
           <Icon name="arrowRight" />
         </a>
       )}
+      <AppVersion />
+    </div>
+  )
+}
+
+/** The version in use, and on request whether a newer one is out, with a way to it (owner's request). */
+function AppVersion() {
+  const [check, setCheck] = useState<
+    | { state: 'idle' | 'checking' | 'updating' }
+    | { state: 'done'; latest: Release }
+    | { state: 'failed'; error: string }
+  >({ state: 'idle' })
+  const run = async () => {
+    setCheck({ state: 'checking' })
+    try {
+      setCheck({ state: 'done', latest: await latestRelease() })
+    } catch (e) {
+      setCheck({ state: 'failed', error: e instanceof Error ? e.message : String(e) })
+    }
+  }
+  const newer =
+    check.state === 'done' && isNewer(check.latest.version, VERSION) ? check.latest : null
+  return (
+    <div className={styles.version}>
+      <p className={styles.fine} role="status">
+        Version {VERSION}
+        {' · '}
+        {check.state === 'idle' && (
+          <button type="button" className={styles.textButton} onClick={() => void run()}>
+            Check for updates
+          </button>
+        )}
+        {check.state === 'checking' && 'Checking for updates…'}
+        {check.state === 'updating' && 'Updating…'}
+        {check.state === 'done' && (newer ? <strong>{newer.version} is out</strong> : 'Up to date')}
+        {check.state === 'failed' && (
+          <>
+            {check.error}{' '}
+            <button type="button" className={styles.textButton} onClick={() => void run()}>
+              Try again
+            </button>
+          </>
+        )}
+      </p>
+      {newer &&
+        // The desktop app has no updater: its installers are on the release's page.
+        (desktopInvoke ? (
+          <a className={controls.primary} href={newer.url} target="_blank" rel="noreferrer">
+            <Icon name="external" />
+            Download {newer.version}
+          </a>
+        ) : (
+          <button
+            type="button"
+            className={controls.primary}
+            onClick={() => {
+              setCheck({ state: 'updating' })
+              void reloadIntoUpdate()
+            }}
+          >
+            <Icon name="refresh" />
+            Update to {newer.version}
+          </button>
+        ))}
     </div>
   )
 }
