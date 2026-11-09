@@ -638,3 +638,18 @@ test('the deep leaves’ labels follow the first paint, and the selection shows 
   await page.goto(`./#/tree/you/engineering/${deep.id}`)
   await expect(page.locator('[data-map] [data-sel] text')).toHaveText(deep.title)
 })
+
+test('a selected note’s name shows once: its label under the bold copy is hidden', async ({
+  page,
+  graph,
+}) => {
+  await openTree(page)
+  const leaf = [...graph.nodes.values()].find((n) => n.kind === 'leaf' && n.depth >= 2)!
+  await page.goto(`./#/tree/you/engineering/${leaf.id}`)
+  const svg = page.locator('[data-map] svg[role="img"]')
+  await expect(svg.locator(`[data-node][data-id="${leaf.id}"]`)).toHaveAttribute('data-covered', '')
+  await expect(svg.locator(`[data-node][data-id="${leaf.id}"] text`)).toBeHidden()
+  // Deselected, it shows again.
+  await page.goto('./#/tree/you/engineering')
+  await expect(svg.locator(`[data-node][data-id="${leaf.id}"] text`)).toBeVisible()
+})

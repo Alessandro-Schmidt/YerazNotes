@@ -286,3 +286,8 @@
 .coreIcon {
   pointer-events: none;
 }
+
+/* A node copied above the veil (TreeMap.tsx): its own label is hidden under the copy's. */
+.node[data-covered] .label {
+  visibility: hidden;
+}

@@ -161,6 +161,8 @@ export function TreeMap({
   const centred = useRef<string | null>(null)
   /** The selection the veil last faded in for: a redraw (typing changes the graph) doesn't fade it again. */
   const veiled = useRef<string | null>(null)
+  /** The map's elements copied above the veil now, their own labels hidden. */
+  const covered = useRef<Element[]>([])
   // Panel insets, as plain values so effects re-run when a panel opens or closes.
   const {
     top: insetTop = 0,
@@ -325,6 +327,8 @@ export function TreeMap({
     const els = elements.current
     const visible = (x: number, y: number) => zoom.isVisible(x, y, area)
     for (const core of els.cores.values()) core.removeAttribute('data-sel')
+    for (const el of covered.current) el.removeAttribute('data-covered')
+    covered.current = []
     overlay.replaceChildren()
     delete stage.dataset.focus
     const tree = selected === null ? undefined : family.treeOf.get(selected)
@@ -375,6 +379,10 @@ export function TreeMap({
       const copy = el.cloneNode(true) as Element
       if (attribute) copy.setAttribute(attribute, '')
       layer(family.treeOf.get(id)).append(copy)
+      // The original's label hides under its copy: the veil only dims it, and a bold copy
+      // (the selection) is wider, so both would show, one beside the other.
+      el.setAttribute('data-covered', '')
+      covered.current.push(el)
     }
 
     const veil = document.createElementNS(SVG_NS, 'rect')
