@@ -482,7 +482,10 @@ describe('planConvert: a note becomes a group, a group a note', () => {
   })
 
   it('turns a group into a note: its README.md (or its name) the note, its contents its sub-notes', () => {
-    const withText = { ...files, 'identity/README.md': '# 🔐 Identity\n\nAll about logins.\n' }
+    const withText: Record<string, string> = {
+      ...files,
+      'identity/README.md': '# 🔐 Identity\n\nAll about logins.\n',
+    }
     const { changes, id } = planConvert(graphOf(withText), (p) => withText[p]!, 'identity')
     expect(id).toBe('identity.md')
     expect(changes).toContainEqual({ path: 'identity/README.md', text: null })
@@ -495,7 +498,10 @@ describe('planConvert: a note becomes a group, a group a note', () => {
 
   it('reads what it rewrites; a sub-note called README.md stops it', () => {
     expect(convertReads(graph, 'identity/keycloak.md')).toContain('AI Agents/prompting.md')
-    const readme = { ...files, 'identity/keycloak/README.md': '# Read me\n' }
+    const readme: Record<string, string> = {
+      ...files,
+      'identity/keycloak/README.md': '# Read me\n',
+    }
     expect(() => planConvert(graphOf(readme), (p) => readme[p]!, 'identity/keycloak.md')).toThrow(
       StructureError,
     )
