@@ -303,7 +303,6 @@ export function Peek({
                       <Glyph node={node} />
                       <h2 className={styles.title}>{node.title}</h2>
                     </div>
-                    {chipRow}
                   </>
                 }
               />
@@ -320,7 +319,7 @@ export function Peek({
               />
             )}
 
-            {children.length + hiddenKids.length > 0 && (
+            {(children.length + hiddenKids.length > 0 || node.kind === 'branch') && (
               <div className={styles.group}>
                 <h3 className={controls.eyebrow}>
                   {node.kind === 'root'
@@ -356,6 +355,29 @@ export function Peek({
                       {h.title}
                     </button>
                   ))}
+                  {/* A group makes its own groups and notes here, each named in its dialog. */}
+                  {node.kind === 'branch' && (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.kid}
+                        data-new=""
+                        onClick={() => onAction({ kind: 'new-branch', parent: id })}
+                      >
+                        <Icon name="plus" size={14} />
+                        New group
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.kid}
+                        data-new=""
+                        onClick={() => onAction({ kind: 'new-leaf', parent: id })}
+                      >
+                        <Icon name="plus" size={14} />
+                        New note
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -398,7 +420,7 @@ export function Peek({
           </button>
         )}
         {/* A note's words and threads sit in its foot (owner's request). */}
-        {node.kind === 'leaf' && chipRow}
+        {(node.kind === 'leaf' || node.kind === 'branch') && chipRow}
         <div className={styles.actions}>
           {(node.kind === 'leaf' || node.kind === 'branch') && (
             <>
@@ -549,6 +571,15 @@ export function Peek({
                       onClick={() => onAction({ kind: 'move', id })}
                     >
                       Move…
+                    </button>
+                  )}
+                  {(node.kind === 'leaf' || node.kind === 'branch') && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => onAction({ kind: 'convert', id })}
+                    >
+                      {node.kind === 'leaf' ? 'Make it a group…' : 'Make it a note…'}
                     </button>
                   )}
                   {/* Off the map with everything under it; Settings › Hidden shows it again. */}

@@ -418,6 +418,17 @@
   color: var(--muted);
   font-style: italic;
 }
+.kid[data-new] {
+  border-style: dashed;
+  color: var(--muted);
+  font: inherit;
+  background: none;
+  cursor: pointer;
+}
+.kid[data-new]:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 .kids {
   display: flex;
   flex-wrap: wrap;

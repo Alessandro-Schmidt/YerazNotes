@@ -50,8 +50,8 @@
 
 .mark {
   display: block;
-  height: 24px;
-  width: auto;
+  flex: none;
+  color: var(--text);
 }
 
 .word {

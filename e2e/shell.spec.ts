@@ -38,7 +38,7 @@ test('the welcome screen shows the version and, on request, a newer one to updat
 })
 
 test('starts on the Vanta background', async ({ page }) => {
-  await expect(page.locator('header img').first()).toBeVisible()
+  await expect(page.locator('header svg').first()).toBeVisible()
   const colours = await page.evaluate(() => ({
     body: getComputedStyle(document.body).backgroundColor,
     bg: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),

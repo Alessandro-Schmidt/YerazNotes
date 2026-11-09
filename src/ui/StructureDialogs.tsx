@@ -8,8 +8,10 @@ import { crumbs, type Graph, type Template } from '../model/graph'
 import { ROOT } from '../model/tree'
 import { session, useSession } from '../store/session'
 import {
+  convertReads,
   leavesUnder,
   moveReads,
+  planConvert,
   planDelete,
   planMove,
   planMoveAcross,
@@ -28,6 +30,8 @@ export type StructureAction =
   | { kind: 'new-branch'; parent: string }
   | { kind: 'move'; id: string }
   | { kind: 'delete'; id: string }
+  /** A note becomes a group, a group a note. */
+  | { kind: 'convert'; id: string }
 
 /** Where new leaves and branches go: the selected branch, beside the selected leaf, or the root. */
 export function parentFor(graph: Graph, selected: string | null): string {
@@ -427,6 +431,41 @@ export function StructureDialog({
               nowhere.
             </p>
           )}
+        </Dialog>
+      )
+    }
+
+    case 'convert': {
+      const node = graph.nodes.get(action.id)!
+      const toGroup = node.kind === 'leaf'
+      return (
+        <Dialog
+          title={`Make ${node.title} a ${toGroup ? 'group' : 'note'}`}
+          submit={toGroup ? 'Make it a group' : 'Make it a note'}
+          busy={busy}
+          error={error}
+          onClose={onClose}
+          onSubmit={() =>
+            run(async () => {
+              const s = session.getState()
+              const texts = new Map(
+                await Promise.all(
+                  convertReads(graph, action.id).map(
+                    async (p) => [p, await s.textOf(tree.repo, p)] as const,
+                  ),
+                ),
+              )
+              const { changes, id } = planConvert(graph, (p) => texts.get(p)!, action.id)
+              await s.apply(tree.repo, changes)
+              onDone({ select: id })
+            })
+          }
+        >
+          <p className={styles.text}>
+            {toGroup
+              ? 'Its text becomes the group’s own text, and its sub-notes the notes in the group. Links to it open the group.'
+              : 'Its text, if it has one, becomes the note, and what is in it becomes its sub-notes. Links to it open the note.'}
+          </p>
         </Dialog>
       )
     }
