@@ -67,6 +67,21 @@ test.describe('icon and cover', () => {
     await expect(images.first()).toHaveAttribute('href', /^blob:/)
     for (const image of await images.all()) await expect(image).toHaveAttribute('href', /^blob:/)
 
+    // On the Mind map, beside its title, as an emoji would be; the selection's copy too.
+    await page
+      .getByRole('radiogroup', { name: 'View' })
+      .getByRole('radio', { name: 'Mind map' })
+      .click()
+    const mind = page.getByRole('img', { name: /^Mind map of/ })
+    await expect(mind.locator(`[data-id="${LEAF}"] image`)).toHaveAttribute('href', /^blob:/)
+    await expect(mind.locator('image')).toHaveCount(2)
+    for (const image of await mind.locator('image').all())
+      await expect(image).toHaveAttribute('href', /^blob:/)
+    await page
+      .getByRole('radiogroup', { name: 'View' })
+      .getByRole('radio', { name: 'Map', exact: true })
+      .click()
+
     // Remove icon takes the image and its place away.
     await page.getByRole('button', { name: /^Change icon/ }).click()
     await page.getByRole('menuitem', { name: 'Remove icon' }).click()

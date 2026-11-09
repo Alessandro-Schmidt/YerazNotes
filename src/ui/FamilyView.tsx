@@ -290,6 +290,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
             <Suspense fallback={<p className={styles.placeholder} aria-busy="true" />}>
               <View
                 key={view}
+                imageUrl={imageUrl}
                 tree={tree}
                 graph={graph}
                 selected={selected}
