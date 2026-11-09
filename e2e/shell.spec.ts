@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 
 test('starts on the welcome screen: the logo, the name, GitHub or a folder', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Yeraz', level: 1 })).toBeVisible()
-  await expect(page.locator('main img').first()).toBeVisible()
+  await expect(page.locator('main svg').first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'GitHub', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Folder', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Connect GitHub' })).toHaveCount(0)

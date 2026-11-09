@@ -936,6 +936,20 @@ function build(view: EditorView): Built {
             if (!touched(node.from, node.to)) decorations.push(hide.range(node.from, node.to))
             return
           case 'ListMark': {
+            // A nested item's spaces give way to one step per level: it starts under the text
+            // of the item above, whatever the font (a bullet and a checkbox are one step wide).
+            const ln = state.doc.lineAt(node.from)
+            if (node.from > ln.from && !state.sliceDoc(ln.from, node.from).trim()) {
+              let depth = -1
+              for (let p = node.node.parent; p; p = p.parent) if (p.name === 'ListItem') depth++
+              decorations.push(
+                Decoration.line({
+                  class: 'cm-nested',
+                  attributes: { style: `--depth: ${depth}` },
+                }).range(ln.from),
+                hide.range(ln.from, node.from),
+              )
+            }
             // A bullet is drawn as one (`-`, `*`, `+` all alike); a task's goes with its box.
             const bullet = /^[-*+]$/.test(state.sliceDoc(node.from, node.to))
             const task = node.node.parent?.getChild('Task')
@@ -943,7 +957,10 @@ function build(view: EditorView): Built {
               decorations.push(
                 Decoration.replace({ widget: new BulletWidget() }).range(node.from, node.to),
               )
-            else decorations.push(mark('cm-list-mark').range(node.from, node.to))
+            else
+              decorations.push(
+                mark(bullet ? 'cm-list-mark' : 'cm-list-mark cm-number').range(node.from, node.to),
+              )
             return
           }
           case 'TaskMarker': {

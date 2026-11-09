@@ -40,7 +40,7 @@ import { InlineName } from '../ui/InlineName'
 import { play } from '../ui/motion'
 import { ResizeHandle } from '../ui/ResizeHandle'
 import type { Panel } from '../ui/panels'
-import { widthVar } from '../ui/panels'
+import { noteWidth, saveWidth, widthVar } from '../ui/panels'
 import { PHONE, useMedia } from '../ui/useMedia'
 import { SyncStatus } from '../ui/SyncStatus'
 import { focusFirst, menuKeys } from '../ui/menuKeys'
@@ -70,8 +70,6 @@ export interface PeekProps {
   pinned?: boolean
   /** A kept note's place in the stack: its column's width is its own (`pin0`, `pin1`…). */
   slot?: number
-  /** The column to its left in a stack: dragging the edge between them moves width from one to the other. */
-  partner?: Panel
   /** Keeps this node open beside whatever is selected next; the head shows the button. */
   onPin?(id: string): void
   /** This node is pinned: the pin shows pressed, and a click unpins it. */
@@ -97,7 +95,6 @@ export function Peek({
   created,
   pinned,
   slot,
-  partner,
   onPin,
   kept,
   onSwap,
@@ -134,6 +131,12 @@ export function Peek({
   /** The leaf whose history is shown in place of its editor. */
   const [historyOf, setHistoryOf] = useState<string | null>(null)
   useLayoutEffect(() => mark('peek-painted'), [id])
+  // A note's width is its own: its column takes it wherever the note shows (owner's request).
+  const column: Panel = docked ? 'dock' : slot === undefined ? 'peek' : `pin${slot}`
+  useLayoutEffect(() => {
+    if (!docked) saveWidth(column, noteWidth(id))
+  }, [id, column, docked])
+
   const sheet = useRef<HTMLElement>(null)
   const motion = usePeekMotion(sheet, id, expanded, onExpand)
   const phone = useMedia(PHONE)
@@ -218,9 +221,9 @@ export function Peek({
     >
       {!expanded && (
         <ResizeHandle
-          panel={docked ? 'dock' : slot === undefined ? 'peek' : `pin${slot}`}
+          panel={column}
+          note={docked ? undefined : id}
           edge="left"
-          partner={docked ? undefined : partner}
           label="Note panel width"
         />
       )}
@@ -420,25 +423,21 @@ export function Peek({
                 type="button"
                 className={`${controls.ghost} ${styles.square}`}
                 aria-label="New note"
+                title={`New note (${isMac ? '⌘Y' : 'Ctrl+Y'})`}
                 aria-keyshortcuts="Control+Y Meta+Y"
                 onClick={() => onAction(newNoteAction(graph, id, false)!)}
               >
                 <Icon name="noteRight" size={20} />
-                <span className={styles.label}>
-                  New note <kbd className={styles.kbd}>{isMac ? '⌘Y' : 'Ctrl+Y'}</kbd>
-                </span>
               </button>
               <button
                 type="button"
                 className={`${controls.ghost} ${styles.square}`}
                 aria-label="New sub-note"
+                title={`New sub-note (${isMac ? '⇧⌘Y' : 'Ctrl+Shift+Y'})`}
                 aria-keyshortcuts="Control+Shift+Y Meta+Shift+Y"
                 onClick={() => onAction(newNoteAction(graph, id, true)!)}
               >
                 <Icon name="noteDown" size={20} />
-                <span className={styles.label}>
-                  New sub-note <kbd className={styles.kbd}>{isMac ? '⇧⌘Y' : 'Ctrl+Shift+Y'}</kbd>
-                </span>
               </button>
             </>
           )}

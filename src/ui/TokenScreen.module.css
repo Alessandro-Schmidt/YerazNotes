@@ -55,10 +55,7 @@
   height: 72px;
   width: auto;
   margin-bottom: 6px;
-}
-:root[data-mode='light'] .logoDark,
-:root[data-mode='dark'] .logoLight {
-  display: none;
+  color: var(--text);
 }
 
 .name {

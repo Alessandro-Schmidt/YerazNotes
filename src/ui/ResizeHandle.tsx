@@ -4,7 +4,16 @@
 // move it by 16 px, Home and End to its least and most; a double click puts it back.
 
 import { useRef, useSyncExternalStore } from 'react'
-import { clampWidth, limits, saveWidth, widthOf, widthStore, widthVar, type Panel } from './panels'
+import {
+  clampWidth,
+  limits,
+  saveNoteWidth,
+  saveWidth,
+  widthOf,
+  widthStore,
+  widthVar,
+  type Panel,
+} from './panels'
 import styles from './ResizeHandle.module.css'
 
 export function ResizeHandle({
@@ -12,8 +21,11 @@ export function ResizeHandle({
   edge,
   label,
   partner,
+  note,
 }: {
   panel: Panel
+  /** The note shown in the panel: the width is its own, kept for it alone. */
+  note?: string
   /** The neighbour across this edge: it gives up what the panel gains, so only the edge moves. */
   partner?: Panel
   /** Which edge of the panel it is: the panel grows away from it. */
@@ -38,6 +50,7 @@ export function ResizeHandle({
   }
   const save = (w: number) => {
     saveWidth(panel, w)
+    if (note) saveNoteWidth(note, w)
     if (partner) saveWidth(partner, partnerFor(w))
   }
   const { min, max } = limits(panel)
@@ -77,7 +90,10 @@ export function ResizeHandle({
         delete e.currentTarget.dataset.dragging
         show(e.currentTarget, width)
       }}
-      onDoubleClick={() => saveWidth(panel, null)}
+      onDoubleClick={() => {
+        saveWidth(panel, null)
+        if (note) saveNoteWidth(note, null)
+      }}
       onKeyDown={(e) => {
         const step = e.key === 'ArrowRight' ? 16 * grow : e.key === 'ArrowLeft' ? -16 * grow : null
         const next =
