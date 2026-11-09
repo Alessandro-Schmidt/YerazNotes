@@ -156,6 +156,7 @@ export function TreeMap({
   const target = useRef<string | null>(null)
   /** The Tree core whose selection was last acted on: the one opened on isn't followed. */
   const followed = useRef<string | null>(null)
+  const legendId = useId()
   /** The leaf last centred on a phone's screen. */
   const centred = useRef<string | null>(null)
   /** The selection the veil last faded in for: a redraw (typing changes the graph) doesn't fade it again. */
@@ -615,30 +616,41 @@ export function TreeMap({
             Leaves
           </span>
         </div>
-        <div className={`${controls.panel} ${ui.legend}`}>
-          <span>
-            <span className={controls.glyph} data-kind="leaf" />
-            Leaf
-          </span>
-          <span>
-            <span className={controls.glyph} data-kind="sprout" />
-            Note with sub-notes
-          </span>
-          <span>
-            <span className={controls.glyph} data-kind="branch" />
-            Branch
-          </span>
-          <span>
-            <span className={ui.threadSwatch} />
-            Thread (@mention)
-          </span>
-          {graph.ghosts.size > 0 && (
+        {/* The key to the map, behind a button: shown on hover or focus (owner's request). */}
+        <div className={ui.legendHost}>
+          <button
+            type="button"
+            className={`${controls.panel} ${ui.legendButton}`}
+            aria-label="Legend"
+            aria-describedby={legendId}
+          >
+            <Icon name="book" />
+          </button>
+          <div id={legendId} role="tooltip" className={`${controls.panel} ${ui.legend}`}>
             <span>
-              <span className={controls.glyph} data-kind="ghost" />
-              Not written yet
+              <span className={controls.glyph} data-kind="leaf" />
+              Note
             </span>
-          )}
-          <span>Size = words written</span>
+            <span>
+              <span className={controls.glyph} data-kind="sprout" />
+              Note with sub-notes
+            </span>
+            <span>
+              <span className={controls.glyph} data-kind="branch" />
+              Group
+            </span>
+            <span>
+              <span className={ui.threadSwatch} />
+              Thread (@mention)
+            </span>
+            {graph.ghosts.size > 0 && (
+              <span>
+                <span className={controls.glyph} data-kind="ghost" />
+                Not written yet
+              </span>
+            )}
+            <span className={ui.legendNote}>Bigger dot = more words written</span>
+          </div>
         </div>
       </div>
     </div>

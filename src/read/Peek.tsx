@@ -227,6 +227,15 @@ export function Peek({
       <PeekHead
         {...{ kind, crumb, away, href, onSelect, expanded, onClose, sheet, kept, onSwap }}
         copy={node.kind === 'root' ? undefined : `/${id}${node.kind === 'branch' ? '/' : ''}`}
+        markdown={
+          node.kind === 'root'
+            ? undefined
+            : async () => {
+                const file = textFile(graph, id)!
+                const { files, textOf } = session.getState()
+                return files(tree.repo).includes(file) ? textOf(tree.repo, file) : ''
+              }
+        }
         onPin={onPin && node.kind !== 'root' && !expanded && !docked ? () => onPin(id) : undefined}
         onExpand={motion.expand}
       />
@@ -277,7 +286,7 @@ export function Peek({
                 </h2>
               </div>
             )}
-            {node.kind !== 'branch' && chipRow}
+            {node.kind === 'root' && chipRow}
 
             {/* A branch's text (its folder's README.md): always in the leaf editor, ready to
                 write, even before the file exists; the first save creates it. */}
@@ -388,6 +397,8 @@ export function Peek({
             <Icon name="arrowRight" />
           </button>
         )}
+        {/* A note's words and threads sit in its foot (owner's request). */}
+        {node.kind === 'leaf' && chipRow}
         <div className={styles.actions}>
           {(node.kind === 'leaf' || node.kind === 'branch') && (
             <>
@@ -569,8 +580,19 @@ export function Peek({
   )
 }
 
-/** Copies the node's path from the Family's root (owner's request), beside the breadcrumbs. */
-function CopyPath({ text }: { text: string }) {
+/**
+ * Copies what `get` gives (the node's path, or its Markdown), shown as the copy icon and a tag
+ * naming which (owner's request: they replace the breadcrumbs).
+ */
+function CopyButton({
+  tag,
+  label,
+  get,
+}: {
+  tag: string
+  label: string
+  get: () => Promise<string>
+}) {
   const [copied, setCopied] = useState(false)
   useEffect(() => {
     if (!copied) return
@@ -580,14 +602,20 @@ function CopyPath({ text }: { text: string }) {
   return (
     <button
       type="button"
-      className={`${controls.iconButton} ${styles.copy}`}
-      aria-label={copied ? 'Copied' : 'Copy path'}
-      title={text}
+      className={`${controls.ghost} ${styles.copy}`}
+      aria-label={copied ? 'Copied' : label}
+      title={label}
       onClick={() => {
-        void navigator.clipboard?.writeText(text).then(() => setCopied(true))
+        void get()
+          .then((text) => navigator.clipboard?.writeText(text))
+          .then(
+            () => setCopied(true),
+            () => undefined,
+          )
       }}
     >
       <Icon name={copied ? 'check' : 'copy'} size={15} />
+      <span className={styles.copyTag}>{tag}</span>
     </button>
   )
 }
@@ -619,6 +647,7 @@ function PeekHead({
   crumb,
   away = null,
   copy,
+  markdown,
   onPin,
   kept,
   onSwap,
@@ -635,6 +664,8 @@ function PeekHead({
   away?: string | null
   /** The node's path from the Family's root, for the copy button; none without it. */
   copy?: string | undefined
+  /** The node's Markdown, for the copy-content button. */
+  markdown?: (() => Promise<string>) | undefined
   /** Keeps the node open beside the next selection; no button without it. */
   onPin?: (() => void) | undefined
   kept?: boolean | undefined
@@ -684,27 +715,34 @@ function PeekHead({
       <span className={styles.handle} aria-hidden="true" />
       <div className={styles.head}>
         <span className={styles.kind}>{kind}</span>
-        <nav className={`${controls.mono} ${styles.crumb}`} aria-label="Breadcrumb">
-          {typeof crumb === 'string' ? (
-            away ? (
-              <a href={away} target="_blank" rel="noopener noreferrer">
-                {crumb}
-              </a>
-            ) : (
-              crumb
-            )
-          ) : (
-            crumb.map((n, i) => (
-              <Fragment key={n.id}>
-                {i > 0 && ' / '}
-                <a href={href(n.id)} onClick={openHere(onSelect, n.id)}>
-                  {n.title}
+        {copy ? (
+          // A note's place is copied, not shown (owner's request): its path, and its Markdown.
+          <div className={styles.copies}>
+            <CopyButton tag="Path" label="Copy path" get={() => Promise.resolve(copy)} />
+            {markdown && <CopyButton tag="MD" label="Copy Markdown" get={markdown} />}
+          </div>
+        ) : (
+          <nav className={`${controls.mono} ${styles.crumb}`} aria-label="Breadcrumb">
+            {typeof crumb === 'string' ? (
+              away ? (
+                <a href={away} target="_blank" rel="noopener noreferrer">
+                  {crumb}
                 </a>
-              </Fragment>
-            ))
-          )}
-        </nav>
-        {copy && <CopyPath text={copy} />}
+              ) : (
+                crumb
+              )
+            ) : (
+              crumb.map((n, i) => (
+                <Fragment key={n.id}>
+                  {i > 0 && ' / '}
+                  <a href={href(n.id)} onClick={openHere(onSelect, n.id)}>
+                    {n.title}
+                  </a>
+                </Fragment>
+              ))
+            )}
+          </nav>
+        )}
         {onSwap && (
           <button
             type="button"

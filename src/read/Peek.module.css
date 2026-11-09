@@ -99,9 +99,22 @@
   text-decoration: underline;
 }
 /* Copies the path from the Family's root: small, beside the breadcrumbs. */
+.copies {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
 .copy {
-  width: 28px;
   height: 28px;
+  padding: 0 8px;
+  gap: 5px;
+}
+.copyTag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .copy[aria-label='Copied'] {
   color: var(--accent);
@@ -175,6 +188,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+/* In the foot, one line beside the buttons: what doesn't fit is cut, not wrapped. */
+.foot .chips {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+.foot .meta {
+  white-space: nowrap;
 }
 
 .meta {
