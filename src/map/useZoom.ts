@@ -2,6 +2,11 @@
 // re-renders while you pan or zoom (ARCHITECTURE.md §6). Layout coordinates are centred
 // on (0, 0).
 //
+// A camera move redraws every path of the map. So during a gesture (wheel, drag, pinch) the
+// camera stays put and its <svg> layers move instead: a composited layer, scaled from what is
+// already drawn, which costs next to nothing (soft while it moves). When the gesture ends the
+// camera takes the move and the layers are reset, in one frame: one redraw per gesture.
+//
 // As in the design, 100 % means "fitted to the screen". Leaf labels show from 85 % of that
 // (development-plan.md §3.3), but never while they would be drawn smaller than 0.6× their
 // size, so a large Tree opens on its branches. The level is published as `data-zoom` on
@@ -58,6 +63,8 @@ export function useZoom(
   const svgRef = hostRef
   const behaviour = useRef<ZoomBehavior<HTMLElement | SVGSVGElement, unknown> | null>(null)
   const fitted = useRef(1)
+  /** Where the camera is, or will be once a gesture ends: what the controls work from. */
+  const live = useRef({ x: 0, y: 0, k: 1 })
   const untouched = useRef(false)
   const optionsRef = useRef(options)
   useEffect(() => {
@@ -79,19 +86,34 @@ export function useZoom(
     )
     if (!svg || !cameras.length) return
     let far: boolean | null = null
+    // What the cameras show; a gesture moves their layers relative to it.
+    let shown = { ...live.current }
+    const layers = cameras.flatMap((c) => c.ownerSVGElement ?? [])
+    const commit = () => {
+      const { x, y, k } = live.current
+      for (const camera of cameras) camera.style.transform = `translate(${x}px, ${y}px) scale(${k})`
+      for (const layer of layers) layer.style.transform = ''
+      shown = { x, y, k }
+    }
     const z = d3zoom<HTMLElement | SVGSVGElement, unknown>()
       .scaleExtent([optionsRef.current.min, optionsRef.current.max])
       .on('start', (event: { sourceEvent: unknown }) => {
         if (event.sourceEvent) settle()
       })
+      .on('end', commit)
       .on(
         'zoom',
         (event: { transform: { x: number; y: number; k: number }; sourceEvent: unknown }) => {
           // A gesture (wheel, drag, pinch) has a source event; the camera's own moves don't.
           if (event.sourceEvent) untouched.current = false
           const { x, y, k } = event.transform
-          for (const camera of cameras)
-            camera.style.transform = `translate(${x}px, ${y}px) scale(${k})`
+          live.current = { x, y, k }
+          if (event.sourceEvent && layers.length) {
+            // The layers carry the move from what the cameras show: scale s about the origin.
+            const s = k / shown.k
+            const move = `translate(${x - shown.x * s}px, ${y - shown.y * s}px) scale(${s})`
+            for (const layer of layers) layer.style.transform = move
+          } else commit()
           const isFar = k < Math.max(LABEL_ZOOM * fitted.current, LEGIBLE)
           if (isFar !== far) {
             far = isFar
@@ -106,6 +128,7 @@ export function useZoom(
     behaviour.current = z
     select(svg).call(z).on('dblclick.zoom', null)
     return () => {
+      commit()
       select(svg).on('.zoom', null)
       behaviour.current = null
     }
@@ -144,13 +167,7 @@ export function useZoom(
     [svgRef, cameraRef, mirrorRef, settle],
   )
 
-  const current = useCallback(() => {
-    const camera = cameraRef.current
-    const m =
-      camera &&
-      /translate\(([-\d.e]+)px, ([-\d.e]+)px\) scale\(([-\d.e]+)\)/.exec(camera.style.transform)
-    return m ? { x: Number(m[1]), y: Number(m[2]), k: Number(m[3]) } : { x: 0, y: 0, k: 1 }
-  }, [cameraRef])
+  const current = useCallback(() => live.current, [])
 
   return useMemo<ZoomControls>(
     () => ({

@@ -35,6 +35,8 @@
    re-rasterising it (select budget: < 50 ms). */
 .stage > .svg {
   will-change: transform;
+  /* A gesture moves these layers (useZoom): about their top-left corner, like the camera. */
+  transform-origin: 0 0;
 }
 .selection {
   pointer-events: none;
@@ -283,4 +285,9 @@
 }
 .coreIcon {
   pointer-events: none;
+}
+
+/* A node copied above the veil (TreeMap.tsx): its own label is hidden under the copy's. */
+.node[data-covered] .label {
+  visibility: hidden;
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Mark } from './Mark'
 import styles from './TopBar.module.css'
 
 /**
@@ -31,14 +32,7 @@ export function TopBar({ children, home }: { children?: ReactNode; home?: () => 
           })
         }
       >
-        {/* The app's icon, as the favicon and the installers draw it. */}
-        <img
-          className={styles.mark}
-          src={`${import.meta.env.BASE_URL}favicon.svg?v=leaf`}
-          alt=""
-          width={24}
-          height={24}
-        />
+        <Mark className={styles.mark} />
         <span className={styles.word}>Yeraz</span>
       </a>
       {children}

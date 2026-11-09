@@ -200,17 +200,20 @@
   min-width: 0;
 }
 
-.home {
-  align-self: center;
-  display: inline-flex;
+.homeRow {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  color: var(--accent);
-  font-size: 13.5px;
-  text-decoration: none;
+  gap: 12px;
 }
-.home:hover {
-  text-decoration: underline;
+.homeRow:empty {
+  display: none;
+}
+.home {
+  margin-left: auto;
+  color: var(--text);
+  font-weight: 500;
+  text-decoration: none;
 }
 
 .fine {
@@ -291,5 +294,38 @@
 @media (max-width: 420px) {
   .choices {
     grid-template-columns: 1fr;
+  }
+}
+
+/* The welcome screen fits a laptop's height without scrolling (owner's request): wider, its
+   four topics two by two, the leaf smaller. Other cards keep their width. */
+@media (min-width: 780px) {
+  .card:has(.topics) {
+    max-width: 720px;
+    gap: 14px;
+  }
+  .topics {
+    grid-template-columns: auto 1fr auto 1fr;
+    gap: 10px 14px;
+  }
+  .card:has(.topics) .logo {
+    height: 56px;
+    margin-bottom: 0;
+  }
+  .card:has(.topics) .hero {
+    gap: 6px;
+    padding: 0;
+  }
+}
+@media (min-width: 780px) and (max-height: 800px) {
+  .main {
+    padding-block: 12px;
+  }
+  .card:has(.topics) {
+    gap: 10px;
+    padding: 22px 28px;
+  }
+  .topics {
+    line-height: 1.45;
   }
 }

@@ -14,6 +14,8 @@ import {
   leavesUnder,
   moveReads,
   planBranchText,
+  planConvert,
+  convertReads,
   planTemplate,
   StructureError,
   titlesIn,
@@ -455,5 +457,53 @@ describe('newNoteAction', () => {
     expect(newNoteAction(graph, 'identity/keycloak.md', true)?.parent).toBe('identity/keycloak.md')
     expect(newNoteAction(graph, null, true)).toBeNull()
     expect(newNoteAction(graph, ROOT, true)).toBeNull()
+  })
+})
+
+describe('planConvert: a note becomes a group, a group a note', () => {
+  const graphOf = (all: Record<string, string>) => {
+    const model = buildTree(
+      Object.keys(all).map((path) => ({ path, type: 'blob' as const, sha: path, size: 1 })),
+    )
+    return buildGraph(model, new Map(model.leaves.map((p) => [p, parseLeaf(all[p]!)])), 'T')
+  }
+
+  it('turns a note into a group named by its title: its text the README.md, its sub-notes inside', () => {
+    const { changes, id } = planConvert(graph, textOf, 'identity/keycloak.md')
+    expect(id).toBe('identity/Keycloak')
+    const byPath = Object.fromEntries(changes.map((c) => [c.path, c.text]))
+    expect(byPath['identity/keycloak.md']).toBeNull()
+    expect(byPath['identity/keycloak/realms.md']).toBeNull()
+    expect(byPath['identity/Keycloak/README.md']).toBe(files['identity/keycloak.md'])
+    // Links to the note now open the group, through its README.md.
+    expect(byPath['identity/Keycloak/realms.md']).toContain('(/identity/Keycloak/README.md#top)')
+    expect(byPath['AI Agents/prompting.md']).toContain('(/identity/Keycloak/README.md)')
+    expect(byPath['identity/oauth.md']).toContain('(/identity/Keycloak/realms.md)')
+  })
+
+  it('turns a group into a note: its README.md (or its name) the note, its contents its sub-notes', () => {
+    const withText: Record<string, string> = {
+      ...files,
+      'identity/README.md': '# 🔐 Identity\n\nAll about logins.\n',
+    }
+    const { changes, id } = planConvert(graphOf(withText), (p) => withText[p]!, 'identity')
+    expect(id).toBe('identity.md')
+    expect(changes).toContainEqual({ path: 'identity/README.md', text: null })
+    expect(changes).toContainEqual({ path: 'identity.md', text: withText['identity/README.md'] })
+    // Without a README.md, the note starts from the group's name; nothing else moves.
+    expect(planConvert(graph, textOf, 'identity').changes).toEqual([
+      { path: 'identity.md', text: '# Identity\n\n' },
+    ])
+  })
+
+  it('reads what it rewrites; a sub-note called README.md stops it', () => {
+    expect(convertReads(graph, 'identity/keycloak.md')).toContain('AI Agents/prompting.md')
+    const readme: Record<string, string> = {
+      ...files,
+      'identity/keycloak/README.md': '# Read me\n',
+    }
+    expect(() => planConvert(graphOf(readme), (p) => readme[p]!, 'identity/keycloak.md')).toThrow(
+      StructureError,
+    )
   })
 })

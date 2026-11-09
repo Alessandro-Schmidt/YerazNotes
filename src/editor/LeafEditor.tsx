@@ -126,7 +126,11 @@ export function LeafEditor({
       },
       open: (id) => openRef.current(id),
       // A template is nowhere on the map: a leaf mentioned from it is made at the root.
-      here: () => (graphRef.current?.nodes.has(path) ? path : ''),
+      // A group's text (its README.md) counts as the group: new notes from it go in it.
+      here: () => {
+        const graph = graphRef.current
+        return graph && (graph.nodes.has(path) || threadEnd(graph, path) !== null) ? path : ''
+      },
       // A name no note has yet: written now, as a sub-note of this one (a branch's: in it).
       create: (title) => {
         const graph = graphRef.current!

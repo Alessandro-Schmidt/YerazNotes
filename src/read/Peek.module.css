@@ -99,9 +99,22 @@
   text-decoration: underline;
 }
 /* Copies the path from the Family's root: small, beside the breadcrumbs. */
+.copies {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
 .copy {
-  width: 28px;
   height: 28px;
+  padding: 0 8px;
+  gap: 5px;
+}
+.copyTag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .copy[aria-label='Copied'] {
   color: var(--accent);
@@ -175,6 +188,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+/* In the foot, one line beside the buttons: what doesn't fit is cut, not wrapped. */
+.foot .chips {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+.foot .meta {
+  white-space: nowrap;
 }
 
 .meta {
@@ -395,6 +418,17 @@
   color: var(--muted);
   font-style: italic;
 }
+.kid[data-new] {
+  border-style: dashed;
+  color: var(--muted);
+  font: inherit;
+  background: none;
+  cursor: pointer;
+}
+.kid[data-new]:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 .kids {
   display: flex;
   flex-wrap: wrap;
@@ -503,6 +537,57 @@
   position: relative;
 }
 
+/* Square icon buttons; New note and New sub-note grow to show their name on hover. */
+.actions > .square,
+.menuHost > .square {
+  width: auto;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  gap: 0;
+  justify-content: center;
+}
+.label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    max-width 0.2s var(--ease-out),
+    opacity 0.2s var(--ease-out),
+    margin 0.2s var(--ease-out);
+}
+.square:hover .label,
+.square:focus-visible .label {
+  max-width: 220px;
+  margin-left: 8px;
+  opacity: 1;
+}
+/* The shortcut, beside the name. */
+.kbd {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .label {
+    transition: none;
+  }
+}
+/* The menu sits above its button: a bridge over the gap keeps the hover between them. */
+.menu::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 8px;
+}
+
 .menu {
   position: absolute;
   right: 0;
@@ -592,7 +677,7 @@
     width: 44px;
     height: 44px;
   }
-  .actions > button:first-child {
+  .phoneless {
     display: none;
   }
   .openLeaf {
