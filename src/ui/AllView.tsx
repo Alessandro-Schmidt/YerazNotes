@@ -288,6 +288,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
             <Suspense fallback={<p className={styles.placeholder} aria-busy="true" />}>
               <View
                 key={view}
+                imageUrl={imageUrl}
                 tree={all}
                 graph={merged}
                 selected={selected}
