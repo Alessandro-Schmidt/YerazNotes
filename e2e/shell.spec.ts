@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, signIn, test, TOKEN, TOKEN2 } from './fixtures'
+import desktop from '../src-tauri/tauri.conf.json' with { type: 'json' }
 
 test.beforeEach(async ({ page }) => {
   await page.goto('./')
@@ -8,14 +9,36 @@ test.beforeEach(async ({ page }) => {
 
 test('starts on the welcome screen: the logo, the name, GitHub or a folder', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Yeraz', level: 1 })).toBeVisible()
-  await expect(page.locator('main img').first()).toBeVisible()
+  await expect(page.locator('main svg').first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'GitHub', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Folder', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Connect GitHub' })).toHaveCount(0)
 })
 
+test('the welcome screen shows the version and, on request, a newer one to update to', async ({
+  page,
+  fake,
+}) => {
+  const status = page.getByRole('status').filter({ hasText: 'Version' })
+  await expect(status).toHaveText(`Version ${desktop.version} · Check for updates`)
+  // The release this build is: nothing newer.
+  fake.addRelease('Alessandro-Schmidt/YerazNotes', `v${desktop.version}`)
+  await status.getByRole('button', { name: 'Check for updates' }).click()
+  await expect(status).toHaveText(`Version ${desktop.version} · Up to date`)
+  expect(fake.log.at(-1)).toMatchObject({ kind: 'release', status: 200 })
+
+  fake.addRelease('Alessandro-Schmidt/YerazNotes', 'v99.0.0')
+  await page.reload()
+  await status.getByRole('button', { name: 'Check for updates' }).click()
+  await expect(status).toContainText('99.0.0 is out')
+  // The web app reloads into the new build, back on the same screen.
+  await page.getByRole('button', { name: 'Update to 99.0.0' }).click()
+  await expect(status.getByRole('button', { name: 'Check for updates' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Update to 99.0.0' })).toHaveCount(0)
+})
+
 test('starts on the Vanta background', async ({ page }) => {
-  await expect(page.locator('header img').first()).toBeVisible()
+  await expect(page.locator('header svg').first()).toBeVisible()
   const colours = await page.evaluate(() => ({
     body: getComputedStyle(document.body).backgroundColor,
     bg: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),

@@ -53,7 +53,6 @@ export function Search({
         onClick={() => setOpen(true)}
       >
         <Icon name="search" size={16} />
-        <span className={styles.placeholder}>Search notes, groups, projects…</span>
         <kbd className={styles.key}>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
       </button>
       {lit && (

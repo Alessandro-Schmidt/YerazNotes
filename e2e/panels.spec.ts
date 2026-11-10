@@ -120,7 +120,7 @@ test('Keep open holds a leaf beside the next one picked; both are edited at once
   await expect(peeks.getByRole('heading', { level: 2 })).toHaveText(second.title)
 })
 
-test('a kept note and the opened one resize each on its own', async ({ page, graph }) => {
+test('each note has its own width: resizing one never changes another', async ({ page, graph }) => {
   await page.setViewportSize({ width: 1600, height: 900 })
   const leaves = [...graph.nodes.values()]
     .filter((n) => n.kind === 'leaf' && n.parent !== '')
@@ -134,17 +134,20 @@ test('a kept note and the opened one resize each on its own', async ({ page, gra
   await expect.poll(() => width(peeks.nth(0))).toBe(420)
   await expect.poll(() => width(peeks.nth(1))).toBe(420)
 
-  // The edge between them moves: the opened one gains what the kept one gives up.
+  // Each edge resizes its own note, never the one beside it.
   await drag(page, peeks.nth(1).getByRole('separator', { name: 'Note panel width' }), -100)
   await expect.poll(() => width(peeks.nth(1))).toBe(520)
-  await expect.poll(() => width(peeks.nth(0))).toBe(320)
-  // The kept one's outer edge widens it alone.
+  await expect.poll(() => width(peeks.nth(0))).toBe(420)
   await drag(page, peeks.nth(0).getByRole('separator', { name: 'Note panel width' }), -60)
-  await expect.poll(() => width(peeks.nth(0))).toBe(380)
+  await expect.poll(() => width(peeks.nth(0))).toBe(480)
   await expect.poll(() => width(peeks.nth(1))).toBe(520)
 
-  // Kept on this device, each its own.
+  // The width is the note's: kept on this device, and it follows the note wherever it opens.
   await page.reload()
   await expect(peeks).toHaveCount(1)
   await expect.poll(() => width(peeks)).toBe(520)
+  await page.getByRole('treeitem', { name: new RegExp(leaves[0]!.title) }).click()
+  await expect.poll(() => width(peeks)).toBe(480)
+  await page.goto(`./#/tree/you/engineering/${leaves[2]!.id}`)
+  await expect.poll(() => width(peeks)).toBe(420)
 })

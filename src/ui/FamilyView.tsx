@@ -35,15 +35,7 @@ import { SyncStatus } from './SyncStatus'
 import { colorVar } from './theme'
 import { Divider, TopBar } from './TopBar'
 import styles from './FamilyView.module.css'
-import {
-  SHEET_HEIGHT,
-  leftOf,
-  savePinSide,
-  savedPinSide,
-  widthOf,
-  widthStore,
-  widthVars,
-} from './panels'
+import { SHEET_HEIGHT, savePinSide, savedPinSide, widthOf, widthStore, widthVars } from './panels'
 import { PHONE, useMedia } from './useMedia'
 import { Search, type Matches } from './Search'
 import { treeColor, usePlanted } from '../views/common'
@@ -212,11 +204,11 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           <FamilyMenu current={repo} />
         </div>
         {!phone && <ViewSwitcher />}
-        <Search repo={repo} lit={!!found} onMatches={setFound} />
         <span className={styles.status}>
           <Status data={data} repo={repo} branch={tree?.branch ?? 'main'} />
         </span>
         <div className={styles.toggles}>
+          <Search repo={repo} lit={!!found} onMatches={setFound} />
           <SaveAndRefresh repos={[repo]} />
           <button
             type="button"
@@ -298,6 +290,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
             <Suspense fallback={<p className={styles.placeholder} aria-busy="true" />}>
               <View
                 key={view}
+                imageUrl={imageUrl}
                 tree={tree}
                 graph={graph}
                 selected={selected}
@@ -349,7 +342,6 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
                     expanded={false}
                     pinned
                     slot={slot}
-                    partner={leftOf(pinSide, stack.length, slot)}
                     href={href}
                     onSelect={select}
                     onExpand={() => {
@@ -376,7 +368,6 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
                     docked={panel === 'dock'}
                     created={created === selected}
                     pinned={stackShown}
-                    partner={stackShown ? leftOf(pinSide, stack.length) : undefined}
                     kept={pinned.includes(selected!)}
                     onPin={
                       phone || panel !== 'float'

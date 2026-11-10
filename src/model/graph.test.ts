@@ -115,10 +115,10 @@ describe("a branch's text (its folder's README.md)", () => {
     return buildGraph(model, parsed, 'T')
   })()
 
-  it('keeps the folder name and adds no words or leaves; its icon and look are the text’s', () => {
+  it('takes its title, icon and look from the text, as a leaf does; it adds no words or leaves', () => {
     expect(g.nodes.get('AI Agents')).toMatchObject({
       kind: 'branch',
-      title: 'AI Agents',
+      title: 'Agents, renamed',
       icon: '🤖',
       words: 0,
       total: g.nodes.get('AI Agents/prompting.md')!.words,
@@ -276,7 +276,7 @@ describe('hidden nodes (line 2 `"hidden": true`)', () => {
     ])
     expect(g.nodes.get('identity')!.children).toEqual(['identity/oauth.md'])
     expect(g.hidden).toEqual([
-      { id: 'archive', parent: '', kind: 'branch', title: 'Archive', icon: '📦' },
+      { id: 'archive', parent: '', kind: 'branch', title: 'Old', icon: '📦' },
       {
         id: 'identity/keycloak.md',
         parent: 'identity',

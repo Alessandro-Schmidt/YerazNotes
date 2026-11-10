@@ -94,19 +94,73 @@
   color: var(--muted);
 }
 
+.legendHost {
+  position: relative;
+}
+.legendButton {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--text);
+  cursor: help;
+}
+/* One item per line, above the button; shown while it is hovered or focused. */
 .legend {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
   display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  font-size: 11.5px;
-  color: var(--muted);
+  flex-direction: column;
+  gap: 8px;
+  width: max-content;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--text-body);
+  box-shadow: 0 16px 40px var(--shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition:
+    opacity 0.15s var(--ease-out),
+    transform 0.15s var(--ease-out),
+    visibility 0.15s;
+}
+/* A bridge over the gap, so the pointer can move onto it. */
+.legend::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 8px;
+}
+.legendHost:hover .legend,
+.legendHost:focus-within .legend {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
 }
 .legend > span {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 16px auto;
   align-items: center;
-  gap: 7px;
+  justify-items: center;
+  gap: 10px;
+}
+.legend > .legendNote {
+  display: block;
+}
+.legend > .legendNote {
+  padding-top: 8px;
+  border-top: 1px solid var(--hair);
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .legend {
+    transition: none;
+  }
 }
 
 .threadSwatch {
@@ -150,7 +204,7 @@
 }
 
 @media (max-width: 900px) {
-  .legend {
+  .legendHost {
     display: none;
   }
 }

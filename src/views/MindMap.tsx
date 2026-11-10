@@ -2,12 +2,12 @@
 // of the core, leaves and sub-leaves in rows. The selection's threads arc over the map.
 // On a phone it is one-sided and vertical, scrolled with the thumb.
 
-import { memo, useCallback, useMemo, useState, type CSSProperties } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { compactWords, type Graph } from '../model/graph'
 import controls from '../ui/controls.module.css'
 import { Canvas, svgEl } from './Canvas'
 import { degree, plural, treeColor, type ViewProps } from './common'
-import { layoutMind, type MindLayout } from './layout/mindmap'
+import { labelX, layoutMind, MIND_IMAGE, type MindLayout } from './layout/mindmap'
 import ui from '../map/TreeMap.module.css'
 import styles from './MindMap.module.css'
 import type { TreeRef } from '../github/graphql'
@@ -23,6 +23,7 @@ export default function MindMap({
   insets,
   onSelect,
   onOpen,
+  imageUrl,
 }: ViewProps) {
   const [all, setAll] = useState(false)
   const [threads, setThreads] = useState(true)
@@ -59,12 +60,19 @@ export default function MindMap({
         )
         return { x: n.x, y: n.y }
       }
+      // The label is drawn again above the veil: the one under it gives way, never doubled.
+      for (const el of layer.ownerSVGElement!.querySelectorAll(`[data-id="${CSS.escape(id)}"]`)) {
+        if (layer.contains(el)) continue
+        el.setAttribute('data-sel', '')
+        const image = el.querySelector('image')
+        if (image) g.append(image.cloneNode())
+      }
       svgEl('circle', { cx: n.x, cy: n.y, r: n.r + 7, class: styles.halo }, g)
       svgEl('circle', { cx: n.x, cy: n.y, r: n.r, class: styles.selDot }, g)
       const label = svgEl(
         'text',
         {
-          x: n.x + n.side * (n.r + 8),
+          x: labelX(n),
           y: n.y + 4.5,
           'text-anchor': n.side > 0 ? 'start' : 'end',
           'font-size': n.depth === 2 ? (phone ? 13.5 : 13) : 12.5,
@@ -157,7 +165,7 @@ export default function MindMap({
         </>
       }
     >
-      <Geometry layout={layout} graph={graph} tree={tree} phone={phone} />
+      <Geometry layout={layout} graph={graph} tree={tree} phone={phone} imageUrl={imageUrl} />
     </Canvas>
   )
 }
@@ -187,17 +195,40 @@ const Geometry = memo(function Geometry({
   graph,
   tree,
   phone,
+  imageUrl,
 }: {
   layout: MindLayout
   graph: Graph
   tree: TreeRef
   phone: boolean
+  imageUrl: ViewProps['imageUrl']
 }) {
   const root = graph.nodes.get('')!
+  const ref = useRef<SVGGElement>(null)
+  // Image icons' addresses arrive after drawing (private files through the blob cache): set
+  // on the drawing, and on a selection's copy made before they came (as the map does).
+  useEffect(() => {
+    if (!imageUrl) return
+    let live = true
+    for (const el of ref.current!.querySelectorAll<SVGImageElement>('image[data-src]')) {
+      const id = el.closest('[data-id]')!.getAttribute('data-id')!
+      void imageUrl(id, el.dataset.src!).then((url) => {
+        if (!live || !url) return
+        const svg = ref.current?.ownerSVGElement
+        for (const copy of svg?.querySelectorAll(
+          `image[data-src="${CSS.escape(el.dataset.src!)}"]`,
+        ) ?? [])
+          copy.setAttribute('href', url)
+      })
+    }
+    return () => {
+      live = false
+    }
+  }, [layout, imageUrl])
   const groups = new Map<string, MindLayout['nodes']>()
   for (const n of layout.nodes) groups.set(n.tree, [...(groups.get(n.tree) ?? []), n])
   return (
-    <g className={styles.map} data-phone={phone || undefined}>
+    <g ref={ref} className={styles.map} data-phone={phone || undefined}>
       {layout.spine && <path className={styles.spine} d={layout.spine} />}
       {[...groups].map(([id, nodes]) => (
         <g key={id} data-group="" style={{ '--tree': treeColor(tree, id) } as CSSProperties}>
@@ -230,9 +261,19 @@ const Geometry = memo(function Geometry({
                 <circle className={styles.hit} cx={n.x} cy={n.y} r={n.r + 8} />
                 {n.sprout && <circle className={styles.ring} cx={n.x} cy={n.y} r={n.r + 3.5} />}
                 <circle className={styles.dot} cx={n.x} cy={n.y} r={n.r} />
+                {n.image && (
+                  <image
+                    data-src={n.image}
+                    x={n.side > 0 ? n.x + n.r + 8 : n.x - n.r - 8 - MIND_IMAGE}
+                    y={n.y - MIND_IMAGE / 2}
+                    width={MIND_IMAGE}
+                    height={MIND_IMAGE}
+                    preserveAspectRatio="xMidYMid slice"
+                  />
+                )}
                 <text
                   className={styles.label}
-                  x={n.x + n.side * (n.r + 8)}
+                  x={labelX(n)}
                   y={n.y + 4.5}
                   textAnchor={n.side > 0 ? 'start' : 'end'}
                   fontSize={n.depth === 2 ? (phone ? 13.5 : 13) : 12.5}

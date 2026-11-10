@@ -30,10 +30,8 @@ test("a branch's README.md is its text, above what is inside, and never a leaf",
   await page.goto(`./#/tree/${REPO}/AI%20Agents`)
   await signInHere(page)
   const peek = peekOf(page, 'Project')
-  // The README's heading doesn't rename the branch: it keeps its folder's name.
-  await expect(peek.getByRole('heading', { name: 'AI Agents', level: 2 })).toBeVisible()
-  await expect(peek.getByText('Agents handbook')).toHaveCount(0)
-  await expect(peek.locator('.cm-title')).toHaveCount(0)
+  // The README's heading is the group's title, written like a note's (owner's decision).
+  await expect(peek.locator('.cm-title')).toHaveText('Agents handbook')
   const text = peek.getByText('What this branch is for.')
   await expect(text).toBeVisible()
   const inside = peek.getByRole('heading', { name: 'Inside this project' })
@@ -66,9 +64,8 @@ test.describe('writing a branch’s text', () => {
     await expect(peek.locator('.cm-hint')).toHaveText(
       /^→Click to write, hold (⌘|Ctrl) to see options$/,
     )
-    // The branch's name shows once, above its text: the README's heading is hidden.
-    await expect(peek.getByText('Cloud', { exact: true })).toHaveCount(1)
-    await expect(peek.locator('.cm-title')).toHaveCount(0)
+    // The text starts from the group's name, its title, written like a note's.
+    await expect(peek.locator('.cm-title')).toHaveText('Cloud')
     // A branch's icon, cover and colours are its text's (icons.spec.ts); none here yet.
     await expect(peek.getByRole('button', { name: 'Add cover' })).toBeVisible()
     expect(fake.repo(REPO).read('Cloud/README.md')).toBeUndefined()
@@ -89,4 +86,21 @@ test.describe('writing a branch’s text', () => {
     await expect(peek.getByRole('button', { name: 'Add text' })).toHaveCount(0)
     await expect(page.locator('[data-id$="README.md"], [data-row$="README.md"]')).toHaveCount(0)
   })
+})
+
+test("a group's title is its text's heading: retitled there, renamed on the map and in the Explorer", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'typing')
+  await page.goto(`./#/tree/${REPO}/AI%20Agents`)
+  await signInHere(page)
+  const title = peekOf(page, 'Project').locator('.cm-title')
+  await expect(title).toHaveText('Agents handbook')
+  await title.click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' 2')
+  await expect(page.locator('[data-map] > svg [data-tree="AI Agents"]').first()).toContainText(
+    'Agents handbook 2',
+  )
 })

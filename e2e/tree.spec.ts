@@ -207,31 +207,32 @@ test('expands the Peek to a full page, comes back, and dismisses it', async ({ p
   await expect(page.locator('[data-map]')).toHaveAttribute('data-focus')
 })
 
-test('the Peek’s breadcrumbs open the places above the leaf', async ({
+test('the Peek’s head copies the leaf’s path and its Markdown, in place of breadcrumbs', async ({
   page,
   graph,
   context,
   browserName,
 }) => {
-  // A sub-leaf two places below the Family: its Tree, then its parent leaf.
   const leaf = [...graph.nodes.values()]
     .filter((n) => n.kind === 'leaf' && n.parent && graph.nodes.get(n.parent)!.parent)
     .sort((a, b) => a.id.localeCompare(b.id))[0]!
-  const parent = graph.nodes.get(leaf.parent!)!
   await openTree(page)
   await page.goto(`./#/tree/you/engineering/${leaf.id}`)
-  const crumbs = peek(page).getByRole('navigation', { name: 'Breadcrumb' })
-  await expect(crumbs.getByRole('link').first()).toHaveText(graph.nodes.get('')!.title)
-  // In the foot, a button copies the leaf's path from the Family's root (owner's request).
+  // A note's place is copied, not shown (owner's request).
+  await expect(peek(page).getByRole('navigation', { name: 'Breadcrumb' })).toHaveCount(0)
+  await expect(peek(page).getByText(leaf.id, { exact: true })).toHaveCount(0)
   await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => undefined)
   await peek(page).getByRole('button', { name: 'Copy path' }).click()
   await expect(peek(page).getByRole('button', { name: 'Copied' })).toBeVisible()
   if (browserName === 'chromium')
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`/${leaf.id}`)
-  await crumbs.getByRole('link', { name: parent.title, exact: true }).click()
-  await expect(peek(page).getByRole('heading', { level: 2 })).toHaveText(parent.title)
-  await peek(page).getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link').first().click()
-  await expect(peek(page)).toHaveAccessibleName('Family preview')
+  await peek(page).getByRole('button', { name: 'Copy Markdown' }).click()
+  if (browserName === 'chromium')
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toContain(leaf.title)
+  // The Family keeps its line: a link to its repository.
+  await page.goto('./#/tree/you/engineering/')
   await expect(
     peek(page).getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link'),
   ).toHaveAttribute('href', 'https://github.com/you/engineering')
@@ -636,4 +637,19 @@ test('the deep leaves’ labels follow the first paint, and the selection shows 
   await expect(node.locator('text')).toHaveText(deep.title)
   await page.goto(`./#/tree/you/engineering/${deep.id}`)
   await expect(page.locator('[data-map] [data-sel] text')).toHaveText(deep.title)
+})
+
+test('a selected note’s name shows once: its label under the bold copy is hidden', async ({
+  page,
+  graph,
+}) => {
+  await openTree(page)
+  const leaf = [...graph.nodes.values()].find((n) => n.kind === 'leaf' && n.depth >= 2)!
+  await page.goto(`./#/tree/you/engineering/${leaf.id}`)
+  const svg = page.locator('[data-map] svg[role="img"]')
+  await expect(svg.locator(`[data-node][data-id="${leaf.id}"]`)).toHaveAttribute('data-covered', '')
+  await expect(svg.locator(`[data-node][data-id="${leaf.id}"] text`)).toBeHidden()
+  // Deselected, it shows again.
+  await page.goto('./#/tree/you/engineering')
+  await expect(svg.locator(`[data-node][data-id="${leaf.id}"] text`)).toBeVisible()
 })

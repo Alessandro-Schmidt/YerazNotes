@@ -1,6 +1,6 @@
 import { EditorState, type TransactionSpec } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
-import { indentList, link, toggleWrap } from './format'
+import { indentList, link, toggleWrap, unlist } from './format'
 
 /** `doc` with `[` `]` marking the selection, after the change; the new selection marked too. */
 function apply(doc: string, change: (state: EditorState) => TransactionSpec) {
@@ -66,5 +66,22 @@ describe('indentList', () => {
   it('leaves lines that are not list items to the editor', () => {
     expect(after('plain|', 1)).toBeNull()
     expect(after('# Title|\n- a', 1)).toBeNull()
+  })
+})
+
+describe('unlist: Backspace at an item’s text start drops its marker whole', () => {
+  const at = (doc: string, head: number) => {
+    const state = EditorState.create({ doc, selection: { anchor: head } })
+    const spec = unlist(state)
+    return spec ? state.update(spec).state.doc.toString() : null
+  }
+  it('a bullet, a to-do, a number, nested or not', () => {
+    expect(at('- one', 2)).toBe('one')
+    expect(at('  - [ ] task', 8)).toBe('task')
+    expect(at('1. first', 3)).toBe('first')
+  })
+  it('anywhere else, Backspace is its own', () => {
+    expect(at('- one', 3)).toBeNull()
+    expect(at('plain', 0)).toBeNull()
   })
 })

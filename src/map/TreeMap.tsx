@@ -156,8 +156,13 @@ export function TreeMap({
   const target = useRef<string | null>(null)
   /** The Tree core whose selection was last acted on: the one opened on isn't followed. */
   const followed = useRef<string | null>(null)
+  const legendId = useId()
   /** The leaf last centred on a phone's screen. */
   const centred = useRef<string | null>(null)
+  /** The selection the veil last faded in for: a redraw (typing changes the graph) doesn't fade it again. */
+  const veiled = useRef<string | null>(null)
+  /** The map's elements copied above the veil now, their own labels hidden. */
+  const covered = useRef<Element[]>([])
   // Panel insets, as plain values so effects re-run when a panel opens or closes.
   const {
     top: insetTop = 0,
@@ -322,6 +327,8 @@ export function TreeMap({
     const els = elements.current
     const visible = (x: number, y: number) => zoom.isVisible(x, y, area)
     for (const core of els.cores.values()) core.removeAttribute('data-sel')
+    for (const el of covered.current) el.removeAttribute('data-covered')
+    covered.current = []
     overlay.replaceChildren()
     delete stage.dataset.focus
     const tree = selected === null ? undefined : family.treeOf.get(selected)
@@ -347,7 +354,10 @@ export function TreeMap({
       }
     }
     const lit = matches?.ids ?? []
-    if ((!known || onCore) && !lit.length) return
+    if ((!known || onCore) && !lit.length) {
+      veiled.current = null
+      return
+    }
     stage.dataset.focus = ''
     // Copies keep their Tree's place: each Tree's go in a group moved like the Tree.
     const groups = new Map<PlacedTree, Element>()
@@ -369,6 +379,10 @@ export function TreeMap({
       const copy = el.cloneNode(true) as Element
       if (attribute) copy.setAttribute(attribute, '')
       layer(family.treeOf.get(id)).append(copy)
+      // The original's label hides under its copy: the veil only dims it, and a bold copy
+      // (the selection) is wider, so both would show, one beside the other.
+      el.setAttribute('data-covered', '')
+      covered.current.push(el)
     }
 
     const veil = document.createElementNS(SVG_NS, 'rect')
@@ -377,6 +391,8 @@ export function TreeMap({
     veil.setAttribute('y', '-100000')
     veil.setAttribute('width', '200000')
     veil.setAttribute('height', '200000')
+    if (veiled.current === selected) veil.style.animation = 'none'
+    veiled.current = selected
     overlay.append(veil)
 
     for (const id of lit) add(id, els.nodes.get(id) ?? els.cores.get(id), 'data-match')
@@ -608,30 +624,41 @@ export function TreeMap({
             Leaves
           </span>
         </div>
-        <div className={`${controls.panel} ${ui.legend}`}>
-          <span>
-            <span className={controls.glyph} data-kind="leaf" />
-            Leaf
-          </span>
-          <span>
-            <span className={controls.glyph} data-kind="sprout" />
-            Note with sub-notes
-          </span>
-          <span>
-            <span className={controls.glyph} data-kind="branch" />
-            Branch
-          </span>
-          <span>
-            <span className={ui.threadSwatch} />
-            Thread (@mention)
-          </span>
-          {graph.ghosts.size > 0 && (
+        {/* The key to the map, behind a button: shown on hover or focus (owner's request). */}
+        <div className={ui.legendHost}>
+          <button
+            type="button"
+            className={`${controls.panel} ${ui.legendButton}`}
+            aria-label="Legend"
+            aria-describedby={legendId}
+          >
+            <Icon name="book" />
+          </button>
+          <div id={legendId} role="tooltip" className={`${controls.panel} ${ui.legend}`}>
             <span>
-              <span className={controls.glyph} data-kind="ghost" />
-              Not written yet
+              <span className={controls.glyph} data-kind="leaf" />
+              Note
             </span>
-          )}
-          <span>Size = words written</span>
+            <span>
+              <span className={controls.glyph} data-kind="sprout" />
+              Note with sub-notes
+            </span>
+            <span>
+              <span className={controls.glyph} data-kind="branch" />
+              Group
+            </span>
+            <span>
+              <span className={ui.threadSwatch} />
+              Thread (@mention)
+            </span>
+            {graph.ghosts.size > 0 && (
+              <span>
+                <span className={controls.glyph} data-kind="ghost" />
+                Not written yet
+              </span>
+            )}
+            <span className={ui.legendNote}>Bigger dot = more words written</span>
+          </div>
         </div>
       </div>
     </div>

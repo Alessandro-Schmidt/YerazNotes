@@ -50,7 +50,7 @@ import { useDeleteKey } from './deleteKey'
 import { colorVar } from './theme'
 import { ProjectTabs } from './ProjectTabs'
 import { Divider, TopBar } from './TopBar'
-import { SHEET_HEIGHT, leftOf, savePinSide, savedPinSide, widthStore, widthVars } from './panels'
+import { SHEET_HEIGHT, savePinSide, savedPinSide, widthStore, widthVars } from './panels'
 import { PHONE, useMedia } from './useMedia'
 
 const TITLE = 'All projects'
@@ -241,8 +241,8 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           <FamilyMenu all />
         </div>
         {!phone && <ViewSwitcher />}
-        <Search repo={target?.ref.repo ?? ''} lit={!!found} onMatches={setFound} />
         <div className={styles.toggles}>
+          <Search repo={target?.ref.repo ?? ''} lit={!!found} onMatches={setFound} />
           <SaveAndRefresh repos={trees.map((t) => t.repo)} />
           {target && (
             <button
@@ -288,6 +288,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
             <Suspense fallback={<p className={styles.placeholder} aria-busy="true" />}>
               <View
                 key={view}
+                imageUrl={imageUrl}
                 tree={all}
                 graph={merged}
                 selected={selected}
@@ -341,7 +342,6 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
                     expanded={false}
                     pinned
                     slot={slot}
-                    partner={leftOf(pinSide, stack.length, slot)}
                     kept
                     onSwap={swapPinSide}
                     href={(id) => `#${allHref(f.ref.repo, id)}`}
@@ -368,7 +368,6 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
                     docked={panel === 'dock'}
                     created={created === path}
                     pinned={stackShown}
-                    partner={stackShown ? leftOf(pinSide, stack.length) : undefined}
                     kept={pinned.includes(selected!)}
                     onPin={
                       phone || panel !== 'float'

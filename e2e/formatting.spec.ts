@@ -34,11 +34,19 @@ test('Ctrl/⌘+B wraps the selection, again takes it off; a typed * wraps it too
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('Make this *word* strong.')
 })
 
-test('Ctrl/⌘+K in the editor is the link shortcut, not Search', async ({ page }) => {
+test('Ctrl/⌘+K in the editor: selected text becomes a link, otherwise Search opens', async ({
+  page,
+}) => {
   test.skip(isPhone(page), 'Keyboard tests run on desktop engines')
-  await page.locator('.cm-content').getByText('Make this word strong.').click()
+  const editor = page.locator('.cm-content')
+  await editor.getByText('Make this word strong.').click()
+  await page.keyboard.press('ControlOrMeta+k')
+  await expect(page.getByRole('dialog', { name: 'Search' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await editor.getByText('Make this word strong.').dblclick()
   await page.keyboard.press('ControlOrMeta+k')
   await expect(page.getByRole('dialog', { name: 'Search' })).toHaveCount(0)
+  await expect(editor).toContainText('](')
 })
 
 test('bullets draw as bullets, the dash shown only under the cursor', async ({ page }) => {
@@ -117,6 +125,20 @@ test('Tab nests a list item under the one above, Shift+Tab brings it out', async
   await page.keyboard.press('Tab')
   await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- one\n  - two\n')
+  // Drawn under the text of the item above: its bullet starts where "one" starts.
+  await editor.getByText('Make this word strong.').click()
+  const one = await editor
+    .locator('.cm-bullet')
+    .first()
+    .evaluate((dot) => {
+      const text = [...dot.parentElement!.childNodes].find((n) => n.textContent?.includes('one'))!
+      const range = document.createRange()
+      range.setStart(text, text.textContent!.indexOf('one'))
+      return range.getBoundingClientRect().x
+    })
+  const bullet = (await editor.locator('.cm-bullet').nth(1).boundingBox())!
+  expect(Math.abs(bullet.x - one)).toBeLessThan(2)
+  await editor.getByText('two').click()
   await page.keyboard.press('Shift+Tab')
   await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- one\n- two\n')
@@ -133,4 +155,54 @@ test('on a phone, the bar indents and outdents a list item', async ({ page, fake
   await bar.getByRole('button', { name: 'Outdent' }).click()
   await page.keyboard.press('ControlOrMeta+s')
   await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- one\n- two\n')
+})
+
+test('a nested item’s checkbox, bullet or number starts where the text above starts', async ({
+  page,
+  fake,
+}) => {
+  await fake.repo(REPO).commit({
+    message: 'n',
+    additions: [
+      {
+        path: LEAF,
+        contents:
+          '# Format\n\nTop.\n\n- [ ] task\n  - [ ] sub task\n\n1. first\n   - under first\n',
+      },
+    ],
+  })
+  await page.reload()
+  const editor = page.locator('.cm-content')
+  await expect(editor).toContainText('under first')
+  const textX = (word: string) =>
+    editor.evaluate((root, word) => {
+      const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        const i = n.textContent!.indexOf(word)
+        if (i < 0) continue
+        const range = document.createRange()
+        range.setStart(n, i)
+        range.setEnd(n, i + 1)
+        return range.getBoundingClientRect().x
+      }
+      return NaN
+    }, word)
+  const x = async (sel: string, i: number) => (await editor.locator(sel).nth(i).boundingBox())!.x
+  expect(Math.abs((await x('.cm-task', 1)) - (await textX('task')))).toBeLessThan(2)
+  expect(Math.abs((await x('.cm-bullet', 0)) - (await textX('first')))).toBeLessThan(2)
+})
+
+test('Backspace at an item’s start takes its bullet away whole; no Markdown shows', async ({
+  page,
+  fake,
+}) => {
+  test.skip(isPhone(page), 'Keyboard tests run on desktop engines')
+  const editor = page.locator('.cm-content')
+  await editor.getByText('two').click()
+  await page.keyboard.press('End')
+  for (let i = 0; i < 'two'.length; i++) await page.keyboard.press('ArrowLeft')
+  await page.keyboard.press('Backspace')
+  await expect(editor).not.toContainText('-')
+  await page.keyboard.press('ControlOrMeta+s')
+  await expect.poll(() => fake.repo(REPO).read(LEAF)).toContain('- one\ntwo\n')
 })

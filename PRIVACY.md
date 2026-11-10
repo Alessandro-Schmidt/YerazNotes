@@ -45,8 +45,12 @@ None of this is a cookie or a tracker, so the app asks for no consent.
   desktop app also reads the page once for its title and description (kept on your device).
   The site sees your IP address.
 - **Links** you click open in your browser like any link.
+- **Checking for updates**, only when you press *Check for updates* on the page the Yeraz logo
+  opens: the app asks GitHub's API for the newest release of Yeraz, without your token. GitHub
+  sees your IP address. *Update* then reloads the web app; in the desktop app it opens the
+  release's page, where you download the installer yourself.
 
-The desktop app connects to nothing else: it has no updater and no telemetry.
+The desktop app connects to nothing else: it updates nothing by itself and has no telemetry.
 
 ## Your rights
 

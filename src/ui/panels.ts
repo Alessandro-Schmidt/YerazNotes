@@ -97,6 +97,35 @@ export const widthVar = (panel: Panel) => `--${panel}-w`
 export const widthVars = (w: Widths) =>
   Object.fromEntries((Object.keys(w) as Panel[]).map((p) => [widthVar(p), `${w[p]}px`]))
 
+/** localStorage key of each note's own width, by its id: a note keeps its width wherever it shows. */
+export const NOTE_WIDTHS_KEY = 'yeraz-note-widths'
+
+const noteWidths = (store = storage()): Record<string, number> => {
+  try {
+    return JSON.parse(store?.getItem(NOTE_WIDTHS_KEY) ?? '{}') as Record<string, number>
+  } catch {
+    return {}
+  }
+}
+
+/** A note's own width, or null when it has none (the Peek's initial width). */
+export const noteWidth = (id: string, store = storage()): number | null => {
+  const w = noteWidths(store)[id]
+  return typeof w === 'number' && Number.isFinite(w) ? clampWidth('peek', w) : null
+}
+
+/** Saves a note's own width; null forgets it. */
+export function saveNoteWidth(id: string, width: number | null, store = storage()): void {
+  const all = noteWidths(store)
+  if (width === null) delete all[id]
+  else all[id] = clampWidth('peek', width)
+  try {
+    store?.setItem(NOTE_WIDTHS_KEY, JSON.stringify(all))
+  } catch {
+    // Refused storage: the width holds for this visit only.
+  }
+}
+
 /** Which side a kept (pinned) note stays on; new notes open on the other side. */
 export type PinSide = 'left' | 'right'
 
@@ -118,18 +147,4 @@ export function savePinSide(side: PinSide, store = storage()): void {
   } catch {
     // Refused storage: the side still changes for this visit.
   }
-}
-
-/**
- * The column on a stacked note's left, which trades width with it across their shared edge
- * (undefined for the leftmost, whose edge is free). `slot` is a kept note's place, or
- * undefined for the opened note; `kept` is how many are kept.
- */
-export function leftOf(side: PinSide, kept: number, slot?: number): Panel | undefined {
-  if (kept === 0) return undefined
-  if (side === 'left')
-    return slot === undefined ? `pin${kept - 1}` : slot > 0 ? `pin${slot - 1}` : undefined
-  // Right: the opened note first, then the kept ones from the last to the first.
-  if (slot === undefined) return undefined
-  return slot === kept - 1 ? 'peek' : `pin${slot + 1}`
 }

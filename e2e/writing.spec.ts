@@ -544,3 +544,39 @@ test('Ctrl/Cmd+Y writes a new note and +Shift+Y a sub-note, even in the editor; 
   // Not CodeMirror's redo: the text is as it was.
   await expect(page.locator('.cm-content')).toContainText('Kept.')
 })
+
+test('@ with a new name writes a note inside a group too, from the group’s own text', async ({
+  page,
+  graph,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'typing')
+  const group = [...graph.nodes.values()].find((n) => n.kind === 'branch' && n.parent)!
+  await openEditor(page, group.id)
+  await page.locator('.cm-content').click()
+  await page.keyboard.press('ControlOrMeta+End')
+  await page.keyboard.type(' @Zebrafish')
+  await page.getByRole('option', { name: /Zebrafish/ }).click()
+  // Written in the group at once (committed by autosave later): listed inside it.
+  await expect(page.getByRole('link', { name: 'Zebrafish', exact: true })).toHaveAttribute(
+    'href',
+    new RegExp(`${group.id}/zebrafish[.]md$`),
+  )
+})
+
+test('a note becomes a group and back, from its Options', async ({ page, fake, graph }) => {
+  const leaf = plainLeaf(graph)
+  await openEditor(page, leaf.id)
+  const options = page.getByRole('button', { name: 'Options' })
+  await options.click()
+  await page.getByRole('menuitem', { name: 'Make it a group…' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Make it a group' }).click()
+  const readme = `${leaf.id.slice(0, leaf.id.lastIndexOf('/') + 1)}${leaf.title}/README.md`
+  await expect.poll(() => fake.repo(REPO).read(readme)).toContain(leaf.title)
+  await page.getByRole('button', { name: 'Options' }).click()
+  await page.getByRole('menuitem', { name: 'Make it a note…' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Make it a note' }).click()
+  await expect
+    .poll(() => fake.repo(REPO).read(readme.replace('/README.md', '.md')))
+    .toContain(leaf.title)
+})

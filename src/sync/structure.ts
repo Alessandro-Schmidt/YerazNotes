@@ -146,6 +146,14 @@ export const titlesIn = (text: string): string[] =>
     .map((line) => line.replace(/^\s*[-*+]\s+/, '').trim())
     .filter(Boolean)
 
+// Kept as typed (owner's decision), minus what a folder name can't hold.
+const folderName = (name: string) =>
+  name
+    .replace(/[/\\]+/g, '-')
+    .replace(/^\.+/, '')
+    .replace(/\s+/g, ' ')
+    .trim() || 'Untitled branch'
+
 /** A branch is a folder; git keeps no empty folders, so it starts with one leaf. */
 export function planNewBranch(
   graph: Graph,
@@ -153,14 +161,7 @@ export function planNewBranch(
   name: string,
   firstLeaf = 'Untitled',
 ): { branch: string; leaf: FileChange } {
-  // Kept as typed (owner's decision), minus what a folder name can't hold.
-  const clean =
-    name
-      .replace(/[/\\]+/g, '-')
-      .replace(/^\.+/, '')
-      .replace(/\s+/g, ' ')
-      .trim() || 'Untitled branch'
-  const folder = unique(clean, takenNames(graph, parentId), ' ')
+  const folder = unique(folderName(name), takenNames(graph, parentId), ' ')
   const branch = `${folderOf(graph, parentId)}${folder}`
   return { branch, leaf: { path: `${branch}/${slugify(firstLeaf)}.md`, text: leafText(firstLeaf) } }
 }
@@ -331,4 +332,57 @@ export function newNoteAction(
   const node = selected !== null ? graph.nodes.get(selected) : undefined
   if (!node || node.kind === 'root') return sub ? null : { kind: 'new-leaf', parent: ROOT }
   return { kind: 'new-leaf', parent: sub ? node.id : (node.parent ?? ROOT) }
+}
+
+/** Every file `planConvert` reads: as for a move, its files and the ones linking to them. */
+export const convertReads = moveReads
+
+/**
+ * A note becomes a group, or a group a note (owner's request), links rewritten in the same
+ * change set. A note's group is named by its title: the note's text becomes its README.md (so
+ * its icon and look stay), its sub-notes the group's contents. A group's note is its folder's
+ * name + `.md`: its README.md's text, or a title from its name; its contents become sub-notes.
+ */
+export function planConvert(
+  graph: Graph,
+  textOf: (path: string) => string,
+  id: string,
+): { changes: FileChange[]; id: string } {
+  const node = graph.nodes.get(id)
+  if (node?.kind !== 'leaf' && node?.kind !== 'branch')
+    throw new StructureError('Only notes and groups can be converted')
+  const parent = node.parent ?? ROOT
+  const moves = new Map<string, string>()
+  const changes: FileChange[] = []
+  let next: string
+  if (node.kind === 'leaf') {
+    const taken = takenNames(graph, parent)
+    taken.delete(baseName(id).toLowerCase())
+    next = `${folderOf(graph, parent)}${unique(folderName(node.title), taken, ' ')}`
+    const oldPrefix = id.slice(0, -'.md'.length)
+    for (const p of filesUnder(graph, id)) {
+      if (p === `${oldPrefix}/${BRANCH_TEXT}`)
+        throw new StructureError(`A sub-note is already called ${BRANCH_TEXT}`)
+      moves.set(p, p === id ? `${next}/${BRANCH_TEXT}` : next + p.slice(oldPrefix.length))
+    }
+  } else {
+    next = `${id}.md`
+    const siblings = whole(graph).model.nodes.get(parent)!.children
+    if (siblings.some((c) => c !== id && c.toLowerCase() === next.toLowerCase()))
+      throw new StructureError(`A note is already called ${baseName(id)}`)
+    const readme = fileOf(graph, id)
+    if (readme) moves.set(readme, next)
+    else changes.push({ path: next, text: leafText(node.title) })
+  }
+  for (const [from, to] of moves) {
+    changes.push({ path: from, text: null })
+    changes.push({ path: to, text: rewriteLinks(textOf(from), moves) })
+  }
+  for (const path of linkingFiles(graph, id)) {
+    if (moves.has(path)) continue
+    const before = textOf(path)
+    const after = rewriteLinks(before, moves)
+    if (after !== before) changes.push({ path, text: after })
+  }
+  return { changes, id: next }
 }

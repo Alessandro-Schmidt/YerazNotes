@@ -28,6 +28,8 @@ export interface ViewProps {
   /** Opens a node as a full page. */
   onOpen(id: string): void
   onAction(action: StructureAction): void
+  /** The address of a node's image icon (`/assets/…` or https). */
+  imageUrl?: (id: string, src: string) => Promise<string | null>
 }
 
 /** The Tree a node is in: its ancestor at the top of the Family (itself for a Tree). */

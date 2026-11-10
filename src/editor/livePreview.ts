@@ -62,7 +62,6 @@ import {
   typingLine,
   sourceShown,
 } from './elements'
-import { titleShown } from './emptyText'
 import { askHost } from './insertMenu'
 import { CODE_ICON, languageIcon } from './languageIcons'
 import { logo, menu } from './menu'
@@ -778,10 +777,8 @@ function build(view: EditorView): Built {
   /** Where alerts' `[!NOTE]` markers start: they aren't links. */
   const markers = new Set<number>()
 
-  // Line 1 is the title, the leaf's heading; line 2's metadata is hidden by metaLine.
-  // A branch's text hides its heading instead (emptyText.ts): nothing of it is drawn.
-  const titled = state.facet(titleShown)
-  if (titled) decorations.push(title.range(0))
+  // Line 1 is the title, a leaf's or a branch's heading; line 2's metadata is hidden by metaLine.
+  decorations.push(title.range(0))
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -791,7 +788,6 @@ function build(view: EditorView): Built {
         const name = node.name
         const heading = /^ATXHeading(\d)$/.exec(name)
         if (heading) {
-          if (!titled && node.from === 0) return false
           decorations.push(line(`cm-h${heading[1]}`).range(state.doc.lineAt(node.from).from))
           return
         }
@@ -940,6 +936,20 @@ function build(view: EditorView): Built {
             if (!touched(node.from, node.to)) decorations.push(hide.range(node.from, node.to))
             return
           case 'ListMark': {
+            // A nested item's spaces give way to one step per level: it starts under the text
+            // of the item above, whatever the font (a bullet and a checkbox are one step wide).
+            const ln = state.doc.lineAt(node.from)
+            if (node.from > ln.from && !state.sliceDoc(ln.from, node.from).trim()) {
+              let depth = -1
+              for (let p = node.node.parent; p; p = p.parent) if (p.name === 'ListItem') depth++
+              decorations.push(
+                Decoration.line({
+                  class: 'cm-nested',
+                  attributes: { style: `--depth: ${depth}` },
+                }).range(ln.from),
+                hide.range(ln.from, node.from),
+              )
+            }
             // A bullet is drawn as one (`-`, `*`, `+` all alike); a task's goes with its box.
             const bullet = /^[-*+]$/.test(state.sliceDoc(node.from, node.to))
             const task = node.node.parent?.getChild('Task')
@@ -947,7 +957,10 @@ function build(view: EditorView): Built {
               decorations.push(
                 Decoration.replace({ widget: new BulletWidget() }).range(node.from, node.to),
               )
-            else decorations.push(mark('cm-list-mark').range(node.from, node.to))
+            else
+              decorations.push(
+                mark(bullet ? 'cm-list-mark' : 'cm-list-mark cm-number').range(node.from, node.to),
+              )
             return
           }
           case 'TaskMarker': {

@@ -23,6 +23,8 @@ export interface MindNode {
   kind: 'tree' | 'branch' | 'leaf'
   sprout: boolean
   label: string
+  /** An image icon (line 2 `icon`), drawn between the dot and the label. */
+  image?: string
   words: string
   /** Where its label ends, away from the core: children's edges start here. */
   end: number
@@ -30,6 +32,12 @@ export interface MindNode {
   pill: number
   tree: string
 }
+
+/** An image icon's size (px), beside a node's label. */
+export const MIND_IMAGE = 14
+
+/** Where a node's label starts: past its dot and its image icon. */
+export const labelX = (n: MindNode) => n.x + n.side * (n.r + 8 + (n.image ? MIND_IMAGE + 4 : 0))
 
 export interface MindLayout {
   nodes: MindNode[]
@@ -141,7 +149,9 @@ export function layoutMind(graph: Graph, options: MindOptions): MindLayout {
   }
 
   // Columns: each level starts past the widest label of the one before.
-  const labelOf = (n: GraphNode) => (n.icon ? `${n.icon} ${n.title}` : n.title)
+  // An image icon takes an emoji's place, beside the label.
+  const labelOf = (n: GraphNode) => (n.icon && !n.image ? `${n.icon} ${n.title}` : n.title)
+  const imageW = (n: GraphNode) => (n.image ? MIND_IMAGE + 4 : 0)
   const sizeOf = (depth: number) => (depth === 2 ? (phone ? 13.5 : LABEL[2]) : LABEL.deep)
   const pillW = (n: GraphNode) =>
     textWidth(n.title.toUpperCase(), phone ? 10 : 10.5, 0.14) + (phone ? 22 : 26)
@@ -153,6 +163,7 @@ export function layoutMind(graph: Graph, options: MindOptions): MindLayout {
         ? pillW(n)
         : mindDot(n, phone) +
           8 +
+          imageW(n) +
           textWidth(labelOf(n), sizeOf(depth)) +
           (n.kind === 'leaf' ? 7 + textWidth(compactWords(n.words), 10.5) : 0)
     widest.set(depth, Math.max(widest.get(depth) ?? 0, w))
@@ -185,6 +196,7 @@ export function layoutMind(graph: Graph, options: MindOptions): MindLayout {
           side *
             (r +
               8 +
+              imageW(n) +
               textWidth(label, sizeOf(depth)) +
               (words && !phone ? 7 + textWidth(words, 10.5) : 0))
     const node: MindNode = {
@@ -197,6 +209,7 @@ export function layoutMind(graph: Graph, options: MindOptions): MindLayout {
       kind: depth === 1 ? 'tree' : n.kind === 'branch' ? 'branch' : 'leaf',
       sprout: n.kind === 'leaf' && n.children.length > 0,
       label,
+      ...(depth > 1 && n.image && { image: n.image }),
       words: phone ? '' : words,
       end,
       pill,

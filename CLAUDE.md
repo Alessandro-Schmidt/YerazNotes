@@ -43,6 +43,8 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
 - `src/views/` the other views (`design/views/`): `views.ts` (ids, saved per device), `ViewSwitcher.tsx`, `index.ts` (lazy chunks),
   `Canvas.tsx` (drawn views' stage: camera, selection layer), one file per view, pure layouts in `layout/`;
   Settings › Views (`ui/ViewsSettings.tsx`) and › Family colours (`ui/FamilyColours.tsx`, `.yeraz.json` `color`, `linkColor`)
+- `src/ui/update.ts` the version (`src-tauri/tauri.conf.json`'s, through vite.config.ts) and *Check for updates* on the introduction
+  (the latest GitHub Release, no token; the web reloads into it, the desktop links to the installers)
 - `src/read/` `render.ts` (markdown-it, lazy) · `Peek.tsx` · `History.tsx` (past versions, diff, restore) · `src/ui/` App, FamilyView, FamilyMenu, Start, Explorer, TokenScreen,
   theme (saved per device in `localStorage`, applied before paint by `index.html`), `panels.ts` + `ResizeHandle.tsx` (Explorer and Peek widths, per device), Appearance (`#/settings/appearance`),
   `customTheme.ts` + `ThemeEditor.tsx` (custom themes), `contrast.ts` (`readable` adjusts a failing colour), `Hidden.tsx` (Settings › Hidden),
@@ -79,9 +81,9 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
   `coverAspect` is `slim`, `tall` or `"W:H"` (3:1 when absent);
   `hidden: true` takes the leaf (or, in a README.md, the branch or Tree) off the map with everything under it (still listed, marked, in the Explorer and its parent's Peek, where a click shows it again; Settings › Hidden too)
 - [ ] Sub-leaves live in a sibling folder with the same name (`keycloak.md` + `keycloak/`)
-- [ ] A branch is a folder without a same-named `.md`; its name is the folder name, as typed
-- [ ] A branch's text is `README.md` in its folder (exact name): not a leaf, never renames the branch, but its
-  line 1 emoji and line 2 are the branch's icon and look (a Tree's too); the root's `README.md` and one in a
+- [ ] A branch is a folder without a same-named `.md`; its folder name is kept as typed, and is its title until its text has a heading
+- [ ] A branch's text is `README.md` in its folder (exact name): not a leaf, but its line 1 is the branch's title
+  (its folder keeps its name, as a leaf's file does), its emoji and line 2 the branch's icon and look (a Tree's too); the root's `README.md` and one in a
   leaf's sibling folder stay leaves
 - [ ] Threads are root-relative Markdown links (`[Keycloak](/identity/keycloak.md)`)
 - [ ] An image's width ends its title: `![Realm](/assets/realm.png "width=50%")`, a percent of the column

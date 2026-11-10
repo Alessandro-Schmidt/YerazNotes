@@ -9,6 +9,7 @@
 //   POST /user/repos
 //   PUT  /repos/{owner}/{name}/contents/{path}   (one file; the first commit of an empty repository)
 //   PATCH /repos/{o}/{r}                                 rename (name only)
+//   GET  /repos/{o}/{r}/releases/latest                  Yeraz's own newest release (no token)
 // plus a request log and fault switches. Error messages copy GitHub's where known;
 // the nightly contract test against real GitHub keeps them honest.
 
@@ -34,7 +35,15 @@ export interface LogEntry {
   path: string
   status: number
   kind:
-    'head' | 'tree' | 'blob' | 'graphql' | 'create-repo' | 'rename-repo' | 'put-file' | 'unknown'
+    | 'head'
+    | 'tree'
+    | 'blob'
+    | 'graphql'
+    | 'create-repo'
+    | 'rename-repo'
+    | 'put-file'
+    | 'release'
+    | 'unknown'
   /** GraphQL only. */
   operation?: 'query' | 'mutation'
   /** Number of blob texts returned. */
@@ -106,6 +115,8 @@ export function createFakeGitHub(options: { login?: string; tokens?: string[] } 
   const login = options.login ?? 'you'
   const repos = new Map<string, FakeRepo>()
   const log: LogEntry[] = []
+  /** Releases by repository, oldest first; not tied to a FakeRepo (Yeraz's own needn't exist). */
+  const releases = new Map<string, { tag: string; draft: boolean; prerelease: boolean }[]>()
   const faults: Faults = {
     offline: false,
     serverError: false,
@@ -332,6 +343,32 @@ export function createFakeGitHub(options: { login?: string; tokens?: string[] } 
       html_url: `https://github.com/${repo.nameWithOwner}`,
       url: `${API}/repos/${repo.nameWithOwner}`,
       default_branch: repo.defaultBranch,
+    })
+  }
+
+  /** Publishes a release of `nameWithOwner` (the newest added is the latest). */
+  function addRelease(
+    nameWithOwner: string,
+    tag: string,
+    { draft = false, prerelease = false }: { draft?: boolean; prerelease?: boolean } = {},
+  ) {
+    const list = releases.get(nameWithOwner.toLowerCase()) ?? []
+    list.push({ tag, draft, prerelease })
+    releases.set(nameWithOwner.toLowerCase(), list)
+  }
+
+  /** GET /repos/{owner}/{name}/releases/latest: drafts and pre-releases never count. */
+  function latestRelease(owner: string, name: string): FakeResponse {
+    const release = (releases.get(key(owner, name)) ?? [])
+      .filter((r) => !r.draft && !r.prerelease)
+      .at(-1)
+    if (!release) return restError(404, 'Not Found')
+    return json(200, {
+      tag_name: release.tag,
+      name: release.tag,
+      html_url: `https://github.com/${owner}/${name}/releases/tag/${release.tag}`,
+      draft: false,
+      prerelease: false,
     })
   }
 
@@ -709,6 +746,7 @@ export function createFakeGitHub(options: { login?: string; tokens?: string[] } 
     const blob = url.pathname.match(/^\/repos\/([^/]+)\/([^/]+)\/git\/blobs\/([0-9a-f]{40})$/)
     const repoPath = url.pathname.match(/^\/repos\/([^/]+)\/([^/]+)$/)
     const contents = url.pathname.match(/^\/repos\/([^/]+)\/([^/]+)\/contents\/(.+)$/)
+    const release = url.pathname.match(/^\/repos\/([^/]+)\/([^/]+)\/releases\/latest$/)
     const kind: LogEntry['kind'] =
       method === 'PATCH' && repoPath
         ? 'rename-repo'
@@ -720,11 +758,13 @@ export function createFakeGitHub(options: { login?: string; tokens?: string[] } 
               ? 'tree'
               : method === 'GET' && blob
                 ? 'blob'
-                : method === 'POST' && url.pathname === '/graphql'
-                  ? 'graphql'
-                  : method === 'POST' && url.pathname === '/user/repos'
-                    ? 'create-repo'
-                    : 'unknown'
+                : method === 'GET' && release
+                  ? 'release'
+                  : method === 'POST' && url.pathname === '/graphql'
+                    ? 'graphql'
+                    : method === 'POST' && url.pathname === '/user/repos'
+                      ? 'create-repo'
+                      : 'unknown'
     const entry: LogEntry = { method, path: url.pathname + url.search, status: 0, kind, blobs: 0 }
     log.push(entry)
 
@@ -776,6 +816,9 @@ export function createFakeGitHub(options: { login?: string; tokens?: string[] } 
       response = auth
         ? await putFile(owner!, name!, decodeURIComponent(path!), request)
         : restError(401, 'Requires authentication')
+    } else if (kind === 'release') {
+      const [, owner, name] = release!
+      response = latestRelease(owner!, name!)
     } else if (kind === 'rename-repo') {
       const [, owner, name] = repoPath!
       response = auth
@@ -794,6 +837,7 @@ export function createFakeGitHub(options: { login?: string; tokens?: string[] } 
     log,
     faults,
     addRepo,
+    addRelease,
     repo,
     handle,
     /** Clears the request log, keeping the same array. */
