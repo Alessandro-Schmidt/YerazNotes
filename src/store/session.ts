@@ -188,6 +188,8 @@ export interface SessionState {
    * `hidden` of the leaf, or of the branch's README.md, which is written when it has none.
    */
   setHidden(repo: string, id: string, hidden: boolean): Promise<void>
+  /** Draws a node on the map without what is under it, or with it again: its line 2's `collapsed`. */
+  setCollapsed(repo: string, id: string, collapsed: boolean): Promise<void>
   /** Commits a Tree's pending edits now. */
   flush(repo: string): Promise<void>
   /** Commits every Tree's pending edits now (app hidden, Ctrl/Cmd+S, back online). */
@@ -556,6 +558,22 @@ export function createSession(deps: {
         autosaves.set(key, save)
       }
       return save
+    }
+
+    /** A flag in line 2 of a leaf, or of a branch's README.md (written when it has none). */
+    const flag = async (repo: string, id: string, name: 'hidden' | 'collapsed', on: boolean) => {
+      const key = repo.toLowerCase()
+      await pulls.get(key)
+      const graph = get().data[key]?.graph
+      const node = graph?.nodes.get(id) ?? graph?.hidden.find((h) => h.id === id)
+      if (!graph || !node) throw new Error("This leaf isn't in the Family.")
+      const path = node.kind === 'leaf' ? id : branchText(id)
+      const text = get().files(repo).includes(path) ? await get().textOf(repo, path) : ''
+      const meta = { ...(parseMeta(text.split(/\r\n|\r|\n/)[1]) ?? {}) }
+      if (on) meta[name] = true
+      else delete meta[name]
+      const file = id.slice(id.lastIndexOf('/') + 1)
+      await get().apply(repo, [{ path, text: withMeta(text, meta, humanize(file)) }])
     }
 
     return {
@@ -1099,20 +1117,8 @@ export function createSession(deps: {
         return next
       },
 
-      async setHidden(repo, id, hidden) {
-        const key = repo.toLowerCase()
-        await pulls.get(key)
-        const graph = get().data[key]?.graph
-        const node = graph?.nodes.get(id) ?? graph?.hidden.find((h) => h.id === id)
-        if (!graph || !node) throw new Error("This leaf isn't in the Family.")
-        const path = node.kind === 'leaf' ? id : branchText(id)
-        const text = get().files(repo).includes(path) ? await get().textOf(repo, path) : ''
-        const meta = { ...(parseMeta(text.split(/\r\n|\r|\n/)[1]) ?? {}) }
-        if (hidden) meta.hidden = true
-        else delete meta.hidden
-        const name = id.slice(id.lastIndexOf('/') + 1)
-        await get().apply(repo, [{ path, text: withMeta(text, meta, humanize(name)) }])
-      },
+      setHidden: (repo, id, hidden) => flag(repo, id, 'hidden', hidden),
+      setCollapsed: (repo, id, collapsed) => flag(repo, id, 'collapsed', collapsed),
 
       async flush(repo) {
         const key = repo.toLowerCase()

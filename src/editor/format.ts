@@ -4,7 +4,16 @@
 // `` ` ``, `~`, `[`, `(`, `"`) wraps it instead of replacing it: the way to format on a phone.
 
 import { indentLess, indentMore } from '@codemirror/commands'
-import { EditorSelection, Prec, type EditorState, type TransactionSpec } from '@codemirror/state'
+import { insertNewlineContinueMarkup } from '@codemirror/lang-markdown'
+import { syntaxTree } from '@codemirror/language'
+import {
+  EditorSelection,
+  Prec,
+  type ChangeSpec,
+  type EditorState,
+  type Transaction,
+  type TransactionSpec,
+} from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 
 /** Each selection wrapped in `open`…`close`, or unwrapped where it already is. */
@@ -136,7 +145,56 @@ export function unlist(state: EditorState): TransactionSpec | null {
   return { changes: { from: line.from, to: main.head } }
 }
 
+const EMPTY_ITEM = /^\s*([-*+]|\d+[.)])\s+(\[[ xX]\]\s*)?$/
+
+/**
+ * Enter in a list item (issue feedback: a to-do list jumped two lines). Markdown's own Enter
+ * moves an empty item down a line, which makes the list loose, and from then on puts a blank
+ * line before every new item. Here an empty item ends the list (a nested one comes out a
+ * level), and a new item always goes on the very next line. Null outside a list.
+ */
+export function listEnter(state: EditorState): TransactionSpec | null {
+  const { main } = state.selection
+  if (!main.empty || state.selection.ranges.length > 1) return null
+  const line = state.doc.lineAt(main.head)
+  const m = ITEM.exec(line.text)
+  if (!m || main.head < line.from + m[0].length) return null
+  let node: ReturnType<typeof syntaxTree>['topNode'] | null = syntaxTree(state).resolveInner(
+    main.head,
+    -1,
+  )
+  while (node && node.name !== 'ListItem') node = node.parent
+  if (!node) return null
+  if (EMPTY_ITEM.test(line.text) && main.head === line.to)
+    return indentList(state, -1) ?? { changes: { from: line.from, to: line.to } }
+  let tr: Transaction | null = null
+  if (!insertNewlineContinueMarkup({ state, dispatch: (t) => (tr = t) }) || !tr) return null
+  const done: Transaction = tr
+  const changes: ChangeSpec[] = []
+  let cursor = done.newSelection.main.head
+  done.changes.iterChanges((fromA, toA, _fromB, toB, inserted) => {
+    const text = inserted.toString()
+    const tight = text.replace(/^\n[ \t>]*\n/, '\n')
+    if (tight !== text && toB <= cursor) cursor -= text.length - tight.length
+    changes.push({ from: fromA, to: toA, insert: tight })
+  })
+  return {
+    changes,
+    selection: { anchor: cursor },
+    scrollIntoView: true,
+    userEvent: 'input',
+  }
+}
+
 export const formatKeymap = keymap.of([
+  {
+    key: 'Enter',
+    run: (view) => {
+      const spec = listEnter(view.state)
+      if (spec) view.dispatch(spec)
+      return !!spec
+    },
+  },
   { key: 'Tab', run: indentCommand, shift: outdentCommand },
   {
     key: 'Backspace',

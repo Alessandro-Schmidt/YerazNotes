@@ -1,6 +1,8 @@
 import { EditorState, type TransactionSpec } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
-import { indentList, link, toggleWrap, unlist } from './format'
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
+import { ensureSyntaxTree } from '@codemirror/language'
+import { indentList, link, listEnter, toggleWrap, unlist } from './format'
 
 /** `doc` with `[` `]` marking the selection, after the change; the new selection marked too. */
 function apply(doc: string, change: (state: EditorState) => TransactionSpec) {
@@ -83,5 +85,43 @@ describe('unlist: Backspace at an item’s text start drops its marker whole', (
   it('anywhere else, Backspace is its own', () => {
     expect(at('- one', 3)).toBeNull()
     expect(at('plain', 0)).toBeNull()
+  })
+})
+
+describe('listEnter', () => {
+  /** Enter at `|` in `doc`; the text after, with the cursor marked, or null if not a list's. */
+  function enter(doc: string) {
+    const state = EditorState.create({
+      doc: doc.replace('|', ''),
+      selection: { anchor: doc.indexOf('|') },
+      extensions: markdown({ base: markdownLanguage }),
+    })
+    ensureSyntaxTree(state, state.doc.length, 5000)
+    const spec = listEnter(state)
+    if (!spec) return null
+    const next = state.update(spec).state
+    const at = next.selection.main.head
+    const text = next.doc.toString()
+    return `${text.slice(0, at)}|${text.slice(at)}`
+  }
+
+  it('starts the next item on the very next line, a box for a to-do', () => {
+    expect(enter('# T\n\n- [ ] one|')).toBe('# T\n\n- [ ] one\n- [ ] |')
+    expect(enter('# T\n\n- one|\n- two')).toBe('# T\n\n- one\n- |\n- two')
+    expect(enter('# T\n\n1. one|\n2. two')).toBe('# T\n\n1. one\n2. |\n3. two')
+  })
+
+  it('never a blank line between items, even in a loose list', () => {
+    expect(enter('# T\n\n- [ ] one\n\n- [ ] two|')).toBe('# T\n\n- [ ] one\n\n- [ ] two\n- [ ] |')
+  })
+
+  it('an empty item ends the list; a nested one comes out a level', () => {
+    expect(enter('# T\n\n- [ ] one\n- [ ] |')).toBe('# T\n\n- [ ] one\n|')
+    expect(enter('# T\n\n- one\n  - |')).toBe('# T\n\n- one\n- |')
+  })
+
+  it('leaves Enter alone outside a list and in a code block', () => {
+    expect(enter('# T\n\nText|')).toBeNull()
+    expect(enter('# T\n\n```\n- |\n```')).toBeNull()
   })
 })

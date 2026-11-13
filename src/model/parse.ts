@@ -6,6 +6,8 @@ export interface LeafMeta {
   cover?: string
   icon?: string
   color?: { text?: string; heading?: string }
+  /** On the map, what is under it isn't drawn (owner's request); it stays listed elsewhere. */
+  collapsed?: boolean
   [key: string]: unknown
 }
 

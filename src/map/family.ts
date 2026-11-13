@@ -56,21 +56,34 @@ const round = (v: number) => Math.round(v * 10) / 10
  */
 export function treeGraph(family: Graph, id: string): Graph {
   const top = family.nodes.get(id)!
+  // A collapsed node (line 2) is drawn without what is under it: the count takes its place.
+  const fold = (n: GraphNode): GraphNode => {
+    if (n.meta?.collapsed !== true || !n.children.length) return n
+    let under = 0
+    const count = (m: GraphNode) => {
+      for (const c of m.children) {
+        under++
+        count(family.nodes.get(c)!)
+      }
+    }
+    count(n)
+    return { ...n, children: [], folded: under }
+  }
   const nodes = new Map<string, GraphNode>([
-    [ROOT, { ...top, id: ROOT, kind: 'root', parent: null, depth: 0 }],
+    [ROOT, { ...fold(top), id: ROOT, kind: 'root', parent: null, depth: 0 }],
   ])
   let leaves = 0
   let branches = 0
   const walk = (node: GraphNode) => {
     for (const child of node.children) {
-      const c = family.nodes.get(child)!
+      const c = fold(family.nodes.get(child)!)
       nodes.set(child, { ...c, parent: c.parent === id ? ROOT : c.parent, depth: c.depth - 1 })
       if (c.kind === 'leaf') leaves++
       else branches++
       walk(c)
     }
   }
-  walk(top)
+  walk(nodes.get(ROOT)!)
   const local = (n: string) => (n === id ? ROOT : n)
   const threads: Thread[] = family.threads
     .filter((t) => t.from !== ROOT && t.to !== ROOT)
@@ -79,7 +92,7 @@ export function treeGraph(family: Graph, id: string): Graph {
   const ghosts = new Map<string, Ghost>()
   for (const ghost of family.ghosts.values()) {
     const parent = nodes.get(local(ghost.parent))
-    if (ghost.parent === ROOT || !parent) continue
+    if (ghost.parent === ROOT || !parent || parent.folded) continue
     ghosts.set(ghost.id, ghost)
     nodes.set(parent.id, { ...parent, children: [...parent.children, ghost.id] })
     nodes.set(ghost.id, {
@@ -145,6 +158,7 @@ function signature(tree: Graph): string {
       String(n.words),
       String(n.total),
       n.children.join(','),
+      String(n.folded ?? ''),
     )
   for (const t of tree.threads) parts.push(`${t.from}>${t.to}${t.ghost ? '~' : ''}`)
   return parts.join('\n')
