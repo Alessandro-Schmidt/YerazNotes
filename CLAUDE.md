@@ -79,7 +79,8 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
   `icon` is an image icon (`/assets/…` or https, instead of the title's emoji); `iconPosition` is `center` or `right`;
   `iconInline: true` puts the icon on the title's line; `iconShape` is `rounded`, `square` or `"W:H"` (a circle when absent); `iconFocus` is `[x, y]` % of an image icon shown in its frame;
   `coverAspect` is `slim`, `tall` or `"W:H"` (3:1 when absent);
-  `hidden: true` takes the leaf (or, in a README.md, the branch or Tree) off the map with everything under it (still listed, marked, in the Explorer and its parent's Peek, where a click shows it again; Settings › Hidden too)
+  `hidden: true` takes the leaf (or, in a README.md, the branch or Tree) off the map with everything under it (still listed, marked, in the Explorer and its parent's Peek, where a click shows it again; Settings › Hidden too);
+  `collapsed: true` keeps the node on the map but not what is under it (`Keycloak +2`, a dashed ring; the Peek's Options menu, *Collapse on the map*)
 - [ ] Sub-leaves live in a sibling folder with the same name (`keycloak.md` + `keycloak/`)
 - [ ] A branch is a folder without a same-named `.md`; its folder name is kept as typed, and is its title until its text has a heading
 - [ ] A branch's text is `README.md` in its folder (exact name): not a leaf, but its line 1 is the branch's title

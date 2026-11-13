@@ -25,6 +25,8 @@ export interface LaidNode {
   /** Dot radius: area grows with words. */
   r: number
   hasChildren: boolean
+  /** How many nodes under it are not drawn: it is collapsed (GraphNode.folded). */
+  folded?: number
   /** The leaf's emoji, drawn on its dot; null when it has none. */
   icon: string | null
   /** The leaf's image icon, drawn on its dot in place of an emoji. */
@@ -315,10 +317,12 @@ export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout
     -radius * Math.cos(angle),
   ]
 
+  // A collapsed node says how many it holds that aren't drawn.
   const labelOf = (g: GraphNode, depth: number) =>
-    g.kind === 'branch' && depth === 1 ? g.title.toUpperCase() : g.title
+    (g.kind === 'branch' && depth === 1 ? g.title.toUpperCase() : g.title) +
+    (g.folded ? ` +${g.folded}` : '')
   const offsetOf = (g: GraphNode) =>
-    dotRadius(g) + (g.children.length && g.kind === 'leaf' ? 9 : 6) + 2
+    dotRadius(g) + ((g.children.length && g.kind === 'leaf') || g.folded ? 9 : 6) + 2
   const widthOf = (d: HierarchyPointNode<GraphNode>) => {
     const branch = d.depth === 1 && d.data.kind === 'branch'
     return textWidth(labelOf(d.data, d.depth), branch ? BRANCH_FONT : LEAF_FONT, branch ? 0.14 : 0)
@@ -349,7 +353,8 @@ export function layoutTree(graph: Graph, options: LayoutOptions = {}): MapLayout
         x: round(x),
         y: round(y),
         r: round(graph.ghosts.has(g.id) ? GHOST_R : dotRadius(g)),
-        hasChildren: g.children.length > 0,
+        hasChildren: g.children.length > 0 || !!g.folded,
+        ...(g.folded && { folded: g.folded }),
         icon: g.icon,
         ...(g.image && { image: g.image }),
         label: labelOf(g, d.depth),

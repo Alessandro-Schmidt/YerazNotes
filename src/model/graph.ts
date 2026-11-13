@@ -24,6 +24,11 @@ export interface GraphNode {
   loaded: boolean
   /** The blob of the node's text: a leaf's file, a branch's README.md; null when it has none. */
   sha: string | null
+  /**
+   * On the map only (map/family.ts): how many nodes under it are not drawn, its line 2 saying
+   * `collapsed` (owner's request). Its `children` are empty there; everywhere else they stay.
+   */
+  folded?: number
 }
 
 export interface Thread {

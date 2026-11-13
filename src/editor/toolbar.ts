@@ -2,6 +2,9 @@
 // Ctrl: bold, italic, code, a link, a bullet list, a to-do, indent and outdent (no Tab key). It appears while the text has the
 // focus, just above the keyboard (the visual viewport's bottom edge), and keeps the focus in
 // the text when tapped, so the keyboard stays. Elsewhere the shortcuts (format.ts) do this.
+// With a hardware keyboard on a tablet there is no keyboard on screen, only the system's small
+// shortcut bar: the bar then sits at the bottom of the page (owner's request), not floating
+// above that bar, and leaves the middle free, where iPadOS draws it.
 
 import { EditorView, ViewPlugin } from '@codemirror/view'
 import { isTouch } from '../ui/platform'
@@ -24,6 +27,12 @@ const LINK_ICON =
   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">' +
   '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>'
 
+/**
+ * Less than this hidden at the bottom is no keyboard on screen: at most a hardware keyboard's
+ * shortcut bar (iPadOS's is about 55 px), never a touch keyboard (well over 200 px).
+ */
+const NO_KEYBOARD = 120
+
 export const toolbar = ViewPlugin.define((view) => {
   if (!isTouch()) return {}
   const bar = document.createElement('div')
@@ -45,11 +54,17 @@ export const toolbar = ViewPlugin.define((view) => {
       view.focus()
     })
     bar.append(button)
+    // The middle, left for the system's shortcut bar when the page's bottom is the bar's.
+    if (item.label === 'Link')
+      bar.append(Object.assign(document.createElement('span'), { className: 'cm-toolbar-gap' }))
   }
   const vv = window.visualViewport
-  /** Just above the keyboard: the bottom of what is visible. */
+  /** Just above the keyboard: the bottom of what is visible, or the page's when none is on screen. */
   const place = () => {
-    const bottom = vv ? vv.offsetTop + vv.height : window.innerHeight
+    const visible = vv ? vv.offsetTop + vv.height : window.innerHeight
+    const docked = window.innerHeight - visible < NO_KEYBOARD
+    bar.toggleAttribute('data-docked', docked)
+    const bottom = docked ? window.innerHeight : visible
     bar.style.top = `${bottom - bar.offsetHeight}px`
     bar.style.left = `${vv?.offsetLeft ?? 0}px`
     bar.style.width = `${vv?.width ?? window.innerWidth}px`

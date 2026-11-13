@@ -304,9 +304,9 @@ export function LeafEditor({
   const inline = meta?.iconInline === true
   const shape = iconShape(meta)
   const focus = iconFocus(meta)
-  // The title starts after the icon: 36 px high in its frame, or an emoji's width.
+  // The title starts after the icon: an image's frame is this wide for its height (the CSS).
   const [w, h] = shape.aspect.split(' / ').map(Number)
-  const inlineWidth = image ? Math.round((36 * w!) / h!) + 14 : 50
+  const ratio = w! / h!
   /** A choice that sets one line-2 field, or removes it for the usual look. */
   const choose = (key: string, value: unknown) =>
     changeLook((m) => {
@@ -515,7 +515,8 @@ export function LeafEditor({
         <div
           className={styles.body}
           data-icon-inline={inline ? '' : undefined}
-          style={inline ? ({ '--inline-icon-w': `${inlineWidth}px` } as CSSProperties) : undefined}
+          data-icon-image={inline && image ? '' : undefined}
+          style={inline && image ? ({ '--icon-ratio': ratio } as CSSProperties) : undefined}
         >
           {inline && iconRow}
           <Editor

@@ -151,6 +151,11 @@
   stroke-opacity: 0.45;
   stroke-width: 1px;
 }
+/* Collapsed: what is under it isn't drawn (line 2's `collapsed`). */
+.node[data-folded] .ring {
+  stroke-dasharray: 2 2;
+  stroke-opacity: 0.8;
+}
 
 .label {
   font-size: 13px;

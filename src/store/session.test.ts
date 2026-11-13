@@ -692,6 +692,34 @@ describe('Family and link colours', () => {
   })
 })
 
+describe('collapsing a node on the map', () => {
+  it('writes `collapsed` in line 2, and takes it away again', async () => {
+    await fake.addRepo('you/notes', {
+      '.yeraz.json': '{"name":"Notes"}\n',
+      'Identity/keycloak.md': '# Keycloak\n\nText.\n',
+      'Identity/keycloak/realms.md': '# Realms\n',
+    })
+    const s = createSession({ store: memoryStore(), autosaveDelay: 60_000 })
+    await s.getState().signIn('good')
+    await s.getState().open('you/notes')
+    await s.getState().setCollapsed('you/notes', 'Identity/keycloak.md', true)
+    await s.getState().setCollapsed('you/notes', 'Identity', true)
+    const graph = s.getState().data['you/notes']!.graph!
+    expect(graph.nodes.get('Identity/keycloak.md')!.meta).toEqual({ collapsed: true })
+    expect(graph.nodes.has('Identity/keycloak/realms.md')).toBe(true)
+    await s.getState().flush('you/notes')
+    expect(fake.repo('you/notes').read('Identity/keycloak.md')).toBe(
+      '# Keycloak\n<!-- yeraz {"collapsed":true} -->\n\nText.\n',
+    )
+    expect(fake.repo('you/notes').read('Identity/README.md')).toBe(
+      '# Identity\n<!-- yeraz {"collapsed":true} -->\n\n',
+    )
+    await s.getState().setCollapsed('you/notes', 'Identity/keycloak.md', false)
+    await s.getState().flush('you/notes')
+    expect(fake.repo('you/notes').read('Identity/keycloak.md')).toBe('# Keycloak\n\nText.\n')
+  })
+})
+
 describe('hiding a leaf or a branch', () => {
   it('writes line 2 of the leaf, or of the branch’s README.md, and the graph leaves it out', async () => {
     await fake.addRepo('you/notes', {

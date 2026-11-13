@@ -65,7 +65,8 @@
 /* Line 1 is the title. */
 .editor :global(.cm-line.cm-title) {
   font-family: var(--font-ui);
-  font-size: 34px;
+  /* Set smaller by the floating Peek; an inline icon (LeafEditor.module.css) follows it. */
+  font-size: var(--title-size, 34px);
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.2;
@@ -283,6 +284,14 @@
   padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--hair);
   background: var(--panel);
+}
+:global(.cm-toolbar-gap) {
+  display: none;
+}
+/* At the page's bottom: the middle stays free for iPadOS's floating shortcut bar. */
+:global(.cm-toolbar[data-docked] .cm-toolbar-gap) {
+  display: block;
+  flex: 0 0 min(320px, 30%);
 }
 :global(.cm-toolbar button) {
   width: 44px;

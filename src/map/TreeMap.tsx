@@ -878,9 +878,10 @@ const Geometry = memo(function Geometry({
           data-deep={n.depth >= 2 ? '' : undefined}
           data-icon={n.icon || n.image ? '' : undefined}
           data-ghost={graph.ghosts.has(n.id) ? '' : undefined}
+          data-folded={n.folded ? '' : undefined}
         >
           <circle className={styles.hit} cx={n.x} cy={n.y} r={n.r + 8} />
-          {n.kind === 'leaf' && n.hasChildren && (
+          {((n.kind === 'leaf' && n.hasChildren) || n.folded) && (
             <circle className={styles.ring} cx={n.x} cy={n.y} r={n.r + 4} />
           )}
           <circle className={styles.dot} cx={n.x} cy={n.y} r={n.r} />

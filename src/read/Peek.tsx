@@ -573,6 +573,21 @@ export function Peek({
                       {node.kind === 'leaf' ? 'Make it a group…' : 'Make it a note…'}
                     </button>
                   )}
+                  {/* On the map without what is under it, still listed here (line 2's `collapsed`). */}
+                  {node.children.length > 0 && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenu(false)
+                        void session
+                          .getState()
+                          .setCollapsed(tree.repo, id, node.meta?.collapsed !== true)
+                      }}
+                    >
+                      {node.meta?.collapsed === true ? 'Expand on the map' : 'Collapse on the map'}
+                    </button>
+                  )}
                   {/* Off the map with everything under it; Settings › Hidden shows it again. */}
                   <button
                     type="button"
