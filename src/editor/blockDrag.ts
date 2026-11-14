@@ -34,6 +34,30 @@ export function blockAt(state: EditorState, pos: number): Block | null {
   return { from: first.from, to: state.doc.lineAt(node.to).to, item }
 }
 
+/**
+ * What a handle drags: its block, or, when the selection reaches over it, every block the
+ * selection touches, as one (owner's request: lines selected with Shift move together).
+ */
+export function draggedBlock(state: EditorState, block: Block): Block {
+  const { main } = state.selection
+  if (main.empty || main.to <= block.from || main.from >= block.to) return block
+  const { doc } = state
+  // A selection of whole lines ends at the start of the next one: that line isn't in it.
+  const last = doc.lineAt(Math.max(main.from, main.to - 1)).number
+  let { from, to, item } = block
+  for (let n = doc.lineAt(main.from).number; n <= last; n++) {
+    const line = doc.line(n)
+    const b = line.text.trim()
+      ? blockAt(state, line.from + (line.length - line.text.trimStart().length))
+      : null
+    if (!b) continue
+    from = Math.min(from, b.from)
+    to = Math.max(to, b.to)
+    item &&= b.item
+  }
+  return { from, to, item }
+}
+
 /** Removes a block's lines, and one blank line beside them so the rest keep one between. */
 function removal(state: EditorState, block: Block): ChangeSpec {
   const { doc } = state
@@ -108,10 +132,11 @@ const handles = ViewPlugin.fromClass(
       view.dom.append(this.grip, this.line)
       this.grip.addEventListener('dragstart', (e) => {
         if (!this.block || !e.dataTransfer) return
-        const text = view.state.sliceDoc(this.block.from, this.block.to)
-        dragged = { view, block: this.block }
+        const block = draggedBlock(view.state, this.block)
+        const text = view.state.sliceDoc(block.from, block.to)
+        dragged = { view, block }
         // Selected, so a drop on a chip takes it out of this text (mentions.ts).
-        view.dispatch({ selection: { anchor: this.block.from, head: this.block.to } })
+        view.dispatch({ selection: { anchor: block.from, head: block.to } })
         e.dataTransfer.setData('text/plain', text)
         e.dataTransfer.setData(TYPE, '')
         e.dataTransfer.effectAllowed = 'move'

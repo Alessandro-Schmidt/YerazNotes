@@ -32,8 +32,7 @@
 }
 /* An empty text says how to write it: an arrow, then the words, in italic. The words stay
    after the arrow when a narrow panel wraps them (owner's request). */
-.editor :global(.cm-hint),
-.editor :global(.cm-line-hint) {
+.editor :global(.cm-hint) {
   color: var(--faint);
   font-style: italic;
 }
@@ -52,8 +51,7 @@
   color: var(--accent);
   font-style: normal;
 }
-.editor :global(.cm-hint kbd),
-.editor :global(.cm-line-hint kbd) {
+.editor :global(.cm-hint kbd) {
   padding: 0 5px;
   border: 1px solid var(--hair);
   border-radius: 4px;

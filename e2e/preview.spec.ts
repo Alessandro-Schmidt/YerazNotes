@@ -53,7 +53,7 @@ test.describe('writing', () => {
     await page.keyboard.type('First line\n')
     const hint = page.locator('.cm-line-hint')
     await expect(hint).toHaveCount(1)
-    await expect(hint).toHaveText(/^Hold (⌘|Ctrl) to see options$/)
+    await expect(hint).toHaveText(/^→Click to write, hold (⌘|Ctrl) to see options$/)
     // It sits on the empty line being written on, and goes once something is typed.
     await expect(line(page, 3).locator('.cm-line-hint')).toHaveCount(1)
     await page.keyboard.type('Second')
@@ -73,7 +73,7 @@ test.describe('writing', () => {
   })
 })
 
-test('on touch, the hint says tap and hold or type /', async ({ page }) => {
+test('on touch, a new line has the same hint as an empty text: type /', async ({ page }) => {
   test.skip(!isPhone(page), 'Touch devices only')
   await newLeaf(page)
   await page.locator('.cm-content').click()
@@ -81,5 +81,5 @@ test('on touch, the hint says tap and hold or type /', async ({ page }) => {
   // An empty leaf has its own hint (emptyText.ts); a new line after some text has this one.
   await page.keyboard.type('First line')
   await page.keyboard.press('Enter')
-  await expect(page.locator('.cm-line-hint')).toHaveText('Tap and hold, or type /, to see options')
+  await expect(page.locator('.cm-line-hint')).toHaveText('→Tap to write, type / to see options')
 })

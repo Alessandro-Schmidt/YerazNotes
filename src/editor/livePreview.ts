@@ -55,6 +55,7 @@ import {
   beingTyped,
   deletion,
   elements,
+  embedSpans,
   moreButton,
   openElementMenu,
   revealSource,
@@ -1170,6 +1171,7 @@ const typeBesideEmbeds = EditorView.inputHandler.of((view, from, to, text) => {
 export const livePreview = [
   elements,
   preview,
+  embedSpans.of((view) => view.plugin(preview)?.built.embeds ?? []),
   flippedDetails,
   diagrams,
   tableEditing,

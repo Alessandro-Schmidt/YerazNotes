@@ -2,7 +2,7 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { ensureSyntaxTree } from '@codemirror/language'
 import { EditorState } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
-import { blockAt, moveBlock } from './blockDrag'
+import { blockAt, draggedBlock, moveBlock } from './blockDrag'
 
 const stateOf = (doc: string) => {
   const state = EditorState.create({ doc, extensions: markdown({ base: markdownLanguage }) })
@@ -50,5 +50,38 @@ describe('moveBlock', () => {
 
   it('does nothing when dropped on itself', () => {
     expect(move(DOC, 'First.', 'First.', true)).toBeNull()
+  })
+})
+
+describe("draggedBlock: the selection over a handle's block moves with it", () => {
+  const dragged = (anchor: string, head: string, grip: string) => {
+    const base = stateOf(DOC)
+    const state = base.update({
+      selection: { anchor: DOC.indexOf(anchor), head: DOC.indexOf(head) },
+    }).state
+    ensureSyntaxTree(state, state.doc.length)
+    const b = draggedBlock(state, blockAt(state, DOC.indexOf(grip))!)
+    return { text: state.sliceDoc(b.from, b.to), item: b.item, state, b }
+  }
+
+  it('is every block the selection touches, whole, from any of their handles', () => {
+    expect(dragged('rst.', 'x\n', 'First').text).toBe('First.\n\n```js\nx\n```')
+    expect(dragged('rst.', 'x\n', 'x\n').text).toBe('First.\n\n```js\nx\n```')
+    // Whole lines selected end at the next line's start: that line stays.
+    expect(dragged('- one', '- two', '- one')).toMatchObject({ text: '- one', item: true })
+    expect(dragged('one', 'wo', 'two')).toMatchObject({ text: '- one\n- two', item: true })
+  })
+
+  it("is the handle's own block when the selection is elsewhere or empty", () => {
+    expect(dragged('rst.', 'x\n', 'Last').text).toBe('Last.')
+    expect(dragged('First', 'First', 'First').text).toBe('First.')
+  })
+
+  it('moves as one block', () => {
+    const { state, b } = dragged('rst.', 'x\n', 'First')
+    const spec = moveBlock(state, b, DOC.indexOf('Last'), true)!
+    expect(state.update(spec).state.doc.toString()).toBe(
+      '# T\n\n- one\n- two\n\nLast.\n\nFirst.\n\n```js\nx\n```\n',
+    )
   })
 })
