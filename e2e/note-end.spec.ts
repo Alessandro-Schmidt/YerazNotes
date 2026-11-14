@@ -24,8 +24,11 @@ test('a short note shows its end; scrolling over it never moves the app', async 
   await signInHere(page)
   await expect(page.locator('.cm-content')).toContainText('A line.')
   await expect.poll(() => end(page)).toBe(1)
-  await page.locator('.cm-content').hover()
-  await page.mouse.wheel(40, 400)
+  // A wheel over the note, where there is one (mobile WebKit has no mouse wheel).
+  if (!isPhone(page)) {
+    await page.locator('.cm-content').hover()
+    await page.mouse.wheel(40, 400)
+  }
   const moved = await page.evaluate(() => {
     window.scrollTo(50, 50)
     document.getElementById('root')!.scrollTop = 50
