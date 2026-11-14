@@ -34,13 +34,20 @@ export function hintParts(touch: boolean, mac: boolean): [string, string, string
   return ['Click to write, hold ', mac ? '⌘' : 'Ctrl', ' to see options']
 }
 
+/**
+ * The one hint (owner's request: an empty text and a new line read the same): an arrow, then
+ * the words. On a new line (`line`) it is under the caret, so clicks pass through it.
+ */
 class Hint extends WidgetType {
-  eq() {
-    return true
+  constructor(readonly line = false) {
+    super()
+  }
+  eq(other: Hint) {
+    return other.line === this.line
   }
   toDOM() {
     const hint = document.createElement('span')
-    hint.className = 'cm-hint'
+    hint.className = this.line ? 'cm-hint cm-line-hint' : 'cm-hint'
     hint.setAttribute('aria-hidden', 'true')
     const arrow = document.createElement('span')
     arrow.className = 'cm-hint-arrow'
@@ -62,29 +69,8 @@ class Hint extends WidgetType {
 
 const hint = Decoration.widget({ widget: new Hint(), side: 1 })
 
-/** A new line's hint's words (issue #68): on touch, tap and hold or `/` opens the menu. */
-export function lineHintParts(touch: boolean, mac: boolean): [string, string, string] {
-  if (touch) return ['Tap and hold, or type ', '/', ', to see options']
-  return ['Hold ', mac ? '⌘' : 'Ctrl', ' to see options']
-}
-
-class LineHint extends WidgetType {
-  eq() {
-    return true
-  }
-  toDOM() {
-    const el = document.createElement('span')
-    el.className = 'cm-line-hint'
-    el.setAttribute('aria-hidden', 'true')
-    const [before, key, after] = lineHintParts(isTouch(), isMac)
-    const kbd = document.createElement('kbd')
-    kbd.textContent = key
-    el.append(before, kbd, after)
-    return el
-  }
-}
-
-const lineHint = Decoration.widget({ widget: new LineHint(), side: 1 })
+/** A new line's hint (issue #68): the same arrow and words as an empty text's. */
+const lineHint = Decoration.widget({ widget: new Hint(true), side: 1 })
 
 /** Where the new line's hint goes: the empty body line being written on, outside code. */
 function newLine(view: EditorView): DecorationSet {

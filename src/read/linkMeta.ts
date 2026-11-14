@@ -79,9 +79,16 @@ export function linkMeta(
 
 /**
  * Fills a bookmark card: its title when the link had none of its own (its text is the
- * address), and a description line. Text only.
+ * address), and a description line. Text only. Its site's icon goes when there is none.
  */
 export function fillBookmark(card: Element, url: string) {
+  // A site without a favicon.ico leaves no gap before its address (feedback).
+  const icon = card.querySelector('.favicon')
+  if (icon && typeof Image === 'function' && URL.canParse(url)) {
+    const probe = new Image()
+    probe.onerror = () => icon.remove()
+    probe.src = `${new URL(url).origin}/favicon.ico`
+  }
   void linkMeta(url).then((meta) => {
     if (!meta) return
     const title = card.querySelector('strong')
