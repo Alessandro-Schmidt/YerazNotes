@@ -32,6 +32,8 @@ const LINK_ICON =
  * shortcut bar (iPadOS's is about 55 px), never a touch keyboard (well over 200 px).
  */
 const NO_KEYBOARD = 120
+/** How long a touch keyboard takes to come up, and more: the bar is docked for good after it. */
+const SETTLE_MS = 500
 
 export const toolbar = ViewPlugin.define((view) => {
   if (!isTouch()) return {}
@@ -59,12 +61,30 @@ export const toolbar = ViewPlugin.define((view) => {
       bar.append(Object.assign(document.createElement('span'), { className: 'cm-toolbar-gap' }))
   }
   const vv = window.visualViewport
+  const root = document.documentElement.style
+  let room: ReturnType<typeof setTimeout> | null = null
+  /** The app has the page's whole height again. */
+  const giveBack = () => {
+    if (room !== null) clearTimeout(room)
+    room = null
+    root.removeProperty('--toolbar-dock')
+  }
   /** Just above the keyboard: the bottom of what is visible, or the page's when none is on screen. */
   const place = () => {
-    const visible = vv ? vv.offsetTop + vv.height : window.innerHeight
-    const docked = window.innerHeight - visible < NO_KEYBOARD
+    // The page's own height: iOS shortens `innerHeight` with the visible part at times.
+    const page = document.documentElement.clientHeight
+    const visible = vv ? vv.offsetTop + vv.height : page
+    const docked = page - visible < NO_KEYBOARD
     bar.toggleAttribute('data-docked', docked)
-    const bottom = docked ? window.innerHeight : visible
+    // Docked, the app ends above the bar (global.css): nothing of it is under the bar. Only
+    // once it has stayed docked a moment: a touch keyboard on its way up starts out the same.
+    if (docked)
+      room ??= setTimeout(
+        () => root.setProperty('--toolbar-dock', `${bar.offsetHeight}px`),
+        SETTLE_MS,
+      )
+    else giveBack()
+    const bottom = docked ? page : visible
     bar.style.top = `${bottom - bar.offsetHeight}px`
     bar.style.left = `${vv?.offsetLeft ?? 0}px`
     bar.style.width = `${vv?.width ?? window.innerWidth}px`
@@ -77,6 +97,7 @@ export const toolbar = ViewPlugin.define((view) => {
   }
   const hide = () => {
     bar.remove()
+    giveBack()
     vv?.removeEventListener('resize', place)
     vv?.removeEventListener('scroll', place)
   }
