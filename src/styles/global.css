@@ -50,6 +50,9 @@ body,
   }
   #root {
     overflow: clip;
+    /* A formatting bar docked at the page's bottom (editor/toolbar.ts) takes its height off
+       the app, which ends above it: the bar hides nothing. */
+    height: calc(100% - var(--toolbar-dock, 0px));
   }
 }
 
