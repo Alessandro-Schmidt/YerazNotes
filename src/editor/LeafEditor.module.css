@@ -306,26 +306,34 @@
   }
 }
 
-/* The icon on the title's line (line 2 `iconInline`): the title moves over to make room. */
+/* The icon on the title's line (line 2 `iconInline`): the title moves over to make room.
+   Sized from the title's own size (Editor.module.css), so the two stay centred on one line
+   at every size: the row is exactly as tall as the title's line. */
 .body {
   position: relative;
+  --inline-icon-h: calc(var(--title-size, 34px) * 1.06);
 }
 .iconRow[data-inline] {
   position: absolute;
   z-index: 1;
   top: 0;
   left: 0;
-  height: 41px;
+  height: calc(var(--title-size, 34px) * 1.2);
   align-items: center;
 }
 .iconRow[data-inline] .icon {
-  font-size: 32px;
+  font-size: calc(var(--title-size, 34px) * 0.94);
+  line-height: 1;
 }
 .iconRow[data-inline] .iconImage {
-  height: 36px;
+  height: var(--inline-icon-h);
 }
+/* An emoji takes about one and a half times the title's size; an image its width, and a gap. */
 .body[data-icon-inline] :global(.cm-line.cm-title) {
-  padding-left: var(--inline-icon-w, 56px);
+  padding-left: calc(var(--title-size, 34px) * 1.47);
+}
+.body[data-icon-inline][data-icon-image] :global(.cm-line.cm-title) {
+  padding-left: calc(var(--inline-icon-h) * var(--icon-ratio, 1) + 14px);
 }
 
 /* The image icon while it is moved in its frame. */

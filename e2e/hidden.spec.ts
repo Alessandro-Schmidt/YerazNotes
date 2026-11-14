@@ -116,3 +116,26 @@ test('a hidden leaf stays listed in what holds it; its eye shows it on the map a
     .poll(() => fake.repo(HIDDEN).read('Identity/keycloak.md'))
     .toBe(FILES['Identity/keycloak.md'])
 })
+
+test('Collapse on the map keeps the node, takes what is under it off the map, and back', async ({
+  page,
+  fake,
+}) => {
+  await page.goto(`./#/tree/${REPO}/Identity`)
+  await signInHere(page)
+  const peek = page.getByRole('region', { name: 'Project preview' })
+  const node = (id: string) => page.locator(`[data-map] [data-node][data-id="${id}"]`)
+  await expect(node('Identity/keycloak.md')).toHaveCount(1)
+  await peek.getByRole('button', { name: 'Options' }).click()
+  await page.getByRole('menuitem', { name: 'Collapse on the map' }).click()
+  await expect(node('Identity/keycloak.md')).toHaveCount(0)
+  // The Peek stays, and still lists both leaves; the Explorer too.
+  await expect(peek).toContainText('OAuth')
+  await page.keyboard.press('ControlOrMeta+s')
+  await expect
+    .poll(() => fake.repo(REPO).read('Identity/README.md'))
+    .toBe('# Identity\n<!-- yeraz {"collapsed":true} -->\n\n')
+  await peek.getByRole('button', { name: 'Options' }).click()
+  await page.getByRole('menuitem', { name: 'Expand on the map' }).click()
+  await expect(node('Identity/keycloak.md')).toHaveCount(1)
+})

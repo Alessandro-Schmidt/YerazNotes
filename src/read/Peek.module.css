@@ -128,6 +128,8 @@
 }
 
 .scroll {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -135,8 +137,20 @@
 }
 
 .column {
+  flex: none;
   width: 100%;
   margin: 0 auto;
+}
+
+/* The end of the note (owner's request): a bar that fills with the accent as the end comes
+   near (`--end`, 0 to 1, set by useEndBar), and is full where there is nothing to scroll. */
+.end {
+  flex: none;
+  height: 4px;
+  margin: auto 20px 10px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: calc(0.1 + 0.9 * var(--end, 1));
 }
 .peek[data-expanded] .column {
   /* About 70 characters at the reading size. */
@@ -740,8 +754,8 @@
 .article :global(.cm-editor .cm-content) {
   padding-bottom: 24px;
 }
-.peek:not([data-expanded]) :global(.cm-line.cm-title) {
-  font-size: 24px;
+.peek:not([data-expanded]) {
+  --title-size: 24px;
 }
 
 /* A bookmark: the same card across the column, its site's icon and address on one line. */

@@ -47,7 +47,12 @@ export function menu<K extends string>(
   dom.addEventListener('focusout', (e) => {
     if (!dom.contains(e.relatedTarget as Node | null)) dismiss()
   })
-  return { dom, mount: autofocus ? () => buttons[0]?.focus() : undefined }
+  // Mounted before it is placed: focusing must not scroll the page to where it isn't yet
+  // (feedback: on iPad and iPhone the page jumped to its top with the menu open).
+  return {
+    dom,
+    mount: autofocus ? () => buttons[0]?.focus({ preventScroll: true }) : undefined,
+  }
 }
 
 /** A 24×24 one-colour logo from its SVG path, in the text's colour; an empty path draws none. */

@@ -35,6 +35,23 @@ body,
 #root {
   height: 100%;
 }
+/* The app itself never scrolls, up, down or sideways (owner's request): each panel scrolls
+   what is in it. A note too short to scroll would otherwise hand the gesture to the page,
+   which rubber-banded under the finger. Not in print, where the page is the leaf. */
+@media screen {
+  html,
+  body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body {
+    position: fixed;
+    inset: 0;
+  }
+  #root {
+    overflow: clip;
+  }
+}
 
 /* Only the map zooms (useZoom): a pinch or double tap never scales the whole app. */
 html {

@@ -5,6 +5,7 @@
 
 import { syntaxTree } from '@codemirror/language'
 import {
+  Facet,
   Prec,
   StateEffect,
   StateField,
@@ -360,12 +361,21 @@ const linkButton = (view: EditorView, from: number) => ({
   dom: moreButton('Link', () => linkMenu(view, from)),
 })
 
+/**
+ * The spans drawn as embeds (livePreview.ts): a card has its own ⋯, so the link under it
+ * shows none (feedback: a second ⋯ floated over a bookmark).
+ */
+export const embedSpans =
+  Facet.define<(view: EditorView) => readonly { from: number; to: number }[]>()
+
 const linkHover = hoverTooltip(
   (view, pos, side) => {
     if (view.state.field(menuField, false) || view.state.field(editField, false) !== null)
       return null
     const link = linkAt(view.state, pos, side)
     if (!link || sourceShown(view.state, link.from, link.to)) return null
+    for (const spans of view.state.facet(embedSpans))
+      if (spans(view).some((e) => e.from <= link.from && link.to <= e.to)) return null
     return {
       pos: link.from,
       end: link.to,

@@ -31,6 +31,11 @@
     max-width: 100%;
     break-inside: avoid;
   }
+  /* An image of the text (not the cover) is never taller than a page, so none is cut by a page's end. */
+  #print-root article .reading img {
+    max-height: 240mm;
+    object-fit: contain;
+  }
   #print-root pre,
   #print-root blockquote,
   #print-root .katex-display,

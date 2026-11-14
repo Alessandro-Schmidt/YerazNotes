@@ -53,6 +53,37 @@ describe('treeGraph', () => {
   })
 })
 
+describe('a collapsed node on the map', () => {
+  // Line 2's `collapsed`: the node stays, what is under it leaves the map (Explorer keeps it).
+  const folded = graphOf({
+    'Identity/keycloak.md':
+      '# Keycloak\n<!-- yeraz {"collapsed":true} -->\n\n[Realms](/Identity/keycloak/realms.md)\n',
+    'Identity/keycloak/realms.md': '# Realms\n\n[Flows](/Identity/keycloak/realms/flows.md)\n',
+    'Identity/keycloak/realms/flows.md': '# Flows\n\n[Planned](/Identity/keycloak/planned.md)\n',
+    'Identity/oidc.md': '# OIDC\n\n[Flows](/Identity/keycloak/realms/flows.md)\n',
+    'Chess/openings.md': '# Openings\n\n[Realms](/Identity/keycloak/realms.md)\n',
+  })
+
+  it('keeps the node, with how many it folds, and draws nothing under it', () => {
+    const tree = treeGraph(folded, 'Identity')
+    expect([...tree.nodes.keys()].sort()).toEqual(['', 'Identity/keycloak.md', 'Identity/oidc.md'])
+    expect(tree.nodes.get('Identity/keycloak.md')).toMatchObject({ children: [], folded: 2 })
+    expect(tree.threads).toEqual([])
+    expect(tree.ghosts.size).toBe(0)
+    const { layout } = familyLayout(folded).treeOf.get('Identity')!
+    expect(layout.byId.get('Identity/keycloak.md')).toMatchObject({ hasChildren: true, folded: 2 })
+    expect(folded.nodes.get('Identity/keycloak.md')!.children).toEqual([
+      'Identity/keycloak/realms.md',
+    ])
+  })
+
+  it('draws no thread between Trees to a node folded away', () => {
+    const family = familyLayout(folded)
+    expect(family.between).toEqual([])
+    expect(positionOf(family, 'Identity/keycloak/realms.md')).toBeNull()
+  })
+})
+
 describe('ghost leaves on the map', () => {
   const sketch = graphOf({
     'Identity/keycloak.md': '# Keycloak\n\n[OAuth](/Identity/oauth.md) [Plan](/Later/plan.md)\n',

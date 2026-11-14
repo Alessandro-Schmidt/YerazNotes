@@ -139,6 +139,7 @@ export function Peek({
 
   const sheet = useRef<HTMLElement>(null)
   const motion = usePeekMotion(sheet, id, expanded, onExpand)
+  const endBar = useEndBar()
   const phone = useMedia(PHONE)
   const ghost = graph.ghosts.get(id)
   if (ghost) {
@@ -245,7 +246,12 @@ export function Peek({
       {/* The full page covers the top bar on a phone: what the writer needs from it, here. */}
       {expanded && phone && <SheetStatus repo={tree.repo} branch={tree.branch} />}
 
-      <div className={styles.scroll} onScroll={motion.onScroll} onFocus={motion.onFocus}>
+      <div
+        ref={endBar}
+        className={styles.scroll}
+        onScroll={motion.onScroll}
+        onFocus={motion.onFocus}
+      >
         <div className={styles.column}>
           <article className={styles.article}>
             {node.kind === 'leaf' && historyOf === id ? (
@@ -401,6 +407,7 @@ export function Peek({
             )}
           </article>
         </div>
+        <div className={styles.end} data-end="" aria-hidden="true" />
       </div>
 
       <div className={styles.foot}>
@@ -573,6 +580,21 @@ export function Peek({
                       {node.kind === 'leaf' ? 'Make it a group…' : 'Make it a note…'}
                     </button>
                   )}
+                  {/* On the map without what is under it, still listed here (line 2's `collapsed`). */}
+                  {node.children.length > 0 && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenu(false)
+                        void session
+                          .getState()
+                          .setCollapsed(tree.repo, id, node.meta?.collapsed !== true)
+                      }}
+                    >
+                      {node.meta?.collapsed === true ? 'Expand on the map' : 'Collapse on the map'}
+                    </button>
+                  )}
                   {/* Off the map with everything under it; Settings › Hidden shows it again. */}
                   <button
                     type="button"
@@ -609,10 +631,13 @@ export function Peek({
 function CopyButton({
   tag,
   label,
+  hint = label,
   get,
 }: {
   tag: string
   label: string
+  /** What hovering shows: the path itself, for the path's button (owner's request). */
+  hint?: string
   get: () => Promise<string>
 }) {
   const [copied, setCopied] = useState(false)
@@ -626,7 +651,7 @@ function CopyButton({
       type="button"
       className={`${controls.ghost} ${styles.copy}`}
       aria-label={copied ? 'Copied' : label}
-      title={label}
+      title={hint}
       onClick={() => {
         void get()
           .then((text) => navigator.clipboard?.writeText(text))
@@ -740,7 +765,12 @@ function PeekHead({
         {copy ? (
           // A note's place is copied, not shown (owner's request): its path, and its Markdown.
           <div className={styles.copies}>
-            <CopyButton tag="Path" label="Copy path" get={() => Promise.resolve(copy)} />
+            <CopyButton
+              tag="Path"
+              label="Copy path"
+              hint={`${copy}\nClick to copy`}
+              get={() => Promise.resolve(copy)}
+            />
             {markdown && <CopyButton tag="MD" label="Copy Markdown" get={markdown} />}
           </div>
         ) : (
@@ -839,6 +869,37 @@ const FLICK_MIN = 24
 
 /** Where a finger dragging the grip by `dy` puts the Peek: upwards, reluctantly. */
 const dragged = (dy: number) => `translateY(${dy > 0 ? dy : dy / 3}px)`
+/** How far from a note's end its bar starts to fill, in pixels of scrolling. */
+const END_REACH = 240
+
+/**
+ * The bar at a note's end (owner's request): `--end` on the scroller goes from 0 to 1 over
+ * the last stretch of scrolling, and is 1 when the note is too short to scroll. A style
+ * property, never a render.
+ */
+function useEndBar() {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      const left = el.scrollHeight - el.clientHeight - el.scrollTop
+      el.style.setProperty('--end', String(Math.min(1, Math.max(0, 1 - left / END_REACH))))
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    // The text grows and the panel is resized without a scroll.
+    const sizes = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null
+    sizes?.observe(el)
+    if (el.firstElementChild) sizes?.observe(el.firstElementChild)
+    return () => {
+      el.removeEventListener('scroll', update)
+      sizes?.disconnect()
+    }
+  }, [])
+  return ref
+}
+
 /** Moves the Peek with the finger; a dismissed one goes out from there (ui/motion.tsx). */
 function shift(el: HTMLElement | null, dy: number) {
   if (el) el.style.transform = dy ? dragged(dy) : ''
@@ -979,6 +1040,7 @@ function GhostPeek({
   const [error, setError] = useState<string | null>(null)
   const sheet = useRef<HTMLElement>(null)
   const motion = usePeekMotion(sheet, ghost.id, expanded, onExpand)
+  const endBar = useEndBar()
   const { named, where } = threadNames(graph)
   const write = async () => {
     setBusy(true)
@@ -1009,7 +1071,12 @@ function GhostPeek({
         {...{ href, onSelect, expanded, onClose, sheet }}
         onExpand={motion.expand}
       />
-      <div className={styles.scroll} onScroll={motion.onScroll} onFocus={motion.onFocus}>
+      <div
+        ref={endBar}
+        className={styles.scroll}
+        onScroll={motion.onScroll}
+        onFocus={motion.onFocus}
+      >
         <div className={styles.column}>
           <article className={styles.article}>
             <div className={styles.titleRow}>
@@ -1045,6 +1112,7 @@ function GhostPeek({
             />
           </article>
         </div>
+        <div className={styles.end} data-end="" aria-hidden="true" />
       </div>
     </section>
   )
