@@ -226,7 +226,7 @@ test('the Peek’s head copies the leaf’s path and its Markdown, in place of b
   await expect(peek(page).getByRole('button', { name: 'Copied' })).toBeVisible()
   if (browserName === 'chromium')
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`/${leaf.id}`)
-  await peek(page).getByRole('button', { name: 'Copy Markdown' }).click()
+  await peek(page).getByRole('button', { name: 'Copy content' }).click()
   if (browserName === 'chromium')
     await expect
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))

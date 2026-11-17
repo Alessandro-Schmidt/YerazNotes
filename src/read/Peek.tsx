@@ -48,6 +48,8 @@ import { templateHref, treeHref } from '../ui/paths'
 import styles from './Peek.module.css'
 import { coverAspect, coverPosition } from './cover'
 import { downloadAsset } from './files'
+import { CopyButton } from './CopyButton'
+import { floatNote } from './float'
 import { History } from './History'
 import { printLeaf } from './print'
 import { playYouTube } from './youtube'
@@ -241,6 +243,20 @@ export function Peek({
               }
         }
         onPin={onPin && node.kind !== 'root' && !expanded && !docked ? () => onPin(id) : undefined}
+        onFloat={
+          node.kind === 'leaf' || node.kind === 'branch'
+            ? () => {
+                void floatNote({
+                  repo: tree.repo,
+                  id,
+                  file: node.kind === 'leaf' ? id : textFile(graph, id)!,
+                  path: `/${id}${node.kind === 'branch' ? '/' : ''}`,
+                  back: href(id),
+                })
+                onClose()
+              }
+            : undefined
+        }
         onExpand={motion.expand}
       />
       {/* The full page covers the top bar on a phone: what the writer needs from it, here. */}
@@ -624,49 +640,6 @@ export function Peek({
   )
 }
 
-/**
- * Copies what `get` gives (the node's path, or its Markdown), shown as the copy icon and a tag
- * naming which (owner's request: they replace the breadcrumbs).
- */
-function CopyButton({
-  tag,
-  label,
-  hint = label,
-  get,
-}: {
-  tag: string
-  label: string
-  /** What hovering shows: the path itself, for the path's button (owner's request). */
-  hint?: string
-  get: () => Promise<string>
-}) {
-  const [copied, setCopied] = useState(false)
-  useEffect(() => {
-    if (!copied) return
-    const timer = setTimeout(() => setCopied(false), 1500)
-    return () => clearTimeout(timer)
-  }, [copied])
-  return (
-    <button
-      type="button"
-      className={`${controls.ghost} ${styles.copy}`}
-      aria-label={copied ? 'Copied' : label}
-      title={hint}
-      onClick={() => {
-        void get()
-          .then((text) => navigator.clipboard?.writeText(text))
-          .then(
-            () => setCopied(true),
-            () => undefined,
-          )
-      }}
-    >
-      <Icon name={copied ? 'check' : 'copy'} size={15} />
-      <span className={styles.copyTag}>{tag}</span>
-    </button>
-  )
-}
-
 /** A plain click opens it here; others (a new tab) follow the link. */
 const openHere = (onSelect: (id: string) => void, id: string) => (e: MouseEvent) => {
   if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
@@ -696,6 +669,7 @@ function PeekHead({
   copy,
   markdown,
   onPin,
+  onFloat,
   kept,
   onSwap,
   href,
@@ -713,6 +687,8 @@ function PeekHead({
   copy?: string | undefined
   /** The node's Markdown, for the copy-content button. */
   markdown?: (() => Promise<string>) | undefined
+  /** Takes the node out of Yeraz, floating over everything (float.ts); no button without it. */
+  onFloat?: (() => void) | undefined
   /** Keeps the node open beside the next selection; no button without it. */
   onPin?: (() => void) | undefined
   kept?: boolean | undefined
@@ -771,7 +747,7 @@ function PeekHead({
               hint={`${copy}\nClick to copy`}
               get={() => Promise.resolve(copy)}
             />
-            {markdown && <CopyButton tag="MD" label="Copy Markdown" get={markdown} />}
+            {markdown && <CopyButton tag="Content" label="Copy content" get={markdown} />}
           </div>
         ) : (
           <nav className={`${controls.mono} ${styles.crumb}`} aria-label="Breadcrumb">
@@ -804,6 +780,17 @@ function PeekHead({
             onClick={onSwap}
           >
             <Icon name="swap" size={16} />
+          </button>
+        )}
+        {onFloat && (
+          <button
+            type="button"
+            className={controls.iconButton}
+            aria-label="Float this note"
+            title="Take it out of Yeraz: it floats above everything, anywhere on the screen"
+            onClick={onFloat}
+          >
+            <Icon name="float" size={16} />
           </button>
         )}
         {onPin && (

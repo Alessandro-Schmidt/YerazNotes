@@ -45,7 +45,8 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
   Settings › Views (`ui/ViewsSettings.tsx`) and › Family colours (`ui/FamilyColours.tsx`, `.yeraz.json` `color`, `linkColor`)
 - `src/ui/update.ts` the version (`src-tauri/tauri.conf.json`'s, through vite.config.ts) and *Check for updates* on the introduction
   (the latest GitHub Release, no token; the web reloads into it, the desktop links to the installers)
-- `src/read/` `render.ts` (markdown-it, lazy) · `Peek.tsx` · `History.tsx` (past versions, diff, restore) · `src/ui/` App, FamilyView, FamilyMenu, Start, Explorer, TokenScreen,
+- `src/read/` `render.ts` (markdown-it, lazy) · `Peek.tsx` · `History.tsx` (past versions, diff, restore) · `float.ts` + `FloatingNote.tsx` (a note taken out of Yeraz:
+  an always-on-top Document Picture-in-Picture window, else a draggable card; lazy chunk) · `src/ui/` App, FamilyView, FamilyMenu, Start, Explorer, TokenScreen,
   theme (saved per device in `localStorage`, applied before paint by `index.html`), `panels.ts` + `ResizeHandle.tsx` (Explorer and Peek widths, per device), Appearance (`#/settings/appearance`),
   `customTheme.ts` + `ThemeEditor.tsx` (custom themes), `contrast.ts` (`readable` adjusts a failing colour), `Hidden.tsx` (Settings › Hidden),
   `Templates.tsx` (Settings › Templates, issue #41; `model/template.ts` fills one, `StructureDialogs.tsx` offers them under *Start from*),

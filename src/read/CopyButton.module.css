@@ -1,0 +1,16 @@
+/* A copy button: its icon, then the word naming what it copies. */
+
+.copy {
+  height: 28px;
+  padding: 0 8px;
+  gap: 5px;
+}
+.copyTag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.copy[aria-label='Copied'] {
+  color: var(--accent);
+}

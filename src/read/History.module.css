@@ -6,11 +6,17 @@
   gap: 12px;
 }
 
+/* The way back stays at the top of the box, however far the versions or changes scroll. */
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  padding: 4px 0;
+  background: var(--panel);
 }
 .top h2:focus {
   outline: none;
