@@ -41,6 +41,8 @@ test('lists past versions, compares one with now, and restores it as a new commi
   await expect(changes.locator('del').first()).toBeVisible()
   await page.getByRole('button', { name: 'This version', exact: true }).click()
   await expect(page.getByLabel('Changes from this version to now')).toHaveCount(0)
+  // The way back to the note is at the top of a version too (owner's request).
+  await expect(panel.getByRole('button', { name: 'Back to the note' })).toBeVisible()
 
   fake.resetLog()
   await page.getByRole('button', { name: 'Restore this version' }).click()

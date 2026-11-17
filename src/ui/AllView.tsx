@@ -24,6 +24,7 @@ import { byPlanted, type Graph } from '../model/graph'
 import { ROOT } from '../model/tree'
 import { preloadEditor } from '../editor/LeafEditor'
 import { imageAt } from '../read/LeafLook'
+import { onPutBack } from '../read/float'
 import { Peek } from '../read/Peek'
 import { session, useSession } from '../store/session'
 import { treeColor, usePlanted } from '../views/common'
@@ -136,6 +137,8 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
       : null
   const selected = family && path !== null ? allId(family.ref.repo, path) : null
 
+  // A floating note put back in Yeraz shows in the Peek again (read/float.ts).
+  useEffect(() => onPutBack(() => setPeekOpen(true)), [])
   const [arrived, setArrived] = useState(selected)
   if (arrived !== selected) {
     setArrived(selected)

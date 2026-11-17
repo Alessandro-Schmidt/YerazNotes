@@ -120,6 +120,7 @@ export function History({
               {when(version.date)} · {version.author}
             </span>
           </h2>
+          {back}
         </div>
         <div className={styles.bar}>
           <div className={styles.switch} role="group" aria-label="Show">

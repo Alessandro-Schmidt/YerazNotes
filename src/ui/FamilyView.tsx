@@ -11,6 +11,7 @@ import { ROOT } from '../model/tree'
 import { markNow } from '../perf'
 import { preloadEditor } from '../editor/LeafEditor'
 import { imageAt } from '../read/LeafLook'
+import { onPutBack } from '../read/float'
 import { Peek } from '../read/Peek'
 import { session, useSession } from '../store/session'
 import controls from './controls.module.css'
@@ -112,6 +113,8 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
     if (a) setAction(a)
   })
 
+  // A floating note put back in Yeraz shows in the Peek again (read/float.ts).
+  useEffect(() => onPutBack(() => setPeekOpen(true)), [])
   // Arriving at a node's URL from outside (a link, the back button) shows its Peek.
   const [arrived, setArrived] = useState(wanted)
   if (arrived !== wanted) {
