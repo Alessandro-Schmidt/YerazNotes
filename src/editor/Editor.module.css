@@ -831,3 +831,60 @@
   background: var(--accent);
   pointer-events: none;
 }
+
+/* Another device's version of the open note (arrivals.ts): what is new fades in, lightly
+   marked, and what went away fades out where it was; whole lines then close. */
+.editor :global(.cm-arrived) {
+  animation: arrive 1.4s ease-out;
+}
+.editor :global(.cm-departed) {
+  color: var(--muted);
+  pointer-events: none;
+  user-select: none;
+  animation: depart 1.4s ease-in forwards;
+}
+.editor :global(.cm-departed-block) {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation-name: depart-block;
+}
+.editor :global(.cm-departed-block > div) {
+  min-height: 0;
+  overflow: hidden;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    background: var(--accent-soft);
+  }
+  40% {
+    opacity: 1;
+    background: var(--accent-soft);
+  }
+  to {
+    background: transparent;
+  }
+}
+@keyframes depart {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes depart-block {
+  50% {
+    opacity: 0;
+    grid-template-rows: 1fr;
+  }
+  to {
+    opacity: 0;
+    grid-template-rows: 0fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor :global(.cm-arrived) {
+    animation: none;
+  }
+  .editor :global(.cm-departed) {
+    display: none;
+  }
+}
