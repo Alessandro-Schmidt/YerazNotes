@@ -20,6 +20,7 @@ import { insertMenu, type InsertHost } from './insertMenu'
 import { mentions, type MentionSource } from './mentions'
 import { pasteLink } from './pasteLink'
 import { steadyCaret } from './steady'
+import { arrivals, receive, remote } from './arrivals'
 import { toolbar } from './toolbar'
 
 export interface EditorHandle {
@@ -29,6 +30,11 @@ export interface EditorHandle {
   /** Inserts text at the cursor (or in place of the selection), on a line of its own when `block`, and focuses. */
   insertText(text: string, block?: boolean): void
   focus(): void
+  /**
+   * Takes another device's version of the text: only what differs changes, fading in and
+   * out, and it isn't an edit (no onChange, no Undo). False when nothing differed.
+   */
+  receive(text: string): boolean
 }
 
 export interface EditorProps {
@@ -110,6 +116,7 @@ export default function Editor({
           formatting,
           toolbar,
           steadyCaret,
+          arrivals,
           assetSource.of(async (path) => (await assetRef.current?.(path)) ?? null),
           treeFiles.of(() => filesListRef.current?.() ?? []),
           fileSizes.of((path) => sizeRef.current?.(path) ?? null),
@@ -138,6 +145,7 @@ export default function Editor({
           preview.current.of(source ? [] : livePreview),
           EditorView.updateListener.of((u) => {
             if (!u.docChanged) return
+            if (u.transactions.every((t) => !t.docChanged || t.annotation(remote))) return
             changed.current(u.state.doc.toString())
             markNow('keystroke-done')
           }),
@@ -214,6 +222,7 @@ export default function Editor({
         v.focus()
       },
       focus: () => view.current?.focus(),
+      receive: (text) => (view.current ? receive(view.current, text) : false),
     }
   }, [handleRef])
 

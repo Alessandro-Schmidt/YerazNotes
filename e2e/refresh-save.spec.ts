@@ -63,3 +63,54 @@ test('Save commits pending edits at once, without waiting two minutes', async ({
   expect(fake.repo(REPO).read(leaf.id)).toContain('Saved by hand.')
   await expect(page.getByRole('button', { name: 'Save now' })).toBeDisabled()
 })
+
+test('Refresh brings another device’s changes into the open note, fading only what changed', async ({
+  page,
+  fake,
+  graph,
+}) => {
+  test.skip(isPhone(page), 'Typing tests run on desktop engines')
+  const leaf = [...graph.nodes.values()].find((n) => n.kind === 'leaf' && !n.children.length)!
+  const before = fake.repo(REPO).read(leaf.id)!
+  const [title, ...rest] = before.split('\n')
+  // A few words of the first paragraph (its links are drawn as chips).
+  const kept = rest.find((l) => l.trim() && !l.startsWith('<!--'))!.slice(0, 30)
+  await page.goto(`./#/tree/${REPO}/${leaf.id}`)
+  await signInHere(page)
+  const content = page.locator('.cm-content')
+  await expect(content).toContainText(kept)
+
+  // Another device: a new icon, a new paragraph, an equation, and the first paragraph taken away.
+  const after = [
+    title!.replace(/^# /, '# 🔑 '),
+    '',
+    'Written on another device.',
+    '',
+    '$$x^2$$',
+    '',
+  ].join('\n')
+  await fake.repo(REPO).commit({
+    message: 'From another device',
+    additions: [{ path: leaf.id, contents: after }],
+  })
+  fake.resetLog()
+  await page.getByRole('button', { name: 'Refresh' }).click()
+
+  // The note stays open and takes the new version: the new parts fade in, the old fade out.
+  await expect(content).toContainText('Written on another device.')
+  await expect(content.locator('.cm-arrived').first()).toBeVisible()
+  await expect(content.locator('.cm-departed').first()).toBeAttached()
+  await expect(page.locator('[data-leaf] [data-arrived]')).toContainText('🔑')
+  if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT })
+  // Then the fades end, and only the new version is left.
+  await expect(content.locator('.cm-arrived, .cm-departed')).toHaveCount(0)
+  await expect(content).not.toContainText(kept)
+  // Taking it isn't an edit: nothing to save, nothing committed back.
+  await expect(page.getByRole('status')).toContainText('Synced')
+  await expect(page.getByRole('button', { name: 'Save now' })).toBeDisabled()
+  expect(fake.log.filter((e) => e.operation === 'mutation')).toHaveLength(0)
+  // Undo is for this device's typing: it doesn't bring the old version back.
+  await content.click()
+  await page.keyboard.press('ControlOrMeta+z')
+  await expect(content).toContainText('Written on another device.')
+})
