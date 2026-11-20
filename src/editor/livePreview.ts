@@ -47,6 +47,8 @@ import {
   type Embed,
 } from '../model/embeds'
 import { isInkPath } from '../model/ink'
+import { destination } from '../model/links'
+import { isTouch } from '../ui/platform'
 import { leadingIcon, linkTarget, ownPath } from '../model/parse'
 import { downloadAsset, favicon, fileCardHtml } from '../read/files'
 import { fillBookmark } from '../read/linkMeta'
@@ -65,7 +67,7 @@ import {
   sourceShown,
 } from './elements'
 import { askHost } from './insertMenu'
-import { inkHost, toOpen, type InkHost } from './ink'
+import { inkCache, inkHost, readInk, toOpen, writeInk, type InkHost } from './ink'
 import type { Pad } from './inkPad'
 import { CODE_ICON, languageIcon } from './languageIcons'
 import { logo, menu } from './menu'
@@ -245,6 +247,48 @@ function imageMenu(view: EditorView, frame: HTMLElement, button: HTMLElement) {
   )
 }
 
+/**
+ * The image on the whole screen (imageViewer.ts, M6): turned, flipped and marked up when it is
+ * the Family's own and the page saves files; looked at only otherwise.
+ */
+function expandImage(view: EditorView, frame: HTMLElement, src: string, alt: string) {
+  const own = ownPath(src)
+  const host = view.state.facet(inkHost)
+  const shown = frame.querySelector('img')?.src || null
+  void Promise.all([import('./imageViewer'), import('./imageEdit')]).then(
+    ([{ openViewer }, { applyEdit, canEditImages, openImage }]) => {
+      const editable = own !== null && canEditImages(host) ? host : null
+      openViewer({
+        label: alt || 'Image',
+        url: shown,
+        ...(editable &&
+          own !== null && {
+            edit: {
+              open: () => openImage(editable, own),
+              async done(opened, edit) {
+                const next = await applyEdit(editable, own, opened, edit)
+                if (next !== own) return relinkImage(view, frame, own, next)
+                // The same file, turned: the picture shown is fetched again.
+                const url = await view.state.facet(assetSource)?.(own)
+                const img = frame.querySelector('img')
+                if (url && img) img.src = url
+              },
+            },
+          }),
+      })
+    },
+  )
+}
+
+/** The image at `frame` now links to `to` (its marked-up copy, or its original again). */
+function relinkImage(view: EditorView, frame: HTMLElement, from: string, to: string) {
+  if (!frame.isConnected) return
+  const image = imageAt(view.state, view.posAtDOM(frame))
+  const url = image?.getChild('URL')
+  if (!image || !url || ownPath(view.state.sliceDoc(url.from, url.to)) !== from) return
+  view.dispatch({ changes: { from: url.from, to: url.to, insert: destination(to) } })
+}
+
 class ImageWidget extends WidgetType {
   constructor(
     readonly src: string,
@@ -269,6 +313,10 @@ class ImageWidget extends WidgetType {
     img.loading = 'lazy'
     img.decoding = 'async'
     frame.append(img)
+    // A tap on a touch screen opens it on the whole screen; a mouse has the expand button.
+    img.addEventListener('click', () => {
+      if (isTouch()) expandImage(view, frame, this.src, this.alt)
+    })
     for (const side of [-1, 1] as const) {
       const handle = document.createElement('span')
       handle.className = 'cm-image-handle'
@@ -286,7 +334,17 @@ class ImageWidget extends WidgetType {
       }
       frame.append(handle)
     }
-    frame.append(moreButton('Image', (button) => imageMenu(view, frame, button)))
+    const expand = moreButton('Image', () => expandImage(view, frame, this.src, this.alt))
+    expand.classList.add('cm-expand')
+    expand.innerHTML =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>'
+    expand.title = 'Expand'
+    expand.setAttribute('aria-label', `Expand ${this.alt || 'the image'}`)
+    expand.removeAttribute('aria-haspopup')
+    frame.append(
+      expand,
+      moreButton('Image', (button) => imageMenu(view, frame, button)),
+    )
     showWidth(frame, this.width)
     return frame
   }
@@ -355,7 +413,14 @@ class InkWidget extends WidgetType {
     this.updateDOM(frame)
     void import('./inkPad').then(({ mountPad }) => {
       if (!frame.isConnected && !view.dom.contains(frame)) return
-      const pad = mountPad(view, frame, this.path, this.host, this.alt)
+      const { host, path } = this
+      const pad = mountPad(frame, {
+        label: this.alt,
+        initial: inkCache(host).get(path),
+        load: () => readInk(host, path),
+        save: (ink) => writeInk(host, path, ink),
+        onEscape: () => view.focus(),
+      })
       pads.set(frame, pad)
       if (toOpen.get(view) === this.path) {
         toOpen.delete(view)

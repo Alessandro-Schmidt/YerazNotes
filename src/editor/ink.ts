@@ -24,6 +24,12 @@ export interface InkHost {
   save(path: string, text: string): void
   /** A free path in `assets/` for a new drawing. */
   create(): string
+  /** Any file's bytes, such as an image's (the image viewer, M6). */
+  bytes?(path: string): Promise<Uint8Array | null>
+  /** Saves a file's bytes as a pending edit; null deletes it. */
+  write?(path: string, bytes: Uint8Array | null): Promise<void>
+  /** Whether a path is a file of the Family's, or one waiting to be committed. */
+  taken?(path: string): boolean
 }
 
 export const inkHost = Facet.define<InkHost, InkHost | null>({

@@ -239,6 +239,10 @@ export function LeafEditor({
         assetPath('drawing', 'ink.svg', new Date(), (p) =>
           session.getState().files(repo).includes(p),
         ),
+      // Images turned and marked up in the viewer (M6).
+      bytes: (p) => session.getState().fileBytes(repo, p),
+      write: (p, bytes) => session.getState().apply(repo, [{ path: p, text: bytes }]),
+      taken: (p) => session.getState().files(repo).includes(p),
     }),
     [repo],
   )
