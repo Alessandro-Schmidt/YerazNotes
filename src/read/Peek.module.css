@@ -255,6 +255,13 @@
 .content a {
   color: var(--accent);
 }
+/* A web link in the text (not a card or a mention): underlined, as in the editor. */
+.content a[target='_blank']:not([class]) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+}
 @media (hover: hover) and (pointer: fine) {
   .content a:hover {
     color: var(--text);
@@ -408,12 +415,33 @@
   border-top: 1px solid var(--hair);
 }
 .content table {
+  /* A table wider than the column scrolls inside itself; the note never scrolls sideways
+     (owner's request). Printed, it is a table again, as wide as the page. */
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
   border-collapse: collapse;
 }
 .content th,
 .content td {
+  min-width: 7em;
+  max-width: 24em;
   padding: 6px 10px;
   border: 1px solid var(--hair);
+  vertical-align: top;
+}
+@media print {
+  .content table {
+    display: table;
+    width: 100%;
+  }
+  .content th,
+  .content td {
+    min-width: 0;
+    max-width: none;
+  }
 }
 
 .group {
