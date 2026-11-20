@@ -2,6 +2,7 @@
 // what it found as data, for `--json`, and as text for a person. Edits are planned by
 // sync/structure.ts, as the app plans them, and saved in one commit, or shown with `--dry-run`.
 
+import { inkFromSvg, isInkPath } from '../model/ink'
 import { AGENTS_FILE, AGENTS_TEXT } from '../example/files'
 import { ancestors, textFile, type Graph, type GraphNode } from '../model/graph'
 import { LINK, META, ownPath, parseMeta, prose, stripBom, HEADING } from '../model/parse'
@@ -185,7 +186,7 @@ const colours = (value: unknown): string[] =>
 
 /**
  * What breaks the repository format, or the map: broken or mistyped links, missing files,
- * a broken line 2, colours written as hex. Ghosts (leaves linked to but not written) are
+ * a broken line 2, colours written as hex, a drawing without its strokes. Ghosts (leaves linked to but not written) are
  * part of how Yeraz works, so they are only warnings.
  */
 export async function check(fam: Family): Promise<Result> {
@@ -229,6 +230,15 @@ export async function check(fam: Family): Promise<Result> {
         add('warning', path, `link to /${target}: that branch has no text yet`)
       else add('warning', path, `ghost: links to /${target}, not written yet`)
     }
+  }
+
+  // Drawings (development-plan.md M5): a `.ink.svg` Yeraz can't read can't be drawn on.
+  for (const path of [...files].filter(isInkPath).sort()) {
+    const text = await fam.bytes(path).then(
+      (b) => new TextDecoder().decode(b),
+      () => '',
+    )
+    if (!inkFromSvg(text)) add('error', path, 'not a drawing Yeraz can read (no stroke metadata)')
   }
 
   issues.sort((a, b) => a.path.localeCompare(b.path) || a.message.localeCompare(b.message))

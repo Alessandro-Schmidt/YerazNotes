@@ -105,21 +105,6 @@
   min-width: 0;
   gap: 4px;
 }
-.copy {
-  height: 28px;
-  padding: 0 8px;
-  gap: 5px;
-}
-.copyTag {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.copy[aria-label='Copied'] {
-  color: var(--accent);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .crumb a:hover {
     color: var(--accent);
@@ -270,6 +255,13 @@
 .content a {
   color: var(--accent);
 }
+/* A web link in the text (not a card or a mention): underlined, as in the editor. */
+.content a[target='_blank']:not([class]) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+}
 @media (hover: hover) and (pointer: fine) {
   .content a:hover {
     color: var(--text);
@@ -400,7 +392,20 @@
   text-decoration: line-through;
   opacity: 0.55;
 }
+/* A drawing (read/ink.ts): its strokes in the theme's colours, as wide as its image was. */
+.content :global(.ink) {
+  display: block;
+  max-width: 100%;
+  margin: 8px auto;
+}
+.content :global(.ink-drawing) {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
 .content img {
+  cursor: zoom-in;
   display: block;
   max-width: 100%;
   height: auto;
@@ -411,12 +416,33 @@
   border-top: 1px solid var(--hair);
 }
 .content table {
+  /* A table wider than the column scrolls inside itself; the note never scrolls sideways
+     (owner's request). Printed, it is a table again, as wide as the page. */
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
   border-collapse: collapse;
 }
 .content th,
 .content td {
+  min-width: 7em;
+  max-width: 24em;
   padding: 6px 10px;
   border: 1px solid var(--hair);
+  vertical-align: top;
+}
+@media print {
+  .content table {
+    display: table;
+    width: 100%;
+  }
+  .content th,
+  .content td {
+    min-width: 0;
+    max-width: none;
+  }
 }
 
 .group {

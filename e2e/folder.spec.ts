@@ -79,10 +79,7 @@ test('Delete from device takes the folder Family off and deletes its files', asy
   await page.getByRole('button', { name: 'Folder', exact: true }).click()
   await page.getByRole('button', { name: 'Open an existing folder' }).click()
   await expect(page).toHaveURL(/#\/tree\/~\/notes$/)
-  await page
-    .getByRole('navigation', { name: 'Projects' })
-    .getByRole('button', { name: 'Remove Notes' })
-    .click()
+  await (await familyMenu(page)).getByRole('menuitem', { name: 'Remove Family' }).click()
   const dialog = page.getByRole('dialog', { name: 'Remove Notes' })
   await expect(dialog).toContainText('stay on this device')
   await dialog.getByRole('button', { name: 'Delete from device' }).click()

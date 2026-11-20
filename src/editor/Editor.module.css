@@ -15,6 +15,9 @@
   overflow: visible;
 }
 .editor :global(.cm-content) {
+  /* The column keeps its width whatever is in it: a wide table or a long address scrolls or
+     is cut short inside its own block, never widening the note (owner's request). */
+  min-width: 0;
   padding: 0 0 40vh;
   /* The caret is the text's colour (issue #68). */
   caret-color: var(--text-body);
@@ -110,6 +113,21 @@
 }
 .editor :global(.cm-link) {
   color: var(--accent);
+}
+/* A link to a web page, written as text: underlined, with a hand, so it reads as something
+   to click (owner's request); a click opens it in a new tab (mentions.ts). */
+.editor :global(.cm-link[data-href]) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .editor :global(.cm-link[data-href]:hover) {
+    text-decoration-color: currentColor;
+    text-decoration-thickness: 2px;
+  }
 }
 .editor :global(.cm-mention) {
   padding: 1px 6px;
@@ -616,6 +634,18 @@
     opacity: 1;
   }
 }
+/* An image's expand button (M6), left of its ⋯: the image on the whole screen. */
+.editor :global(.cm-more.cm-expand) {
+  right: 40px;
+}
+.editor :global(.cm-image img) {
+  cursor: zoom-in;
+}
+@media (hover: hover) and (pointer: fine) {
+  .editor :global(.cm-image img) {
+    cursor: default;
+  }
+}
 .editor :global(.cm-more:focus-visible) {
   outline: none;
   border-color: var(--accent);
@@ -710,15 +740,22 @@
 }
 .editor :global(.cm-table-scroll) {
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 .editor :global(.cm-table table) {
+  width: max-content;
   border-collapse: collapse;
   font-size: 0.95em;
   line-height: 1.5;
 }
 .editor :global(.cm-table th),
 .editor :global(.cm-table td) {
-  min-width: 64px;
+  /* Cells keep a readable width and wrap only between words: a table wider than the column
+     scrolls inside its own frame (owner's request), the note stays put. */
+  min-width: 7em;
+  max-width: 24em;
+  overflow-wrap: normal;
+  word-break: normal;
   padding: 6px 10px;
   border: 1px solid var(--hair);
   text-align: left;
@@ -830,4 +867,61 @@
   border-radius: 1px;
   background: var(--accent);
   pointer-events: none;
+}
+
+/* Another device's version of the open note (arrivals.ts): what is new fades in, lightly
+   marked, and what went away fades out where it was; whole lines then close. */
+.editor :global(.cm-arrived) {
+  animation: arrive 1.4s ease-out;
+}
+.editor :global(.cm-departed) {
+  color: var(--muted);
+  pointer-events: none;
+  user-select: none;
+  animation: depart 1.4s ease-in forwards;
+}
+.editor :global(.cm-departed-block) {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation-name: depart-block;
+}
+.editor :global(.cm-departed-block > div) {
+  min-height: 0;
+  overflow: hidden;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    background: var(--accent-soft);
+  }
+  40% {
+    opacity: 1;
+    background: var(--accent-soft);
+  }
+  to {
+    background: transparent;
+  }
+}
+@keyframes depart {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes depart-block {
+  50% {
+    opacity: 0;
+    grid-template-rows: 1fr;
+  }
+  to {
+    opacity: 0;
+    grid-template-rows: 0fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor :global(.cm-arrived) {
+    animation: none;
+  }
+  .editor :global(.cm-departed) {
+    display: none;
+  }
 }

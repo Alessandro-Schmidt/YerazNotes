@@ -81,10 +81,8 @@ test('starts a Family with a name of its own, and deletes it from the device on 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Recipes')
 
   // Deleted from the device: gone from the Folder step too.
-  await page
-    .getByRole('navigation', { name: 'Projects' })
-    .getByRole('button', { name: 'Remove Recipes' })
-    .click()
+  await familyMenu(page)
+  await page.getByRole('menuitem', { name: 'Remove Family' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Delete from device' }).click()
   await expect(page.getByRole('heading', { name: 'Yeraz', level: 1 })).toBeVisible()
   await page.getByRole('button', { name: 'Folder', exact: true }).click()

@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
+import { useFloated } from '../read/float'
 import { Redirect, Route, Router, Switch } from 'wouter'
 import { useHashLocation } from 'wouter/use-hash-location'
 import { session, useSession } from '../store/session'
@@ -14,6 +15,9 @@ import { Hidden } from './Hidden'
 import { Templates } from './Templates'
 import { InsertMenuSettings } from './InsertMenuSettings'
 import { ViewsSettings } from './ViewsSettings'
+
+// A note taken out of Yeraz (read/float.ts): its own chunk, loaded the first time one floats.
+const FloatingNote = lazy(() => import('../read/FloatingNote'))
 
 // Routes live in the URL hash (GitHub Pages can't rewrite paths):
 //   #/                                   the last Family shown here (or the first one found)
@@ -40,6 +44,7 @@ const FAMILY_ONLY = /^#\/tree\/[^/]+\/[^/]+\/?$/
 
 export function App() {
   const phase = useSession((s) => s.phase)
+  const floated = useFloated()
 
   // Once, as the app starts signed in (a link followed through sign-in keeps its Family).
   useEffect(() => {
@@ -85,6 +90,11 @@ export function App() {
   if (phase === 'signed-out') return <TokenScreen />
   return (
     <Router hook={useHashLocation}>
+      {floated && (
+        <Suspense fallback={null}>
+          <FloatingNote note={floated} />
+        </Suspense>
+      )}
       <Switch>
         <Route path="/" component={Start} />
         <Route path="/tree/:owner/:name/*?" component={FamilyView} />

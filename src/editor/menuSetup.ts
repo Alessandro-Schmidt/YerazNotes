@@ -4,7 +4,7 @@
 
 export type ListKind = 'todo' | 'ordered' | 'bullet'
 export type InsertKind =
-  ListKind | 'mention' | 'table' | 'code' | 'image' | 'file' | 'leaf' | 'branch'
+  ListKind | 'mention' | 'table' | 'code' | 'drawing' | 'image' | 'file' | 'leaf' | 'branch'
 
 export const BUILT_IN: readonly { kind: InsertKind; label: string }[] = [
   { kind: 'todo', label: 'To-do list' },
@@ -13,6 +13,7 @@ export const BUILT_IN: readonly { kind: InsertKind; label: string }[] = [
   { kind: 'mention', label: 'Mention a note' },
   { kind: 'table', label: 'Table' },
   { kind: 'code', label: 'Code block' },
+  { kind: 'drawing', label: 'Drawing' },
   { kind: 'image', label: 'Image from files' },
   { kind: 'file', label: 'Attach a file' },
   { kind: 'leaf', label: 'New note' },

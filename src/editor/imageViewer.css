@@ -1,0 +1,138 @@
+/* The image viewer (imageViewer.ts, M6): the whole screen, the picture centred on the page's
+   background, the tools above it. The pad's own tools (ink.css) move into the second row. */
+
+.yz-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+.yz-viewer-top,
+.yz-viewer-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+}
+.yz-viewer-top {
+  padding-top: max(8px, env(safe-area-inset-top));
+  border-bottom: 1px solid var(--hair);
+  background: var(--panel);
+}
+.yz-viewer-tools:empty,
+.yz-viewer:not([data-drawing]) .yz-viewer-tools {
+  display: none;
+}
+.yz-viewer-tools {
+  border-bottom: 1px solid var(--hair);
+  background: var(--panel);
+}
+.yz-viewer-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.yz-viewer-top button {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: 500 14px var(--font-ui);
+  cursor: pointer;
+}
+.yz-viewer-top button:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+.yz-viewer-top button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .yz-viewer-top button:not(:disabled):hover {
+    background: var(--hover);
+  }
+}
+.yz-viewer-top .yz-viewer-done {
+  margin-left: 4px;
+  padding: 0 16px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.yz-viewer-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+  /* Two fingers zoom the picture, not the page (imageViewer.ts). */
+  touch-action: pan-x pan-y;
+}
+.yz-viewer-frame {
+  position: relative;
+  flex: none;
+  margin: auto;
+  box-shadow: 0 10px 40px var(--shadow);
+}
+.yz-viewer-frame img,
+.yz-viewer-picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.yz-viewer[aria-busy='true'] .yz-viewer-frame {
+  visibility: hidden;
+}
+
+/* The pad over the picture: no frame of its own, its tools in the viewer's second row. */
+.yz-viewer .cm-ink,
+.yz-viewer .cm-ink[data-drawing] {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  cursor: default;
+}
+.yz-viewer .cm-ink[data-drawing] {
+  cursor: crosshair;
+}
+.yz-viewer .cm-ink::after {
+  content: none !important;
+}
+.yz-viewer .cm-ink-svg {
+  height: 100%;
+}
+.yz-viewer[data-drawing] .cm-ink-bar {
+  display: flex;
+  position: static;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.yz-viewer:has(.cm-ink[data-chosen]) .cm-ink-bar button[data-ink='copy'],
+.yz-viewer:has(.cm-ink[data-chosen]) .cm-ink-bar button[data-ink='delete'] {
+  display: grid;
+}
+@media (pointer: coarse) {
+  .yz-viewer-top button {
+    min-width: 44px;
+    height: 44px;
+  }
+}

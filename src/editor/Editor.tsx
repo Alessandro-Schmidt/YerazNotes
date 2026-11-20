@@ -20,7 +20,9 @@ import { insertMenu, type InsertHost } from './insertMenu'
 import { mentions, type MentionSource } from './mentions'
 import { pasteLink } from './pasteLink'
 import { steadyCaret } from './steady'
+import { arrivals, receive, remote } from './arrivals'
 import { toolbar } from './toolbar'
+import { inkClipboard, inkHost, type InkHost } from './ink'
 
 export interface EditorHandle {
   setIcon(icon: string | null): void
@@ -29,6 +31,11 @@ export interface EditorHandle {
   /** Inserts text at the cursor (or in place of the selection), on a line of its own when `block`, and focuses. */
   insertText(text: string, block?: boolean): void
   focus(): void
+  /**
+   * Takes another device's version of the text: only what differs changes, fading in and
+   * out, and it isn't an edit (no onChange, no Undo). False when nothing differed.
+   */
+  receive(text: string): boolean
 }
 
 export interface EditorProps {
@@ -53,6 +60,8 @@ export interface EditorProps {
   files?(): Iterable<string>
   /** Sizes of the Tree's own files, for attachment cards. */
   fileSize?(path: string): number | null
+  /** Drawings (`.ink.svg`): reading and saving them. Without it they show as images. */
+  ink?: InkHost
 }
 
 export default function Editor({
@@ -68,6 +77,7 @@ export default function Editor({
   assetUrl,
   files,
   fileSize,
+  ink,
 }: EditorProps) {
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
@@ -79,7 +89,9 @@ export default function Editor({
   const filesListRef = useRef(files)
   const sizeRef = useRef(fileSize)
   const untitledRef = useRef(untitled)
+  const inkRef = useRef(ink)
   useEffect(() => {
+    inkRef.current = ink
     changed.current = onChange
     insertRef.current = onInsert
     filesRef.current = onFiles
@@ -110,9 +122,23 @@ export default function Editor({
           formatting,
           toolbar,
           steadyCaret,
+          arrivals,
           assetSource.of(async (path) => (await assetRef.current?.(path)) ?? null),
           treeFiles.of(() => filesListRef.current?.() ?? []),
           fileSizes.of((path) => sizeRef.current?.(path) ?? null),
+          ink
+            ? [
+                inkHost.of({
+                  read: (path) => inkRef.current?.read(path) ?? Promise.resolve(null),
+                  save: (path, text) => inkRef.current?.save(path, text),
+                  create: () => inkRef.current!.create(),
+                  bytes: async (path) => (await inkRef.current?.bytes?.(path)) ?? null,
+                  write: async (path, bytes) => inkRef.current?.write?.(path, bytes),
+                  taken: (path) => inkRef.current?.taken?.(path) ?? false,
+                }),
+                inkClipboard,
+              ]
+            : [],
           EditorView.domEventHandlers({
             keydown() {
               markNow('keystroke')
@@ -138,6 +164,7 @@ export default function Editor({
           preview.current.of(source ? [] : livePreview),
           EditorView.updateListener.of((u) => {
             if (!u.docChanged) return
+            if (u.transactions.every((t) => !t.docChanged || t.annotation(remote))) return
             changed.current(u.state.doc.toString())
             markNow('keystroke-done')
           }),
@@ -214,6 +241,7 @@ export default function Editor({
         v.focus()
       },
       focus: () => view.current?.focus(),
+      receive: (text) => (view.current ? receive(view.current, text) : false),
     }
   }, [handleRef])
 

@@ -24,6 +24,7 @@ import { byPlanted, type Graph } from '../model/graph'
 import { ROOT } from '../model/tree'
 import { preloadEditor } from '../editor/LeafEditor'
 import { imageAt } from '../read/LeafLook'
+import { onPutBack } from '../read/float'
 import { Peek } from '../read/Peek'
 import { session, useSession } from '../store/session'
 import { treeColor, usePlanted } from '../views/common'
@@ -48,7 +49,6 @@ import {
 } from './StructureDialogs'
 import { useDeleteKey } from './deleteKey'
 import { colorVar } from './theme'
-import { ProjectTabs } from './ProjectTabs'
 import { Divider, TopBar } from './TopBar'
 import { SHEET_HEIGHT, savePinSide, savedPinSide, widthStore, widthVars } from './panels'
 import { PHONE, useMedia } from './useMedia'
@@ -136,6 +136,8 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
       : null
   const selected = family && path !== null ? allId(family.ref.repo, path) : null
 
+  // A floating note put back in Yeraz shows in the Peek again (read/float.ts).
+  useEffect(() => onPutBack(() => setPeekOpen(true)), [])
   const [arrived, setArrived] = useState(selected)
   if (arrived !== selected) {
     setArrived(selected)
@@ -240,11 +242,12 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           <h1 className={styles.title}>{TITLE}</h1>
           <FamilyMenu all />
         </div>
-        {!phone && <ViewSwitcher />}
+        {/* A note open as a page: only what writing needs stays (owner's request). */}
+        {!phone && !expanded && <ViewSwitcher />}
         <div className={styles.toggles}>
           <Search repo={target?.ref.repo ?? ''} lit={!!found} onMatches={setFound} />
           <SaveAndRefresh repos={trees.map((t) => t.repo)} />
-          {target && (
+          {target && !expanded && (
             <button
               type="button"
               className={`${controls.primary} ${styles.newLeaf}`}
@@ -262,8 +265,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           )}
         </div>
       </TopBar>
-      <ProjectTabs all />
-      {phone && <ViewSwitcher phone />}
+      {phone && !expanded && <ViewSwitcher phone />}
       {trees.map((t) => (
         <ConflictBanner key={t.repo} repo={t.repo} />
       ))}

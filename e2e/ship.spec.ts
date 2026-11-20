@@ -117,6 +117,37 @@ test.describe('PDF export', () => {
   })
 })
 
+test.describe('PDF export from a tap', () => {
+  test('prints within the tap itself, as Safari on iPad requires', async ({ page, fake }) => {
+    await fake.repo('you/engineering').commit({
+      message: 'tablet',
+      additions: [{ path: 'tablet.md', contents: '# Tablet\n\nPrinted from an iPad.\n' }],
+    })
+    await page.goto('./#/tree/you/engineering/tablet.md')
+    await signInHere(page)
+    // Safari prints only while the tap is being handled: print() is recorded with whether
+    // a click was still on its way through the page.
+    await page.evaluate(() => {
+      const w = window as unknown as { inTap: boolean; printedInTap: boolean | null }
+      w.inTap = false
+      w.printedInTap = null
+      window.addEventListener('click', () => (w.inTap = true), true)
+      window.addEventListener('click', () => (w.inTap = false))
+      window.print = () => void (w.printedInTap = w.inTap)
+    })
+    await expect(page.getByText('Printed from an iPad.')).toBeVisible()
+    await page.getByRole('button', { name: 'Options' }).click()
+    // The copy to print is made while the menu is open.
+    await page.waitForTimeout(500)
+    await page.getByRole('menuitem', { name: 'Export PDF' }).click()
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { printedInTap: boolean | null }).printedInTap),
+      )
+      .toBe(true)
+  })
+})
+
 test.describe('installable app', () => {
   test('has a manifest with every icon, and a service worker that serves the shell offline', async ({
     page,

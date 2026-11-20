@@ -14,7 +14,8 @@ import {
 } from 'react'
 import { fileUrl, inFamily } from '../github/graphql'
 import { iconImage, textFile, threadEnd, type Graph, type GraphNode } from '../model/graph'
-import { parseLeaf, parseMeta, repairHeader, type LeafMeta } from '../model/parse'
+import { ARRIVAL_MS } from '../model/diff'
+import { parseLeaf, parseMeta, repairHeader, type LeafMeta, type ParsedLeaf } from '../model/parse'
 import { Cover } from '../read/LeafLook'
 import { mentionLink } from '../model/links'
 import { session, useSession } from '../store/session'
@@ -23,6 +24,7 @@ import { Icon } from '../ui/icons'
 import { treeHref } from '../ui/paths'
 import { ROOT } from '../model/tree'
 import { planBranchText, planNewLeaf } from '../sync/structure'
+import { isLocal } from '../sync/overlay'
 import { parentFor, StructureDialog, type StructureAction } from '../ui/StructureDialogs'
 import { focusFirst, menuKeys } from '../ui/menuKeys'
 import { attach, attachmentMarkdown } from './attach'
@@ -32,6 +34,8 @@ import { EditableCover, IconMover } from './EditableCover'
 import { iconFocus, iconShape } from '../read/cover'
 import { IconPicker } from './IconPicker'
 import type { InsertHost } from './insertMenu'
+import type { InkHost } from './ink'
+import { assetPath } from '../sync/assets'
 import type { MentionLeaf, MentionSource } from './mentions'
 
 // CodeMirror is its own chunk: it loads the first time a leaf is shown (ARCHITECTURE.md §11).
@@ -222,12 +226,40 @@ export function LeafEditor({
     </>
   )
   const assetUrl = useCallback((p: string) => session.getState().assetUrl(repo, p), [repo])
+  // Drawings (development-plan.md M5): pending files in assets/, like images.
+  const ink = useMemo<InkHost>(
+    () => ({
+      read: async (p) => {
+        const bytes = await session.getState().fileBytes(repo, p)
+        return bytes ? new TextDecoder().decode(bytes) : null
+      },
+      save: (p, text) =>
+        void session.getState().apply(repo, [{ path: p, text: new TextEncoder().encode(text) }]),
+      create: () =>
+        assetPath('drawing', 'ink.svg', new Date(), (p) =>
+          session.getState().files(repo).includes(p),
+        ),
+      // Images turned and marked up in the viewer (M6).
+      bytes: (p) => session.getState().fileBytes(repo, p),
+      write: (p, bytes) => session.getState().apply(repo, [{ path: p, text: bytes }]),
+      taken: (p) => session.getState().files(repo).includes(p),
+    }),
+    [repo],
+  )
   const mentionCreated = (id: string | undefined) => {
     setAction(null)
     const created = id && session.getState().data[key]?.graph?.nodes.get(id)
     if (created) handle.current?.insertText(mentionLink(created.title, created.id))
     else handle.current?.focus()
   }
+
+  // The version of the text the editor holds (its sha, as committed), and the text itself.
+  const committed = (branch ?? node)?.sha ?? null
+  const shown = useRef<{ text: string; sha: string | null }>({ text: '', sha: null })
+  // The cover and the icon, when another device changed them: fading in (a count, to start
+  // the fade again) and the old ones fading out.
+  const [fresh, setFresh] = useState({ cover: 0, icon: 0 })
+  const [gone, setGone] = useState<{ cover?: LeafMeta; icon?: ParsedLook } | null>(null)
 
   useEffect(() => {
     let live = true
@@ -243,6 +275,7 @@ export function LeafEditor({
         // A header damaged before shows repaired, and the next save writes the repair.
         const repaired = repairHeader(t)
         if (repaired !== t) setLook(parseLeaf(repaired).meta)
+        shown.current = { text: repaired, sha: null }
         setText({ path, text: repaired })
       })
       .catch(() => undefined)
@@ -264,6 +297,50 @@ export function LeafEditor({
   useEffect(() => {
     saveRef.current = saveLocally
   })
+
+  // The note changed on another device (a Refresh, or any pull, brought a new version):
+  // the open note takes only what differs, fading it in and out, without closing it.
+  // A version from this device's own edits (a local sha) is the text already shown.
+  useEffect(() => {
+    if (!committed || isLocal(committed) || text?.path !== path) return
+    if (shown.current.sha === null) shown.current.sha = committed
+    if (shown.current.sha === committed) return
+    let live = true
+    void (async () => {
+      // Keystrokes not yet written here go first, so the text read back includes them.
+      await saveRef.current()
+      const next = repairHeader(await session.getState().textOf(repo, path))
+      // Typing meanwhile wins: its commit merges, and the merged version comes back here.
+      if (!live || pending.current || !handle.current) return
+      const before = shown.current.text
+      shown.current = { text: next, sha: committed }
+      if (!handle.current.receive(next)) return
+      const [was, now] = [lookOf(before), lookOf(next)]
+      setLook(now.meta ?? {})
+      const coverOf = (m: LeafMeta | null) =>
+        JSON.stringify([m?.cover, m?.coverPosition, m?.coverAspect])
+      const iconOf = (l: ParsedLook) =>
+        JSON.stringify([l.icon, iconImage(l.meta), l.meta?.iconShape, l.meta?.iconFocus])
+      const cover = coverOf(was.meta) !== coverOf(now.meta)
+      const icon = iconOf(was) !== iconOf(now)
+      if (!cover && !icon) return
+      setFresh((f) => ({
+        cover: f.cover + (cover && now.meta?.cover ? 1 : 0),
+        icon: f.icon + (icon && (now.icon || iconImage(now.meta)) ? 1 : 0),
+      }))
+      const leaving = {
+        ...(cover && was.meta?.cover ? { cover: was.meta } : {}),
+        ...(icon && (was.icon || iconImage(was.meta)) ? { icon: was } : {}),
+      }
+      if (leaving.cover || leaving.icon) {
+        setGone(leaving)
+        window.setTimeout(() => setGone(null), ARRIVAL_MS)
+      }
+    })()
+    return () => {
+      live = false
+    }
+  }, [committed, text?.path, path, repo])
   useEffect(
     () => () => {
       void saveRef.current().then(() => session.getState().flush(repo))
@@ -291,6 +368,7 @@ export function LeafEditor({
   }, [repo])
 
   const onChange = (next: string) => {
+    shown.current = { ...shown.current, text: next }
     // The look follows the text, so Undo of a header change shows (and keeps) the undone line 2.
     setLook(parseMeta(secondLine(next)) ?? {})
     if (pending.current) window.clearTimeout(pending.current.timer)
@@ -316,7 +394,9 @@ export function LeafEditor({
     })
   const iconRow = (owned?.icon || image) && (
     <div
+      key={`icon ${fresh.icon}`}
       className={styles.iconRow}
+      data-arrived={fresh.icon ? '' : undefined}
       data-position={inline ? 'left' : iconPlace(meta)}
       data-inline={inline ? '' : undefined}
       // Over the cover's lower edge; not while the cover is being moved.
@@ -424,28 +504,43 @@ export function LeafEditor({
   if (text?.path !== path) return <div className={styles.loading} aria-busy="true" />
   return (
     <div className={styles.leaf} data-leaf="">
-      {meta?.cover !== undefined && !repositioning ? (
-        // The cover's choices open from the cover itself (owner's request), as the icon's do.
-        <Menu
-          label="Change cover"
-          className={styles.coverButton}
-          trigger={
+      {gone?.cover && (
+        <div className={styles.departed} aria-hidden="true" inert>
+          <div>
             <EditableCover
               repo={repo}
-              meta={meta}
+              meta={gone.cover}
               moving={false}
               onSave={() => {}}
               onCancel={() => {}}
             />
-          }
-        >
-          <CoverChoices
-            meta={meta}
-            onChange={changeLook}
-            onCover={() => coverPicker.current?.click()}
-            onReposition={() => setRepositioning(true)}
-          />
-        </Menu>
+          </div>
+        </div>
+      )}
+      {meta?.cover !== undefined && !repositioning ? (
+        <div key={`cover ${fresh.cover}`} data-arrived={fresh.cover ? '' : undefined}>
+          // The cover's choices open from the cover itself (owner's request), as the icon's do.
+          <Menu
+            label="Change cover"
+            className={styles.coverButton}
+            trigger={
+              <EditableCover
+                repo={repo}
+                meta={meta}
+                moving={false}
+                onSave={() => {}}
+                onCancel={() => {}}
+              />
+            }
+          >
+            <CoverChoices
+              meta={meta}
+              onChange={changeLook}
+              onCover={() => coverPicker.current?.click()}
+              onReposition={() => setRepositioning(true)}
+            />
+          </Menu>
+        </div>
       ) : (
         <EditableCover
           key={`${path} ${repositioning}`}
@@ -462,6 +557,7 @@ export function LeafEditor({
       {/* The header's controls change the editor's text, so they appear with it. */}
       <Suspense fallback={<div className={styles.loading} aria-busy="true" />}>
         <div className={styles.header}>
+          {gone?.icon && <GoneIcon repo={repo} look={gone.icon} />}
           {!inline && iconRow}
           <LeafStyle
             meta={meta}
@@ -528,6 +624,7 @@ export function LeafEditor({
             onInsert={onInsert}
             onFiles={(files) => void addFiles(files)}
             assetUrl={assetUrl}
+            ink={ink}
             files={() => session.getState().files(repo)}
             fileSize={(p) => session.getState().fileSize(repo, p)}
             autoFocus={autoFocus}
@@ -558,6 +655,41 @@ export function LeafEditor({
       )}
     </div>
   )
+}
+
+/** An icon another device took away, fading out where it was. */
+function GoneIcon({ repo, look }: { repo: string; look: ParsedLook }) {
+  const image = iconImage(look.meta)
+  const shape = iconShape(look.meta)
+  const focus = iconFocus(look.meta)
+  return (
+    <div className={styles.departed} aria-hidden="true" inert>
+      <div className={styles.iconRow} data-position={iconPlace(look.meta)}>
+        {image ? (
+          <Cover
+            repo={repo}
+            src={image}
+            x={focus[0]}
+            position={focus[1]}
+            aspect={shape.aspect}
+            radius={shape.radius}
+            className={styles.iconImage}
+            loading="lazy"
+            fetchPriority="auto"
+          />
+        ) : (
+          <span className={styles.icon}>{look.icon}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** A text's icon (line 1's emoji) and look (line 2). */
+type ParsedLook = Pick<ParsedLeaf, 'icon' | 'meta'>
+function lookOf(text: string): ParsedLook {
+  const { icon, meta } = parseLeaf(text)
+  return { icon, meta }
 }
 
 /** Line 2 of a text, without parsing the rest of it. */

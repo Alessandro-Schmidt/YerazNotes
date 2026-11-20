@@ -4,6 +4,7 @@ import { createFakeGitHub, type FakeGitHub } from '../../test/fake-github/fakeGi
 import { fakeGitHubHandlers } from '../../test/fake-github/msw'
 import { createGitHubClient } from '../github/client'
 import { createTreeRepository, lookupTree, type TreeRef } from '../github/graphql'
+import { emptyInk, inkFromSvg, inkToSvg } from '../model/ink'
 import { gitBlobSha } from '../model/sha'
 import { memoryStore } from '../store/db'
 import { pullTree } from './pull'
@@ -275,6 +276,40 @@ describe('pushTree', () => {
 `,
     )
     expect(new TextDecoder().decode(at('welcome.md'))).toContain(`(/${path})`)
+    expect(pushed.conflicts).toEqual([])
+  })
+
+  it('merges a drawing two devices drew in, stroke by stroke (M5)', async () => {
+    const path = 'assets/2026-11-20-sketch.ink.svg'
+    const pen = (id: string, x: number) => ({
+      id,
+      tool: 'pen' as const,
+      color: 'ink' as const,
+      size: 5,
+      pressure: true,
+      points: [x, 10, 0.5, x + 10, 20, 0.5],
+    })
+    const base = inkToSvg({ ...emptyInk(), strokes: [pen('a1', 0)] })
+    await fake.addRepo('you/ink', { '.yeraz.json': '{"name":"Ink"}\n', [path]: base })
+    const inkRef = (await lookupTree(client, 'you/ink'))!
+    const store = memoryStore()
+    await pullTree(inkRef, { client, store })
+    fake.faults.pushBeforeNextCommit = {
+      message: 'phone',
+      additions: [
+        { path, contents: inkToSvg({ ...emptyInk(), strokes: [pen('a1', 0), pen('t1', 100)] }) },
+      ],
+    }
+    const ours = inkToSvg({ ...emptyInk(), strokes: [pen('a1', 0), pen('o1', 200)] })
+    const pushed = await pushTree(
+      inkRef,
+      { [path]: { text: new TextEncoder().encode(ours), base: await gitBlobSha(base) } },
+      { client, store },
+    )
+    const repo = fake.repo('you/ink')
+    const merged = inkFromSvg(new TextDecoder().decode(repo.blobs.get(repo.head!.files.get(path)!)))
+    expect(merged?.strokes.map((s) => s.id)).toEqual(['a1', 't1', 'o1'])
+    expect([...repo.head!.files.keys()]).not.toContain('assets/2026-11-20-sketch.ink-2.svg')
     expect(pushed.conflicts).toEqual([])
   })
 

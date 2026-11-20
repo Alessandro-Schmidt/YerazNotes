@@ -4,7 +4,7 @@
 import type { Browser, Page } from '@playwright/test'
 import type { FakeGitHub } from '../test/fake-github/fakeGitHub'
 import type { Graph } from '../src/model/graph'
-import { expect, isPhone, signInHere, test } from './fixtures'
+import { expect, familyMenu, isPhone, signInHere, test } from './fixtures'
 
 const REPO = 'you/engineering'
 
@@ -464,10 +464,7 @@ test('the Delete key offers to delete the selection, unless typed into the leaf'
   await expect(dialog).toBeVisible()
   await page.keyboard.press('Escape')
   // Inside another dialog, the key is that dialog's.
-  await page
-    .getByRole('navigation', { name: 'Projects' })
-    .getByRole('button', { name: 'Remove Engineering' })
-    .click()
+  await (await familyMenu(page)).getByRole('menuitem', { name: 'Remove Family' }).click()
   await page
     .getByRole('dialog', { name: 'Remove Engineering' })
     .getByRole('button', { name: 'Cancel' })

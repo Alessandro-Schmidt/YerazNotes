@@ -368,3 +368,42 @@
 .menuHost:has(> .coverButton) {
   display: block;
 }
+
+/* A cover or icon another device changed fades in; one it took away fades out, then its
+   row closes (a grid row animates from 1fr to 0fr). With the editor's `arrive`. */
+.leaf [data-arrived] {
+  animation: arrive 1.4s ease-out;
+}
+.departed {
+  display: grid;
+  grid-template-rows: 1fr;
+  pointer-events: none;
+  animation: depart 1.4s ease-in forwards;
+}
+.departed > * {
+  min-height: 0;
+  overflow: hidden;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes depart {
+  50% {
+    opacity: 0;
+    grid-template-rows: 1fr;
+  }
+  to {
+    opacity: 0;
+    grid-template-rows: 0fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .leaf [data-arrived] {
+    animation: none;
+  }
+  .departed {
+    display: none;
+  }
+}

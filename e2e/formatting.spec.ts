@@ -70,6 +70,12 @@ test('on a phone, a bar above the keyboard formats the selection', async ({ page
   expect(Math.round(box.y + box.height)).toBe(page.viewportSize()!.height)
   // No keyboard on screen here: the bar is the page's bottom, its middle left free.
   await expect(bar).toHaveAttribute('data-docked', '')
+  // The app ends above it, so the bar hides nothing of the note or the app.
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.getElementById('root')!.getBoundingClientRect().bottom),
+    )
+    .toBe(Math.round(box.y))
   await page.keyboard.press('Home')
   for (let i = 0; i < 'Make this '.length; i++) await page.keyboard.press('ArrowRight')
   for (let i = 0; i < 'word'.length; i++) await page.keyboard.press('Shift+ArrowRight')

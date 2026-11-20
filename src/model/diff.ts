@@ -33,3 +33,53 @@ export function lineDiff(before: string, after: string, context = 2): DiffLine[]
   })
   return out
 }
+
+/** How long a change from another device fades in or out on screen (the editor's CSS too). */
+export const ARRIVAL_MS = 1400
+
+/** One change to a text, in the old text's offsets: `[from, to)` becomes `insert`. */
+export interface TextChange {
+  from: number
+  to: number
+  insert: string
+}
+
+/**
+ * The smallest changes that turn `before` into `after`, in order and apart: lines are matched
+ * first (the LCS, as above), then each changed run is trimmed to the characters that differ.
+ * For showing only what is new when a note changes on another device.
+ */
+export function textChanges(before: string, after: string): TextChange[] {
+  if (before === after) return []
+  // Each line keeps its line break, so the last line (which has none) differs from itself
+  // followed by more, and the change is the break plus what comes after it.
+  const split = (text: string) => text.match(/[^\n]*\n|[^\n]+$/g) ?? []
+  const chunks = diffComm(split(before), split(after)) as Chunk[]
+  const out: TextChange[] = []
+  let at = 0
+  for (const chunk of chunks) {
+    if ('common' in chunk) {
+      at += chunk.common.join('').length
+      continue
+    }
+    const removed = chunk.buffer1.join('')
+    const added = chunk.buffer2.join('')
+    let head = 0
+    const most = Math.min(removed.length, added.length)
+    while (head < most && removed[head] === added[head]) head++
+    let tail = 0
+    while (
+      tail < most - head &&
+      removed[removed.length - 1 - tail] === added[added.length - 1 - tail]
+    )
+      tail++
+    if (removed.length - head - tail > 0 || added.length - head - tail > 0)
+      out.push({
+        from: at + head,
+        to: at + removed.length - tail,
+        insert: added.slice(head, added.length - tail),
+      })
+    at += removed.length
+  }
+  return out
+}

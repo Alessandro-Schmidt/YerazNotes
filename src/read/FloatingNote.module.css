@@ -1,0 +1,75 @@
+/* A floating note: the note alone, its two copies and the way back on top. */
+
+.note {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.back {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .back:hover {
+    background: var(--hover);
+    color: var(--accent);
+  }
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px 24px;
+}
+
+/* Its own window: the note fills it. */
+:global(html):has(> body > .note),
+:global(body):has(> .note) {
+  height: 100%;
+  margin: 0;
+}
+
+/* Over the app, without a window of its own: a card, moved by its head. */
+.card {
+  position: fixed;
+  z-index: 20;
+  width: min(400px, calc(100vw - 32px));
+  height: min(560px, calc(100vh - 32px));
+  border: 1px solid var(--hair-strong);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px var(--shadow);
+}
+.card .head {
+  cursor: grab;
+  touch-action: none;
+}
+.card .head:active {
+  cursor: grabbing;
+}

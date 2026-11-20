@@ -197,20 +197,25 @@
   min-width: 0;
 }
 
-.homeRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
-.homeRow:empty {
-  display: none;
+/* Back to the notes: the card's top left corner, beside the mark, taking no height. */
+.card:has(> .home) {
+  position: relative;
 }
 .home {
-  margin-left: auto;
+  position: absolute;
+  top: 14px;
+  left: 14px;
   color: var(--text);
   font-weight: 500;
   text-decoration: none;
+}
+/* A narrow card: the button would reach the mark, so it has a line of its own. */
+@media (max-width: 640px) {
+  .home {
+    position: static;
+    align-self: flex-start;
+    margin: -8px 0 -4px -10px;
+  }
 }
 
 .fine {

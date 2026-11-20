@@ -342,6 +342,70 @@ Scope: §4 and §5, plus CI.
 - The PWA passes the browser's installability checks.
 - The printing checklist (§7.6) passes on Chrome, Safari and the desktop app on all three OSes.
 
+### M5 — Ink (Apple Pencil and any pen)
+
+**Built.** Left for the owner: the iPad check in §7.6.
+
+Handwriting and drawings mixed with the text (owner's request). A drawing is a block between
+paragraphs, never laid over the text: text reflows on every screen, ink would land on the wrong
+words. Drawing over the text, tied to a paragraph, is left for later (owner's decision).
+
+1. **`model/ink.ts`** (pure, tests first): strokes ↔ an SVG file in `assets/`
+   (`2026-11-20-sketch.ink.svg`). GitHub shows the SVG as a picture; its `<metadata>` holds the
+   strokes (points, pressure, colour name, size, tool) so Yeraz edits them. Writing what was
+   read gives the same bytes. Colours are the theme's names (`ink`, `blue`, `green`, `amber`,
+   `violet`): the file carries their light and dark values for GitHub, the app draws them with
+   the theme's tokens. Shapes that follow pressure come from `perfect-freehand`.
+2. **The ink block** (`editor/ink.ts`, a lazy chunk): an image whose file ends in `.ink.svg` is
+   drawn from its strokes, in the theme's colours, in the editor and the read view. Tapping it,
+   the pencil button on the touch bar, or *Drawing* in the insert menu opens it for drawing:
+   pen, highlighter, eraser, lasso (move, recolour, copy, delete), colours, three sizes, undo and
+   redo. A pen draws and a finger scrolls (palm rejection); without a pen, a finger, a mouse or a
+   trackpad draws. Pressure, coalesced events, the stroke in progress redrawn once a frame
+   (an SVG path: as fast as a canvas at one stroke's size, and no second drawing code).
+3. **Copy and paste:** strokes chosen with the lasso, or a block copied with the text, go on the
+   clipboard with their strokes and as a picture (other apps). Pasting makes a new file, so the
+   copy never changes the original; it works between Families.
+4. **Saving and sync:** a drawing is saved as a pending file like an image, in the same commit as
+   the leaf. Strokes have ids, so two devices drawing in the same file merge stroke by stroke.
+   `yeraz check` reports an ink file it can't read. The contract (ARCHITECTURE.md §4) and the
+   agents' `CLAUDE.md` describe the format.
+
+**Done when:**
+
+- Unit: an ink file round-trips byte for byte; a file with a script, an unknown colour or bad
+  numbers is refused or cleaned; two devices' strokes merge; deleting on one side and keeping on
+  the other keeps a changed stroke.
+- End-to-end: *Drawing* from the insert menu, a stroke with a pen (pointer events, pressure)
+  and one with a mouse, then autosave commits one `.ink.svg` and the leaf in one commit; a finger
+  scrolls once a pen was used; undo; the eraser; the lasso copies to another leaf as a new file.
+- Manual (§7.6): on an iPad with an Apple Pencil, drawing keeps up with the pen and the palm is
+  ignored.
+
+### M6 — Images: viewer and markup
+
+**Built.** Owner's request: any image expanded to the whole screen, turned and flipped, and marked
+up with a pen, a highlighter and shapes, on a computer, a tablet or a phone. Owner's decision: the
+marks are drawn into a copy the note shows, so GitHub, other apps and PDFs show them too.
+
+1. **Viewer** (`editor/imageViewer.ts`, a lazy chunk): an expand button on the image (hover), a
+   tap on touch screens; zoom (buttons, Ctrl/⌘ and the wheel, two fingers), Cancel and Done. The
+   read view opens images to look at only.
+2. **Turn and flip** (`model/orient.ts`): a JPEG by its EXIF orientation alone, its pixels kept
+   byte for byte; any other picture redrawn losslessly (PNG). The note links to the same file.
+3. **Markup** (`model/markup.ts`, `editor/imageEdit.ts`): the original is kept; the note shows
+   `x.marked.png` (`.jpg` for a photo) with the strokes drawn in, and the strokes are kept in
+   `x.marked.ink.svg` (`image` names the original), to be changed again. All marks deleted: the
+   note shows the original again and both files go.
+4. **Shapes** (rectangle, ellipse, arrow) in the pad, for images and drawings alike: two points,
+   the corners or the ends. An older Yeraz draws a shape as a line between its points.
+
+**Done when:** unit tests for orientation (EXIF read and written, both byte orders, composing
+turns), markup names and strokes turned with their picture, shapes' lines and the `image` field;
+end-to-end: a PNG turned in one commit, markup committed as copy and strokes with the original
+untouched and removed again, Cancel, a JPEG turned with its scan data unchanged, the read view's
+viewer, and a tap and a finger on a phone. Manual (§7.6): marking up a photo with an Apple Pencil.
+
 ### After launch
 
 Not part of the first release:
@@ -414,6 +478,8 @@ Not part of the first release:
 - **Installing:** install the PWA on iOS and Android.
 - **Icons:** the dock, taskbar, desktop shortcut and phone home screen icons are sharp on standard and high-density screens (compare with `design/screens/08-app-icon.png`).
 - **Unsigned desktop app:** check that it launches on macOS through right-click → Open.
+- **Ink:** on an iPad with an Apple Pencil, drawing keeps up with the pen, the palm is ignored and a finger scrolls (M5).
+- **Images:** on an iPad, a tap opens a photo, two fingers zoom it, the Pencil marks it up, and the copy in the note matches what was drawn (M6).
 
 ## 8. CI pipeline (GitHub Actions)
 

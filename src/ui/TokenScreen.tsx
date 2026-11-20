@@ -121,6 +121,16 @@ function Welcome({ choose }: { choose(step: Step): void }) {
   ]
   return (
     <div className={styles.card}>
+      {/* The way back, where a way back is looked for: the card's top left (owner's request). */}
+      {families > 0 && (
+        <a
+          className={`${controls.ghost} ${styles.home}`}
+          href={families > 1 ? `#${allHref()}` : '#/'}
+        >
+          <Icon name="chevronLeft" />
+          Back to your notes
+        </a>
+      )}
       <div className={styles.hero}>
         {/* The top bar's mark, the app's one everywhere. */}
         <Mark className={styles.logo} size={72} />
@@ -216,26 +226,14 @@ function Welcome({ choose }: { choose(step: Step): void }) {
           </button>
         ))}
       </div>
-      {/* One row: how GitHub is connected, and the way back (fits a laptop's height). */}
-      <div className={styles.homeRow}>
-        {github && (
-          <p className={styles.fine}>
-            GitHub is connected with a token kept on this device.{' '}
-            <button type="button" className={styles.textButton} onClick={() => choose('token')}>
-              Change token
-            </button>
-          </p>
-        )}
-        {families > 0 && (
-          <a
-            className={`${controls.ghost} ${styles.home}`}
-            href={families > 1 ? `#${allHref()}` : '#/'}
-          >
-            Back to your notes
-            <Icon name="arrowRight" />
-          </a>
-        )}
-      </div>
+      {github && (
+        <p className={styles.fine}>
+          GitHub is connected with a token kept on this device.{' '}
+          <button type="button" className={styles.textButton} onClick={() => choose('token')}>
+            Change token
+          </button>
+        </p>
+      )}
       <AppVersion />
     </div>
   )

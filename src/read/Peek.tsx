@@ -1,6 +1,7 @@
 // The Peek: the selected node, floating over the map (420 px), or its full page when
 // expanded (760 px column). On phones it is a bottom sheet. A leaf is editable in all three.
 
+import { isDrawing, showDrawing } from './ink'
 import {
   Fragment,
   useEffect,
@@ -48,6 +49,8 @@ import { templateHref, treeHref } from '../ui/paths'
 import styles from './Peek.module.css'
 import { coverAspect, coverPosition } from './cover'
 import { downloadAsset } from './files'
+import { CopyButton } from './CopyButton'
+import { floatNote } from './float'
 import { History } from './History'
 import { printLeaf } from './print'
 import { playYouTube } from './youtube'
@@ -127,6 +130,39 @@ export function Peek({
       document.removeEventListener('keydown', close)
     }
   }, [menu])
+  // PDF export: the copy to print is made as the menu opens, so a tap on Export PDF prints at
+  // once. Safari on iPad and iPhone prints only from the tap itself, never after a wait.
+  const toPrint = useRef<{ id: string; leaf: HTMLElement | null; ready: Promise<unknown> } | null>(
+    null,
+  )
+  useEffect(() => {
+    if (!menu || graph.nodes.get(id)?.kind !== 'leaf') return
+    const entry: { id: string; leaf: HTMLElement | null; ready: Promise<unknown> } = {
+      id,
+      leaf: null,
+      ready: Promise.resolve(),
+    }
+    entry.ready = printable(tree.repo, graph, id, href).then(
+      (leaf) => (entry.leaf = leaf),
+      () => undefined,
+    )
+    toPrint.current = entry
+    // Made once each time the menu opens, for the leaf shown then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menu, id])
+  const exportPdf = (title: string) => {
+    const prepared = toPrint.current?.id === id ? toPrint.current : null
+    toPrint.current = null
+    if (prepared?.leaf) return printLeaf(prepared.leaf, title)
+    // Not ready yet: printed when it is (a computer allows it; Safari on touch may not).
+    const leaf = prepared
+      ? prepared.ready.then(() => prepared.leaf)
+      : printable(tree.repo, graph, id, href)
+    void leaf.then(
+      (l) => l && printLeaf(l, title),
+      () => undefined,
+    )
+  }
   const [source, setSource] = useState(false)
   /** The leaf whose history is shown in place of its editor. */
   const [historyOf, setHistoryOf] = useState<string | null>(null)
@@ -241,6 +277,20 @@ export function Peek({
               }
         }
         onPin={onPin && node.kind !== 'root' && !expanded && !docked ? () => onPin(id) : undefined}
+        onFloat={
+          node.kind === 'leaf' || node.kind === 'branch'
+            ? () => {
+                void floatNote({
+                  repo: tree.repo,
+                  id,
+                  file: node.kind === 'leaf' ? id : textFile(graph, id)!,
+                  path: `/${id}${node.kind === 'branch' ? '/' : ''}`,
+                  back: href(id),
+                })
+                onClose()
+              }
+            : undefined
+        }
         onExpand={motion.expand}
       />
       {/* The full page covers the top bar on a phone: what the writer needs from it, here. */}
@@ -509,16 +559,7 @@ export function Peek({
                     </button>
                   )}
                   {node.kind === 'leaf' && (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() =>
-                        void printable(tree.repo, graph, id, href).then(
-                          (leaf) => printLeaf(leaf, node.title),
-                          () => undefined,
-                        )
-                      }
-                    >
+                    <button type="button" role="menuitem" onClick={() => exportPdf(node.title)}>
                       Export PDF
                     </button>
                   )}
@@ -624,49 +665,6 @@ export function Peek({
   )
 }
 
-/**
- * Copies what `get` gives (the node's path, or its Markdown), shown as the copy icon and a tag
- * naming which (owner's request: they replace the breadcrumbs).
- */
-function CopyButton({
-  tag,
-  label,
-  hint = label,
-  get,
-}: {
-  tag: string
-  label: string
-  /** What hovering shows: the path itself, for the path's button (owner's request). */
-  hint?: string
-  get: () => Promise<string>
-}) {
-  const [copied, setCopied] = useState(false)
-  useEffect(() => {
-    if (!copied) return
-    const timer = setTimeout(() => setCopied(false), 1500)
-    return () => clearTimeout(timer)
-  }, [copied])
-  return (
-    <button
-      type="button"
-      className={`${controls.ghost} ${styles.copy}`}
-      aria-label={copied ? 'Copied' : label}
-      title={hint}
-      onClick={() => {
-        void get()
-          .then((text) => navigator.clipboard?.writeText(text))
-          .then(
-            () => setCopied(true),
-            () => undefined,
-          )
-      }}
-    >
-      <Icon name={copied ? 'check' : 'copy'} size={15} />
-      <span className={styles.copyTag}>{tag}</span>
-    </button>
-  )
-}
-
 /** A plain click opens it here; others (a new tab) follow the link. */
 const openHere = (onSelect: (id: string) => void, id: string) => (e: MouseEvent) => {
   if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
@@ -696,6 +694,7 @@ function PeekHead({
   copy,
   markdown,
   onPin,
+  onFloat,
   kept,
   onSwap,
   href,
@@ -713,6 +712,8 @@ function PeekHead({
   copy?: string | undefined
   /** The node's Markdown, for the copy-content button. */
   markdown?: (() => Promise<string>) | undefined
+  /** Takes the node out of Yeraz, floating over everything (float.ts); no button without it. */
+  onFloat?: (() => void) | undefined
   /** Keeps the node open beside the next selection; no button without it. */
   onPin?: (() => void) | undefined
   kept?: boolean | undefined
@@ -771,7 +772,7 @@ function PeekHead({
               hint={`${copy}\nClick to copy`}
               get={() => Promise.resolve(copy)}
             />
-            {markdown && <CopyButton tag="MD" label="Copy Markdown" get={markdown} />}
+            {markdown && <CopyButton tag="Content" label="Copy content" get={markdown} />}
           </div>
         ) : (
           <nav className={`${controls.mono} ${styles.crumb}`} aria-label="Breadcrumb">
@@ -804,6 +805,17 @@ function PeekHead({
             onClick={onSwap}
           >
             <Icon name="swap" size={16} />
+          </button>
+        )}
+        {onFloat && (
+          <button
+            type="button"
+            className={controls.iconButton}
+            aria-label="Float this note"
+            title="Take it out of Yeraz: it floats above everything, anywhere on the screen"
+            onClick={onFloat}
+          >
+            <Icon name="float" size={16} />
           </button>
         )}
         {onPin && (
@@ -1213,6 +1225,10 @@ function ReadText({
     for (const el of body.current?.querySelectorAll<HTMLElement>(
       '[data-asset], [data-asset-href]',
     ) ?? []) {
+      if (isDrawing(el)) {
+        void showDrawing(el, (p) => session.getState().fileBytes(repo, p))
+        continue
+      }
       const href = el.dataset.assetHref
       void session
         .getState()
@@ -1236,8 +1252,19 @@ function ReadText({
       onClick={(event) => {
         footnoteJump(event)
         playYouTube(event)
+        expandImage(event)
       }}
     />
+  )
+}
+
+/** An image (not a link's) opens on the whole screen, to look at closely (M6). */
+function expandImage(event: MouseEvent<HTMLElement>) {
+  const target = event.target as HTMLElement
+  const img = target.closest?.<HTMLImageElement>('img')
+  if (!img || img.closest('a') || !img.src) return
+  void import('../editor/imageViewer').then(({ openViewer }) =>
+    openViewer({ label: img.alt || 'Image', url: img.src }),
   )
 }
 
@@ -1297,6 +1324,7 @@ async function printable(
   await Promise.all(
     [...article.querySelectorAll<HTMLElement>('[data-asset], [data-asset-href]')].map(
       async (el) => {
+        if (isDrawing(el)) return showDrawing(el, (p) => getState().fileBytes(repo, p))
         const link = el.dataset.assetHref
         const url = await getState().assetUrl(repo, link ?? el.dataset.asset!)
         if (url) el.setAttribute(link ? 'href' : 'src', url)
