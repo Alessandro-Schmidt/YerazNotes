@@ -100,7 +100,7 @@ for (const view of VIEW_IDS.filter((v) => v !== 'map')) {
   })
 }
 
-test('choosing a view from a leaf’s page shows the view, keeping the leaf selected', async ({
+test('a leaf’s page hides the views; back on the map, a view keeps the leaf selected', async ({
   page,
   graph,
 }) => {
@@ -108,8 +108,11 @@ test('choosing a view from a leaf’s page shows the view, keeping the leaf sele
   await openOn(page, 'map', leaf.id)
   const peek = page.getByRole('region', { name: /preview$/ })
   if (!isPhone(page)) {
+    // Open as a page, the note is all there is to see (owner's request): no views.
     await peek.getByRole('button', { name: 'Open full page' }).click()
     await expect(peek).toHaveAttribute('data-expanded')
+    await expect(switcher(page)).toHaveCount(0)
+    await peek.getByRole('button', { name: 'Back to the map' }).click()
   }
   await switcher(page).getByRole('radio', { name: 'Outline' }).click()
   await expect(shown.outline(page)).toBeInViewport()

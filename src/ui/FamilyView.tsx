@@ -17,7 +17,6 @@ import { session, useSession } from '../store/session'
 import controls from './controls.module.css'
 import { Explorer } from './Explorer'
 import { Presence } from './motion'
-import { ProjectTabs } from './ProjectTabs'
 import { FamilyMenu, rememberFamily } from './FamilyMenu'
 import { Icon } from './icons'
 import { InlineName } from './InlineName'
@@ -206,7 +205,8 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           </h1>
           <FamilyMenu current={repo} />
         </div>
-        {!phone && <ViewSwitcher />}
+        {/* A note open as a page: only what writing needs stays (owner's request). */}
+        {!phone && !expanded && <ViewSwitcher />}
         <span className={styles.status}>
           <Status data={data} repo={repo} branch={tree?.branch ?? 'main'} />
         </span>
@@ -240,7 +240,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           >
             <Icon name="panelRight" size={18} />
           </button>
-          {graph && (
+          {graph && !expanded && (
             <button
               type="button"
               className={`${controls.primary} ${styles.newLeaf}`}
@@ -253,8 +253,7 @@ export function FamilyView({ params }: { params: { owner: string; name: string; 
           )}
         </div>
       </TopBar>
-      <ProjectTabs current={repo} />
-      {phone && <ViewSwitcher phone />}
+      {phone && !expanded && <ViewSwitcher phone />}
       <ConflictBanner repo={repo} />
       {action && graph && tree && (
         <StructureDialog

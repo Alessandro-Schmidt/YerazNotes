@@ -954,7 +954,11 @@ function build(view: EditorView): Built {
                         },
                       })
                     : web
-                      ? Decoration.mark({ class: 'cm-link', attributes: { 'data-href': web } })
+                      ? Decoration.mark({
+                          class: 'cm-link',
+                          // The address on hover, as a browser shows it for a link.
+                          attributes: { 'data-href': web, title: web },
+                        })
                       : mark(target && target.repo === null ? 'cm-mention' : 'cm-link')
               ).range(node.from, node.to),
             )

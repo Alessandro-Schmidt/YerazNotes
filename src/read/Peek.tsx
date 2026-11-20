@@ -130,6 +130,39 @@ export function Peek({
       document.removeEventListener('keydown', close)
     }
   }, [menu])
+  // PDF export: the copy to print is made as the menu opens, so a tap on Export PDF prints at
+  // once. Safari on iPad and iPhone prints only from the tap itself, never after a wait.
+  const toPrint = useRef<{ id: string; leaf: HTMLElement | null; ready: Promise<unknown> } | null>(
+    null,
+  )
+  useEffect(() => {
+    if (!menu || graph.nodes.get(id)?.kind !== 'leaf') return
+    const entry: { id: string; leaf: HTMLElement | null; ready: Promise<unknown> } = {
+      id,
+      leaf: null,
+      ready: Promise.resolve(),
+    }
+    entry.ready = printable(tree.repo, graph, id, href).then(
+      (leaf) => (entry.leaf = leaf),
+      () => undefined,
+    )
+    toPrint.current = entry
+    // Made once each time the menu opens, for the leaf shown then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menu, id])
+  const exportPdf = (title: string) => {
+    const prepared = toPrint.current?.id === id ? toPrint.current : null
+    toPrint.current = null
+    if (prepared?.leaf) return printLeaf(prepared.leaf, title)
+    // Not ready yet: printed when it is (a computer allows it; Safari on touch may not).
+    const leaf = prepared
+      ? prepared.ready.then(() => prepared.leaf)
+      : printable(tree.repo, graph, id, href)
+    void leaf.then(
+      (l) => l && printLeaf(l, title),
+      () => undefined,
+    )
+  }
   const [source, setSource] = useState(false)
   /** The leaf whose history is shown in place of its editor. */
   const [historyOf, setHistoryOf] = useState<string | null>(null)
@@ -526,16 +559,7 @@ export function Peek({
                     </button>
                   )}
                   {node.kind === 'leaf' && (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() =>
-                        void printable(tree.repo, graph, id, href).then(
-                          (leaf) => printLeaf(leaf, node.title),
-                          () => undefined,
-                        )
-                      }
-                    >
+                    <button type="button" role="menuitem" onClick={() => exportPdf(node.title)}>
                       Export PDF
                     </button>
                   )}

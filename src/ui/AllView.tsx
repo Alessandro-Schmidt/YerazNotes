@@ -49,7 +49,6 @@ import {
 } from './StructureDialogs'
 import { useDeleteKey } from './deleteKey'
 import { colorVar } from './theme'
-import { ProjectTabs } from './ProjectTabs'
 import { Divider, TopBar } from './TopBar'
 import { SHEET_HEIGHT, savePinSide, savedPinSide, widthStore, widthVars } from './panels'
 import { PHONE, useMedia } from './useMedia'
@@ -243,11 +242,12 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           <h1 className={styles.title}>{TITLE}</h1>
           <FamilyMenu all />
         </div>
-        {!phone && <ViewSwitcher />}
+        {/* A note open as a page: only what writing needs stays (owner's request). */}
+        {!phone && !expanded && <ViewSwitcher />}
         <div className={styles.toggles}>
           <Search repo={target?.ref.repo ?? ''} lit={!!found} onMatches={setFound} />
           <SaveAndRefresh repos={trees.map((t) => t.repo)} />
-          {target && (
+          {target && !expanded && (
             <button
               type="button"
               className={`${controls.primary} ${styles.newLeaf}`}
@@ -265,8 +265,7 @@ export function AllView({ params }: { params: { owner?: string; name?: string; '
           )}
         </div>
       </TopBar>
-      <ProjectTabs all />
-      {phone && <ViewSwitcher phone />}
+      {phone && !expanded && <ViewSwitcher phone />}
       {trees.map((t) => (
         <ConflictBanner key={t.repo} repo={t.repo} />
       ))}
