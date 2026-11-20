@@ -342,6 +342,46 @@ Scope: §4 and §5, plus CI.
 - The PWA passes the browser's installability checks.
 - The printing checklist (§7.6) passes on Chrome, Safari and the desktop app on all three OSes.
 
+### M5 — Ink (Apple Pencil and any pen)
+
+**Built.** Left for the owner: the iPad check in §7.6.
+
+Handwriting and drawings mixed with the text (owner's request). A drawing is a block between
+paragraphs, never laid over the text: text reflows on every screen, ink would land on the wrong
+words. Drawing over the text, tied to a paragraph, is left for later (owner's decision).
+
+1. **`model/ink.ts`** (pure, tests first): strokes ↔ an SVG file in `assets/`
+   (`2026-11-20-sketch.ink.svg`). GitHub shows the SVG as a picture; its `<metadata>` holds the
+   strokes (points, pressure, colour name, size, tool) so Yeraz edits them. Writing what was
+   read gives the same bytes. Colours are the theme's names (`ink`, `blue`, `green`, `amber`,
+   `violet`): the file carries their light and dark values for GitHub, the app draws them with
+   the theme's tokens. Shapes that follow pressure come from `perfect-freehand`.
+2. **The ink block** (`editor/ink.ts`, a lazy chunk): an image whose file ends in `.ink.svg` is
+   drawn from its strokes, in the theme's colours, in the editor and the read view. Tapping it,
+   the pencil button on the touch bar, or *Drawing* in the insert menu opens it for drawing:
+   pen, highlighter, eraser, lasso (move, recolour, copy, delete), colours, three sizes, undo and
+   redo. A pen draws and a finger scrolls (palm rejection); without a pen, a finger, a mouse or a
+   trackpad draws. Pressure, coalesced events, the stroke in progress redrawn once a frame
+   (an SVG path: as fast as a canvas at one stroke's size, and no second drawing code).
+3. **Copy and paste:** strokes chosen with the lasso, or a block copied with the text, go on the
+   clipboard with their strokes and as a picture (other apps). Pasting makes a new file, so the
+   copy never changes the original; it works between Families.
+4. **Saving and sync:** a drawing is saved as a pending file like an image, in the same commit as
+   the leaf. Strokes have ids, so two devices drawing in the same file merge stroke by stroke.
+   `yeraz check` reports an ink file it can't read. The contract (ARCHITECTURE.md §4) and the
+   agents' `CLAUDE.md` describe the format.
+
+**Done when:**
+
+- Unit: an ink file round-trips byte for byte; a file with a script, an unknown colour or bad
+  numbers is refused or cleaned; two devices' strokes merge; deleting on one side and keeping on
+  the other keeps a changed stroke.
+- End-to-end: *Drawing* from the insert menu, a stroke with a pen (pointer events, pressure)
+  and one with a mouse, then autosave commits one `.ink.svg` and the leaf in one commit; a finger
+  scrolls once a pen was used; undo; the eraser; the lasso copies to another leaf as a new file.
+- Manual (§7.6): on an iPad with an Apple Pencil, drawing keeps up with the pen and the palm is
+  ignored.
+
 ### After launch
 
 Not part of the first release:
@@ -414,6 +454,7 @@ Not part of the first release:
 - **Installing:** install the PWA on iOS and Android.
 - **Icons:** the dock, taskbar, desktop shortcut and phone home screen icons are sharp on standard and high-density screens (compare with `design/screens/08-app-icon.png`).
 - **Unsigned desktop app:** check that it launches on macOS through right-click → Open.
+- **Ink:** on an iPad with an Apple Pencil, drawing keeps up with the pen, the palm is ignored and a finger scrolls (M5).
 
 ## 8. CI pipeline (GitHub Actions)
 

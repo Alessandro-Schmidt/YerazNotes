@@ -385,6 +385,18 @@
   text-decoration: line-through;
   opacity: 0.55;
 }
+/* A drawing (read/ink.ts): its strokes in the theme's colours, as wide as its image was. */
+.content :global(.ink) {
+  display: block;
+  max-width: 100%;
+  margin: 8px auto;
+}
+.content :global(.ink-drawing) {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
 .content img {
   display: block;
   max-width: 100%;

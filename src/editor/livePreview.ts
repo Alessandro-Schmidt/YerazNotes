@@ -46,6 +46,7 @@ import {
   titleWithWidth,
   type Embed,
 } from '../model/embeds'
+import { isInkPath } from '../model/ink'
 import { leadingIcon, linkTarget, ownPath } from '../model/parse'
 import { downloadAsset, favicon, fileCardHtml } from '../read/files'
 import { fillBookmark } from '../read/linkMeta'
@@ -64,6 +65,8 @@ import {
   sourceShown,
 } from './elements'
 import { askHost } from './insertMenu'
+import { inkHost, toOpen, type InkHost } from './ink'
+import type { Pad } from './inkPad'
 import { CODE_ICON, languageIcon } from './languageIcons'
 import { logo, menu } from './menu'
 import { mentionSource } from './mentions'
@@ -292,6 +295,84 @@ class ImageWidget extends WidgetType {
     if (dom.dataset.src !== this.src || dom.querySelector('img')?.alt !== this.alt) return false
     showWidth(dom, this.width)
     return true
+  }
+}
+
+const INK_ITEMS = [
+  { kind: 'draw', label: 'Draw' },
+  { kind: 'copy', label: 'Copy drawing' },
+  { kind: 'markdown', label: 'Show Markdown' },
+  { kind: 'delete', label: 'Delete drawing' },
+] as const
+
+/** The pad of each drawing shown (inkPad.ts, loaded with the first). */
+const pads = new WeakMap<HTMLElement, Pad>()
+
+/** A drawing's ⋯ menu: draw on it, copy it, its Markdown, or deleting it. */
+function inkMenu(view: EditorView, frame: HTMLElement, button: HTMLElement) {
+  const from = view.posAtDOM(frame)
+  openElementMenu(
+    view,
+    from,
+    'Drawing',
+    INK_ITEMS,
+    (kind) => {
+      const image = imageAt(view.state, from)
+      if (!image) return
+      const pad = pads.get(frame)
+      if (kind === 'draw') return pad?.open()
+      if (kind === 'copy') return void pad?.copy()
+      if (kind === 'markdown') return revealSource(view, image.from, image.to, image.to)
+      view.dispatch({ changes: deletion(view.state, image.from, image.to) })
+      view.focus()
+    },
+    button,
+  )
+}
+
+/**
+ * A drawing (`.ink.svg`, development-plan.md M5): its strokes drawn in the theme's colours, and
+ * drawn on in place (inkPad.ts) when tapped.
+ */
+class InkWidget extends WidgetType {
+  constructor(
+    readonly path: string,
+    readonly alt: string,
+    readonly width: number | null,
+    readonly host: InkHost,
+  ) {
+    super()
+  }
+  eq(other: InkWidget) {
+    return other.path === this.path && other.alt === this.alt && other.width === this.width
+  }
+  toDOM(view: EditorView) {
+    const frame = document.createElement('span')
+    frame.className = 'cm-ink'
+    frame.dataset.path = this.path
+    frame.contentEditable = 'false'
+    frame.append(moreButton('Drawing', (button) => inkMenu(view, frame, button)))
+    this.updateDOM(frame)
+    void import('./inkPad').then(({ mountPad }) => {
+      if (!frame.isConnected && !view.dom.contains(frame)) return
+      const pad = mountPad(view, frame, this.path, this.host, this.alt)
+      pads.set(frame, pad)
+      if (toOpen.get(view) === this.path) {
+        toOpen.delete(view)
+        pad.open()
+      }
+    })
+    return frame
+  }
+  updateDOM(dom: HTMLElement) {
+    if (dom.dataset.path !== this.path) return false
+    if (this.width === null) dom.style.removeProperty('width')
+    else dom.style.width = `${this.width}%`
+    return true
+  }
+  destroy(dom: HTMLElement) {
+    pads.get(dom)?.destroy()
+    pads.delete(dom)
   }
 }
 
@@ -898,7 +979,15 @@ function build(view: EditorView): Built {
             const alt = /^!\[([^\]]*)\]/.exec(text)?.[1] ?? ''
             const title = node.node.getChild('LinkTitle')
             const { width } = imageWidth(title ? state.sliceDoc(title.from + 1, title.to - 1) : '')
-            if (url) {
+            const own = url ? ownPath(state.sliceDoc(url.from, url.to)) : null
+            const host = state.facet(inkHost)
+            if (own !== null && isInkPath(own) && host) {
+              const drawing = Decoration.replace({
+                widget: new InkWidget(own, alt, width, host),
+              }).range(node.from, node.to)
+              decorations.push(drawing)
+              atomic.push(drawing)
+            } else if (url) {
               const image = Decoration.replace({
                 widget: new ImageWidget(
                   state.sliceDoc(url.from, url.to),

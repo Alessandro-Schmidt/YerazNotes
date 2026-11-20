@@ -13,6 +13,7 @@ import {
 } from '@codemirror/state'
 import { EditorView, showTooltip, ViewPlugin, type Tooltip } from '@codemirror/view'
 import { menu } from './menu'
+import { insertDrawing } from './ink'
 import { insertTable } from './tables'
 import { META } from '../model/parse'
 import { setupStore, shown, type InsertKind, type ListKind } from './menuSetup'
@@ -150,6 +151,7 @@ function pick(view: EditorView, open: Open, kind: InsertKind, text?: string) {
     startCompletion(view)
   } else if (kind === 'table') insertTable(view)
   else if (kind === 'code') view.dispatch(codeChange(view.state))
+  else if (kind === 'drawing') insertDrawing(view)
   else askHost(view, kind)
 }
 

@@ -9,6 +9,7 @@ import { buildGraph, type Graph } from '../model/graph'
 import type { TreeModel } from '../model/tree'
 import { memoryStore, type KeyValueStore } from '../store/db'
 import { pullFolder, pushFolder } from '../sync/folder'
+import { assetBytes } from '../sync/assets'
 import { pullTree, type PulledTree } from '../sync/pull'
 import { pushTree, type Dirty, type Pushed } from '../sync/push'
 import type { FileChange } from '../sync/structure'
@@ -21,6 +22,8 @@ export interface Family {
   files: Set<string>
   /** A Markdown file's text: a leaf, a branch's README.md or a template. */
   text(path: string): Promise<string>
+  /** Any file's bytes, such as a drawing in assets/. */
+  bytes(path: string): Promise<Uint8Array>
   save(changes: FileChange[]): Promise<Pushed>
 }
 
@@ -31,6 +34,7 @@ async function opened(
   pulled: PulledTree,
   store: KeyValueStore,
   push: (dirty: Dirty) => Promise<Pushed>,
+  read: (path: string, sha: string) => Promise<Uint8Array>,
 ): Promise<Family> {
   const shas = new Map(pulled.entries.filter((e) => e.type === 'blob').map((e) => [e.path, e.sha]))
   return {
@@ -43,6 +47,11 @@ async function opened(
       const text = sha && (await store.get<string>(`blob:${sha}`))
       if (typeof text !== 'string') throw new Error(`No text at ${path}`)
       return text
+    },
+    async bytes(path) {
+      const sha = shas.get(path)
+      if (!sha) throw new Error(`No file at ${path}`)
+      return read(path, sha)
     },
     save: (changes) =>
       push(
@@ -92,7 +101,13 @@ export async function openFolder(fs: FolderFs, name: string): Promise<Family> {
   const inner = scoped(fs, marker.root)
   const store = memoryStore()
   const pulled = await pullFolder(ref, { fs: inner, store })
-  return opened(ref, pulled, store, (dirty) => pushFolder(ref, dirty, { fs: inner, store }))
+  return opened(
+    ref,
+    pulled,
+    store,
+    (dirty) => pushFolder(ref, dirty, { fs: inner, store }),
+    (path) => inner.read(path),
+  )
 }
 
 /** A Family on GitHub, `owner/name`. */
@@ -101,5 +116,11 @@ export async function openRepo(client: GitHubClient, repo: string): Promise<Fami
   if (!ref) throw new Error(`${repo} has no ${MARKER}: not a Family`)
   const store = memoryStore()
   const pulled = await pullTree(ref, { client, store })
-  return opened(ref, pulled, store, (dirty) => pushTree(ref, dirty, { client, store }))
+  return opened(
+    ref,
+    pulled,
+    store,
+    (dirty) => pushTree(ref, dirty, { client, store }),
+    (_path, sha) => assetBytes(ref.repo, sha, { client, store }),
+  )
 }

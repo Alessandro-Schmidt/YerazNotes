@@ -1,4 +1,5 @@
 import { setupServer } from 'msw/node'
+import { emptyInk, inkToSvg } from '../model/ink'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createFakeGitHub } from '../../test/fake-github/fakeGitHub'
 import { fakeGitHubHandlers } from '../../test/fake-github/msw'
@@ -79,6 +80,18 @@ describe('read commands', () => {
       expect.objectContaining({ level: 'error', message: 'missing file /assets/d.png' }),
     ])
     const clean = await folder({ '.yeraz.json': '{}', 'a.md': '# A\n' })
+    const drawn = await folder({
+      '.yeraz.json': '{}',
+      'assets/ok.ink.svg': inkToSvg(emptyInk()),
+      'assets/bad.ink.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    })
+    expect((await cmd.check(drawn.fam)).data).toEqual([
+      {
+        level: 'error',
+        path: 'assets/bad.ink.svg',
+        message: 'not a drawing Yeraz can read (no stroke metadata)',
+      },
+    ])
     expect((await cmd.check(clean.fam)).code).toBe(0)
   })
 })
