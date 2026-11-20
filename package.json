@@ -65,6 +65,7 @@
     "markdown-it-footnote": "4.0.0",
     "mermaid": "12.3.0",
     "node-diff3": "3.2.1",
+    "perfect-freehand": "1.2.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "simple-icons": "16.36.0",

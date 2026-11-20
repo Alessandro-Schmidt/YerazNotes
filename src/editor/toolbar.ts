@@ -1,5 +1,6 @@
 // A formatting bar above the keyboard on touch screens (owner's request), where there is no
-// Ctrl: bold, italic, code, a link, a bullet list, a to-do, indent and outdent (no Tab key). It appears while the text has the
+// Ctrl: bold, italic, code, a link, a bullet list, a to-do, indent and outdent (no Tab key), and
+// the pencil, a new drawing to write on with a pen or a finger (inkPad.ts). It appears while the text has the
 // focus, just above the keyboard (the visual viewport's bottom edge), and keeps the focus in
 // the text when tapped, so the keyboard stays. Elsewhere the shortcuts (format.ts) do this.
 // With a hardware keyboard on a tablet there is no keyboard on screen, only the system's small
@@ -9,23 +10,35 @@
 import { EditorView, ViewPlugin } from '@codemirror/view'
 import { isTouch } from '../ui/platform'
 import { indentCommand, link, outdentCommand, toggleWrap } from './format'
+import { insertDrawing, inkHost } from './ink'
 import { listChange } from './insertMenu'
 
-const ITEMS: { label: string; text: string; run: (view: EditorView) => void }[] = [
+/** A chain link and a pencil, the bar's icons that no letter or sign draws. */
+const ICONS: Record<string, string> = {
+  link:
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">' +
+    '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>',
+  pencil:
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/><path d="M14 6l3 3"/></svg>',
+}
+
+const ITEMS: {
+  label: string
+  text: string
+  icon?: string
+  run: (view: EditorView) => void
+}[] = [
   { label: 'Bold', text: 'B', run: (v) => v.dispatch(toggleWrap(v.state, '**')) },
   { label: 'Italic', text: 'I', run: (v) => v.dispatch(toggleWrap(v.state, '*')) },
   { label: 'Code', text: '‹›', run: (v) => v.dispatch(toggleWrap(v.state, '`')) },
-  { label: 'Link', text: '', run: (v) => v.dispatch(link(v.state)) },
+  { label: 'Link', text: '', icon: 'link', run: (v) => v.dispatch(link(v.state)) },
   { label: 'Bullet list', text: '•', run: (v) => v.dispatch(listChange(v.state, 'bullet')) },
   { label: 'To-do', text: '☐', run: (v) => v.dispatch(listChange(v.state, 'todo')) },
   { label: 'Indent', text: '⇥', run: (v) => void indentCommand(v) },
   { label: 'Outdent', text: '⇤', run: (v) => void outdentCommand(v) },
+  { label: 'Draw', text: '', icon: 'pencil', run: (v) => void insertDrawing(v) },
 ]
-
-/** A chain link, the bar's only icon that no letter or sign draws. */
-const LINK_ICON =
-  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">' +
-  '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>'
 
 /**
  * Less than this hidden at the bottom is no keyboard on screen: at most a hardware keyboard's
@@ -42,18 +55,20 @@ export const toolbar = ViewPlugin.define((view) => {
   bar.setAttribute('role', 'toolbar')
   bar.setAttribute('aria-label', 'Formatting')
   for (const item of ITEMS) {
+    // The pencil only where drawings can be saved.
+    if (item.label === 'Draw' && !view.state.facet(inkHost)) continue
     const button = document.createElement('button')
     button.type = 'button'
-    if (item.text) button.textContent = item.text
-    else button.innerHTML = LINK_ICON
+    if (item.icon) button.innerHTML = ICONS[item.icon]!
+    else button.textContent = item.text
     button.setAttribute('aria-label', item.label)
     button.dataset.format = item.label
     // The text keeps the focus, and the keyboard stays.
     for (const type of ['pointerdown', 'mousedown', 'touchstart'])
       button.addEventListener(type, (e) => e.preventDefault())
     button.addEventListener('click', () => {
-      item.run(view)
       view.focus()
+      item.run(view)
     })
     bar.append(button)
     // The middle, left for the system's shortcut bar when the page's bottom is the bar's.

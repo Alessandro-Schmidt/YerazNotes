@@ -34,6 +34,8 @@ import { EditableCover, IconMover } from './EditableCover'
 import { iconFocus, iconShape } from '../read/cover'
 import { IconPicker } from './IconPicker'
 import type { InsertHost } from './insertMenu'
+import type { InkHost } from './ink'
+import { assetPath } from '../sync/assets'
 import type { MentionLeaf, MentionSource } from './mentions'
 
 // CodeMirror is its own chunk: it loads the first time a leaf is shown (ARCHITECTURE.md §11).
@@ -224,6 +226,22 @@ export function LeafEditor({
     </>
   )
   const assetUrl = useCallback((p: string) => session.getState().assetUrl(repo, p), [repo])
+  // Drawings (development-plan.md M5): pending files in assets/, like images.
+  const ink = useMemo<InkHost>(
+    () => ({
+      read: async (p) => {
+        const bytes = await session.getState().fileBytes(repo, p)
+        return bytes ? new TextDecoder().decode(bytes) : null
+      },
+      save: (p, text) =>
+        void session.getState().apply(repo, [{ path: p, text: new TextEncoder().encode(text) }]),
+      create: () =>
+        assetPath('drawing', 'ink.svg', new Date(), (p) =>
+          session.getState().files(repo).includes(p),
+        ),
+    }),
+    [repo],
+  )
   const mentionCreated = (id: string | undefined) => {
     setAction(null)
     const created = id && session.getState().data[key]?.graph?.nodes.get(id)
@@ -602,6 +620,7 @@ export function LeafEditor({
             onInsert={onInsert}
             onFiles={(files) => void addFiles(files)}
             assetUrl={assetUrl}
+            ink={ink}
             files={() => session.getState().files(repo)}
             fileSize={(p) => session.getState().fileSize(repo, p)}
             autoFocus={autoFocus}

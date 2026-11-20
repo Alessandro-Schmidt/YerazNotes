@@ -22,6 +22,7 @@ import { pasteLink } from './pasteLink'
 import { steadyCaret } from './steady'
 import { arrivals, receive, remote } from './arrivals'
 import { toolbar } from './toolbar'
+import { inkClipboard, inkHost, type InkHost } from './ink'
 
 export interface EditorHandle {
   setIcon(icon: string | null): void
@@ -59,6 +60,8 @@ export interface EditorProps {
   files?(): Iterable<string>
   /** Sizes of the Tree's own files, for attachment cards. */
   fileSize?(path: string): number | null
+  /** Drawings (`.ink.svg`): reading and saving them. Without it they show as images. */
+  ink?: InkHost
 }
 
 export default function Editor({
@@ -74,6 +77,7 @@ export default function Editor({
   assetUrl,
   files,
   fileSize,
+  ink,
 }: EditorProps) {
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
@@ -85,7 +89,9 @@ export default function Editor({
   const filesListRef = useRef(files)
   const sizeRef = useRef(fileSize)
   const untitledRef = useRef(untitled)
+  const inkRef = useRef(ink)
   useEffect(() => {
+    inkRef.current = ink
     changed.current = onChange
     insertRef.current = onInsert
     filesRef.current = onFiles
@@ -120,6 +126,16 @@ export default function Editor({
           assetSource.of(async (path) => (await assetRef.current?.(path)) ?? null),
           treeFiles.of(() => filesListRef.current?.() ?? []),
           fileSizes.of((path) => sizeRef.current?.(path) ?? null),
+          ink
+            ? [
+                inkHost.of({
+                  read: (path) => inkRef.current?.read(path) ?? Promise.resolve(null),
+                  save: (path, text) => inkRef.current?.save(path, text),
+                  create: () => inkRef.current!.create(),
+                }),
+                inkClipboard,
+              ]
+            : [],
           EditorView.domEventHandlers({
             keydown() {
               markNow('keystroke')

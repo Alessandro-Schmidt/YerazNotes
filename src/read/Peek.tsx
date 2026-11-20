@@ -1,6 +1,7 @@
 // The Peek: the selected node, floating over the map (420 px), or its full page when
 // expanded (760 px column). On phones it is a bottom sheet. A leaf is editable in all three.
 
+import { isDrawing, showDrawing } from './ink'
 import {
   Fragment,
   useEffect,
@@ -1200,6 +1201,10 @@ function ReadText({
     for (const el of body.current?.querySelectorAll<HTMLElement>(
       '[data-asset], [data-asset-href]',
     ) ?? []) {
+      if (isDrawing(el)) {
+        void showDrawing(el, (p) => session.getState().fileBytes(repo, p))
+        continue
+      }
       const href = el.dataset.assetHref
       void session
         .getState()
@@ -1284,6 +1289,7 @@ async function printable(
   await Promise.all(
     [...article.querySelectorAll<HTMLElement>('[data-asset], [data-asset-href]')].map(
       async (el) => {
+        if (isDrawing(el)) return showDrawing(el, (p) => getState().fileBytes(repo, p))
         const link = el.dataset.assetHref
         const url = await getState().assetUrl(repo, link ?? el.dataset.asset!)
         if (url) el.setAttribute(link ? 'href' : 'src', url)

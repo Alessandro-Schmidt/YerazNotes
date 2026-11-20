@@ -2,7 +2,8 @@
 // we changed against what is on GitHub now. A clean merge is committed; when both sides
 // changed the same lines, theirs stays in place and ours is saved beside it as
 // `name.conflict-YYYY-MM-DD.md`. Text is never lost. Images can't merge: they are compared
-// by blob SHA, and neither side's is ever overwritten.
+// by blob SHA, and neither side's is ever overwritten. A drawing (`.ink.svg`) merges stroke
+// by stroke.
 
 import { diff3Merge } from 'node-diff3'
 import { MARKER } from '../local/folder'
@@ -164,10 +165,27 @@ export async function reconcileEdits(
   const named = new Set<string>()
   const taken = (p: string) => current.has(p) || p in dirty || named.has(p)
   const images: FileChange[] = []
+  /** A drawing changed on both sides merges stroke by stroke (model/ink.ts). */
+  const mergedInk = async (path: string, f: Dirty[string], theirs: string) => {
+    const texts = await textsOf([theirs, ...(f.base ? [f.base] : [])])
+    const there = texts.get(theirs)
+    if (!there) return false
+    // Loaded only when a drawing merges: the drawing code stays out of the first load.
+    const { mergeInkFiles } = await import('../model/ink')
+    const merged = mergeInkFiles(
+      (f.base && texts.get(f.base)) || null,
+      new TextDecoder().decode(f.text as Uint8Array),
+      there,
+    )
+    if (merged === null) return false
+    if (merged !== there) images.push({ path, text: new TextEncoder().encode(merged) })
+    return true
+  }
   for (const [path, f] of binary) {
     const theirs = current.get(path) ?? null
     if (theirs === f.base || theirs === null) images.push({ path, text: f.text })
     else if (f.text === null || theirs === (await gitBlobSha(f.text as Uint8Array))) continue
+    else if (/\.ink\.svg$/i.test(path) && (await mergedInk(path, f, theirs))) continue
     else {
       const to = freeName(path, taken)
       moves.set(path, to)
