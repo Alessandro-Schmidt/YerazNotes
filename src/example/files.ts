@@ -26,6 +26,7 @@ These notes are kept with [Yeraz](https://github.com/Alessandro-Schmidt/YerazNot
 - Mention another leaf with a root-relative link: \`[Keycloak](/identity/keycloak.md)\`. The map draws a thread between the two. A link to a leaf not written yet is fine: it shows as a ghost, a leaf to write.
 - Images and files go in \`/assets/\`: \`![Realm](/assets/realm.png "width=50%")\`.
 - A \`.ink.svg\` image is a drawing (handwriting): its strokes are JSON in the SVG's \`<metadata id="yeraz-ink">\`. Show it as any image; don't edit the file by hand, and copy it to a new file (never link two notes to one) when a note needs the same drawing.
+- An image named \`x.marked.png\` (or \`.jpg\`) is a marked-up copy: its marks are in \`x.marked.ink.svg\`, whose \`image\` is the untouched original. Leave the three as they are.
 - A paragraph (or list item) that is only a YouTube link, or a link to a PDF or video in \`/assets/\`, plays in place. Math is \`$x^2$\` or \`$$…$$\`; code uses fences with a language.
 
 ## Writing well here

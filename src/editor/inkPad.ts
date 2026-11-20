@@ -1,14 +1,17 @@
-// Drawing on a drawing (development-plan.md M5): pen, highlighter, eraser and lasso, five
-// colours, three sizes, undo and redo. A lazy chunk, loaded the first time a drawing is shown.
+// Drawing on a drawing (development-plan.md M5), and markup on an image in the viewer (M6): pen,
+// highlighter, rectangle, ellipse, arrow, eraser and lasso, five colours, three sizes, undo and
+// redo. A lazy chunk, loaded the first time a drawing or the viewer is shown.
 //
 // - A pen draws with its pressure; a finger or a mouse draws too, until a pen has been used
 //   on this page: from then on a finger scrolls and a palm resting on the screen draws nothing.
 // - Every event the pen sent is used (getCoalescedEvents), and the stroke in progress is
 //   redrawn once a frame.
-// - Each change is saved as a pending file shortly after (writeInk), committed with the leaf.
-// - The drawing is inline SVG in the theme's colours (inkVar): a theme switch costs nothing.
+// - Each change is handed to `save` shortly after (a drawing: a pending file, committed with
+//   the leaf; markup: the viewer, until Done).
+// - A drawing is inline SVG in the theme's colours (inkVar): a theme switch costs nothing.
+//   Markup on an image keeps the light theme's colours (inkHex), as the copy is drawn.
 
-import type { EditorView } from '@codemirror/view'
+import './ink.css'
 import {
   bounds,
   emptyInk,
@@ -16,7 +19,9 @@ import {
   HIGHLIGHTER_OPACITY,
   INK_COLORS,
   INK_SIZES,
+  inkHex,
   inkVar,
+  isShape,
   lassoed,
   moved,
   outline,
@@ -25,21 +30,12 @@ import {
   touches,
   type Ink,
   type InkColor,
+  type Shape,
   type Stroke,
 } from '../model/ink'
-import {
-  clipboardHtml,
-  COPIED_TEXT,
-  copiedHere,
-  copyInk,
-  inkCache,
-  inksInHtml,
-  readInk,
-  writeInk,
-  type InkHost,
-} from './ink'
+import { clipboardHtml, COPIED_TEXT, copiedHere, copyInk, inksInHtml } from './ink'
 
-export type Tool = 'pen' | 'highlighter' | 'eraser' | 'lasso'
+export type Tool = 'pen' | 'highlighter' | Shape | 'eraser' | 'lasso'
 
 const SVG = 'http://www.w3.org/2000/svg'
 /** How soon after a change it is saved as a pending edit. */
@@ -66,12 +62,36 @@ export interface Pad {
   copy(): Promise<void>
   destroy(): void
   readonly drawing: boolean
+  /** The strokes as they are now. */
+  readonly ink: Ink
+  /** Replaces the strokes (an image turned in the viewer): Undo starts again from here. */
+  replace(ink: Ink): void
+}
+
+export interface PadOptions {
+  label: string
+  /** The drawing, when it is known at once. */
+  initial?: Ink | undefined
+  /** Reads it otherwise. */
+  load?: (() => Promise<Ink>) | undefined
+  /** Each change, shortly after it is made. */
+  save(ink: Ink): void
+  /** Escape was pressed while drawing: back to the text. */
+  onEscape?: (() => void) | undefined
+  /**
+   * Markup on an image, in the viewer: its height is the picture's, its colours stay as the
+   * copy is drawn, and the viewer opens and closes it (no tapping to open, no Done).
+   */
+  onImage?: boolean | undefined
 }
 
 const ICONS: Record<string, string> = {
   pen: '<path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/><path d="M14 6l3 3"/>',
   highlighter: '<path d="M9 15l-4 4h6l2-2"/><path d="M9 15l7-11 4 3-7 11z"/>',
   eraser: '<path d="M8 20h12"/><path d="M4 15l9-9 6 6-7 7H8z"/>',
+  rect: '<rect x="4" y="6" width="16" height="12" rx="1"/>',
+  ellipse: '<ellipse cx="12" cy="12" rx="9" ry="6.5"/>',
+  arrow: '<path d="M5 19L19 5"/><path d="M10 5h9v9"/>',
   lasso:
     '<ellipse cx="12" cy="10" rx="8" ry="5" stroke-dasharray="3 2.5"/><path d="M7 14c-1 3 1 5 3 5"/>',
   undo: '<path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 1 3 6"/>',
@@ -85,6 +105,9 @@ const icon = (name: string) =>
 const LABELS: Record<Tool, string> = {
   pen: 'Pen',
   highlighter: 'Highlighter',
+  rect: 'Rectangle',
+  ellipse: 'Ellipse',
+  arrow: 'Arrow',
   eraser: 'Eraser',
   lasso: 'Lasso',
 }
@@ -110,20 +133,19 @@ function scroller(el: HTMLElement): Element {
 const svgEl = <K extends keyof SVGElementTagNameMap>(name: K) =>
   document.createElementNS(SVG, name) as SVGElementTagNameMap[K]
 
-function paint(el: SVGPathElement, stroke: Stroke) {
-  el.setAttribute('d', outline(stroke))
-  el.style.fill = inkVar(stroke.color)
-  el.style.opacity = stroke.tool === 'highlighter' ? String(HIGHLIGHTER_OPACITY) : ''
-}
+/** A shape smaller than this (in units) was a tap, not a shape. */
+const MIN_SHAPE = 4
 
-export function mountPad(
-  view: EditorView,
-  frame: HTMLElement,
-  path: string,
-  host: InkHost,
-  label: string,
-): Pad {
-  let ink: Ink = inkCache(host).get(path) ?? emptyInk()
+export function mountPad(frame: HTMLElement, options: PadOptions): Pad {
+  const { label, onImage } = options
+  /** Markup keeps the colours its copy is drawn in; a drawing follows the theme. */
+  const colour = (c: InkColor) => (onImage ? inkHex(c, 'light') : inkVar(c))
+  const paint = (el: SVGPathElement, stroke: Stroke) => {
+    el.setAttribute('d', outline(stroke))
+    el.style.fill = colour(stroke.color)
+    el.style.opacity = stroke.tool === 'highlighter' ? String(HIGHLIGHTER_OPACITY) : ''
+  }
+  let ink: Ink = options.initial ?? emptyInk()
   const undo: Ink[] = []
   let redo: Ink[] = []
   let selected = new Set<string>()
@@ -187,7 +209,7 @@ export function mountPad(
     saveTimer = null
     if (!dirty) return
     dirty = false
-    writeInk(host, path, ink)
+    options.save(ink)
   }
   const later = () => {
     dirty = true
@@ -201,7 +223,8 @@ export function mountPad(
     undo.push(from)
     if (undo.length > MAX_UNDO) undo.shift()
     redo = []
-    ink = { ...next, height: heightFor(next) }
+    // A drawing grows as people draw near its bottom; markup is as tall as its picture.
+    ink = onImage ? next : { ...next, height: heightFor(next) }
     draw()
     later()
   }
@@ -255,7 +278,7 @@ export function mountPad(
   }
   const group = () =>
     bar.append(Object.assign(document.createElement('span'), { className: 'cm-ink-sep' }))
-  for (const tool of ['pen', 'highlighter', 'eraser', 'lasso'] as const)
+  for (const tool of ['pen', 'highlighter', 'rect', 'ellipse', 'arrow', 'eraser', 'lasso'] as const)
     button(
       `tool-${tool}`,
       LABELS[tool],
@@ -277,7 +300,7 @@ export function mountPad(
       },
       '<span class="cm-ink-swatch" aria-hidden="true"></span>',
     )
-    b.querySelector<HTMLElement>('span')!.style.background = inkVar(color)
+    b.querySelector<HTMLElement>('span')!.style.background = colour(color)
   }
   group()
   INK_SIZES.forEach((size, i) => {
@@ -298,7 +321,7 @@ export function mountPad(
   button('copy', 'Copy', () => void pad.copy(), icon('copy'))
   button('delete', 'Delete strokes', deleteChosen, icon('delete'))
   bar.append(Object.assign(document.createElement('span'), { className: 'cm-ink-gap' }))
-  button('done', 'Done', () => pad.close())
+  if (!onImage) button('done', 'Done', () => pad.close())
   // Above the drawing, staying in view while a tall one scrolls (Editor.module.css).
   frame.prepend(bar)
 
@@ -337,7 +360,7 @@ export function mountPad(
       frameAsked = false
       live.setAttribute('d', stroke ? outline(stroke) : '')
       if (stroke) {
-        live.style.fill = inkVar(stroke.color)
+        live.style.fill = colour(stroke.color)
         live.style.opacity = stroke.tool === 'highlighter' ? String(HIGHLIGHTER_OPACITY) : ''
       }
       lassoLine.setAttribute('d', lasso ? `M ${lasso.join(' ')} Z` : '')
@@ -368,7 +391,18 @@ export function mountPad(
     pointer = e.pointerId
     const [x, y] = at(e)
     const tool = settings.tool
-    if (tool === 'pen' || tool === 'highlighter') {
+    if (isShape(tool)) {
+      if (selected.size) choose([])
+      stroke = {
+        id: strokeId(),
+        tool,
+        color: settings.color,
+        size: settings.size,
+        pressure: false,
+        points: [x, y, 0.5],
+      }
+      while (ink.strokes.some((s) => s.id === stroke!.id)) stroke.id = strokeId()
+    } else if (tool === 'pen' || tool === 'highlighter') {
       if (selected.size) choose([])
       stroke = {
         id: strokeId(),
@@ -410,7 +444,9 @@ export function mountPad(
     const events = e.getCoalescedEvents?.() ?? []
     for (const ev of events.length ? events : [e]) {
       const [x, y] = at(ev)
-      if (stroke) stroke.points.push(x, y, pressureOf(ev))
+      // A shape is its first point and where the pointer is now.
+      if (stroke && isShape(stroke.tool)) stroke.points = [...stroke.points.slice(0, 3), x, y, 0.5]
+      else if (stroke) stroke.points.push(x, y, pressureOf(ev))
       else if (erasing) eraseAt(x, y)
       else if (lasso) lasso.push(x, y)
     }
@@ -432,7 +468,10 @@ export function mountPad(
     if (stroke) {
       const done = stroke
       stroke = null
-      commit({ ...ink, strokes: [...ink.strokes, done] })
+      const p = done.points
+      const tiny =
+        isShape(done.tool) && (p.length < 6 || Math.hypot(p[3]! - p[0]!, p[4]! - p[1]!) < MIN_SHAPE)
+      if (!tiny) commit({ ...ink, strokes: [...ink.strokes, done] })
     } else if (erasing) {
       const from = erasing
       erasing = null
@@ -473,7 +512,7 @@ export function mountPad(
 
   // Tapping a drawing opens it; tapping anywhere else closes it.
   frame.addEventListener('click', (e) => {
-    if (!drawing && !(e.target as Element).closest('.cm-more')) pad.open()
+    if (!onImage && !drawing && !(e.target as Element).closest('.cm-more')) pad.open()
   })
   const outside = (e: PointerEvent) => {
     const target = e.target as Node
@@ -491,9 +530,9 @@ export function mountPad(
       settings.tool = 'lasso'
       choose(ink.strokes.map((s) => s.id))
       updateBar()
-    } else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape' && !onImage) {
       pad.close()
-      view.focus()
+      options.onEscape?.()
     } else if ((e.key === 'Delete' || e.key === 'Backspace') && selected.size) deleteChosen()
     else return
     e.preventDefault()
@@ -541,7 +580,7 @@ export function mountPad(
       active = pad
       drawing = true
       frame.dataset.drawing = ''
-      document.addEventListener('pointerdown', outside, true)
+      if (!onImage) document.addEventListener('pointerdown', outside, true)
       updateBar()
       frame.focus({ preventScroll: true })
     },
@@ -562,12 +601,23 @@ export function mountPad(
       pad.close()
       save()
     },
+    get ink() {
+      return ink
+    },
+    replace(next) {
+      ink = next
+      undo.length = 0
+      redo = []
+      selected = new Set()
+      draw()
+      later()
+    },
   }
 
   draw()
   updateBar()
-  if (!inkCache(host).has(path))
-    void readInk(host, path).then((read) => {
+  if (!options.initial && options.load)
+    void options.load().then((read) => {
       if (undo.length || dirty) return // drawn on meanwhile: what is drawn stays
       ink = read
       draw()

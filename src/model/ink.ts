@@ -6,14 +6,21 @@
 // Coordinates are in a space 1000 units wide, whatever the screen: a drawing scales with its
 // column. Colours are the theme's names; the file carries their light and dark values for
 // GitHub (prefers-color-scheme), and the app draws them with the theme's tokens. Pure.
+//
+// M6 adds shapes (rectangle, ellipse, arrow: two points, the corners or the ends) and markup:
+// the strokes drawn on an image, kept beside the marked-up copy the note shows, with `image`
+// naming the original (model/markup.ts).
 
 import getStroke from 'perfect-freehand'
 import themes from '../../design/themes/themes.json'
 
 export const INK_COLORS = ['ink', 'blue', 'green', 'amber', 'violet'] as const
 export type InkColor = (typeof INK_COLORS)[number]
-export const INK_TOOLS = ['pen', 'highlighter'] as const
+export const SHAPES = ['rect', 'ellipse', 'arrow'] as const
+export type Shape = (typeof SHAPES)[number]
+export const INK_TOOLS = ['pen', 'highlighter', ...SHAPES] as const
 export type InkTool = (typeof INK_TOOLS)[number]
+export const isShape = (tool: string): tool is Shape => (SHAPES as readonly string[]).includes(tool)
 
 export interface Stroke {
   /** Unique within its drawing; two devices' strokes merge by it. */
@@ -32,6 +39,8 @@ export interface Ink {
   width: number
   height: number
   strokes: Stroke[]
+  /** Markup only: the original image the strokes are drawn on (`assets/…`). */
+  image?: string
 }
 
 /** Every drawing is this wide, in its own units. */
@@ -79,30 +88,113 @@ export const inkVar = (color: InkColor) => (color === 'ink' ? 'var(--text)' : `v
 export const strokeWidth = (stroke: Pick<Stroke, 'tool' | 'size'>) =>
   stroke.tool === 'highlighter' ? stroke.size * HIGHLIGHTER_SCALE : stroke.size
 
-/** The stroke's outline as an SVG path: a filled shape whose width follows the pressure. */
+/** A shape's sides are followed at a point every this many units. */
+const SHAPE_STEP = 6
+/** Points of an ellipse's outline, and of an arrow's head. */
+const ELLIPSE_STEPS = 72
+const ARROW_ANGLE = (28 * Math.PI) / 180
+
+/**
+ * The lines a stroke draws, each as x, y pairs: a pen's own points, a rectangle's four sides,
+ * an ellipse inside its box, an arrow's shaft and head.
+ */
+export function lines(stroke: Stroke): number[][] {
+  const p = stroke.points
+  if (!isShape(stroke.tool) || p.length < 6) {
+    const xy: number[] = []
+    for (let i = 0; i + 1 < p.length; i += 3) xy.push(p[i]!, p[i + 1]!)
+    return [xy]
+  }
+  const [x0, y0, x1, y1] = [p[0]!, p[1]!, p[3]!, p[4]!]
+  if (stroke.tool === 'rect') return [[x0, y0, x1, y0, x1, y1, x0, y1, x0, y0]]
+  if (stroke.tool === 'ellipse') {
+    const [cx, cy, rx, ry] = [
+      (x0 + x1) / 2,
+      (y0 + y1) / 2,
+      Math.abs(x1 - x0) / 2,
+      Math.abs(y1 - y0) / 2,
+    ]
+    const xy: number[] = []
+    for (let i = 0; i <= ELLIPSE_STEPS; i++) {
+      const a = (i / ELLIPSE_STEPS) * Math.PI * 2
+      xy.push(cx + rx * Math.cos(a), cy + ry * Math.sin(a))
+    }
+    return [xy]
+  }
+  const angle = Math.atan2(y1 - y0, x1 - x0)
+  const head = Math.min(Math.hypot(x1 - x0, y1 - y0) / 2, Math.max(14, stroke.size * 4))
+  const wing = (side: number) => [
+    x1 - head * Math.cos(angle + side * ARROW_ANGLE),
+    y1 - head * Math.sin(angle + side * ARROW_ANGLE),
+  ]
+  return [
+    [x0, y0, x1, y1],
+    [...wing(1), x1, y1, ...wing(-1)],
+  ]
+}
+
+/** An outline from perfect-freehand as an SVG subpath. */
+function subpath(shape: number[][]): string {
+  if (!shape.length) return ''
+  const d = ['M', num(shape[0]![0]!), num(shape[0]![1]!), 'Q']
+  for (let i = 0; i < shape.length; i++) {
+    const [x0, y0] = shape[i]!
+    const [x1, y1] = shape[(i + 1) % shape.length]!
+    d.push(num(x0!), num(y0!), num((x0! + x1!) / 2), num((y0! + y1!) / 2))
+  }
+  d.push('Z')
+  return d.join(' ')
+}
+
+/**
+ * The stroke's outline as an SVG path: a filled shape whose width follows the pressure; a
+ * shape's lines are an even width, with sharp corners.
+ */
 export function outline(stroke: Stroke): string {
+  if (isShape(stroke.tool) && stroke.points.length >= 6) {
+    return lines(stroke)
+      .map((xy) => {
+        // Points every few units along each side: perfect-freehand follows them closely, with
+        // sharp corners, where a side given only by its ends would bow.
+        const pts: [number, number, number][] = []
+        for (let i = 0; i + 1 < xy.length; i += 2) {
+          const [x, y] = [xy[i]!, xy[i + 1]!]
+          if (i >= 2) {
+            const [px, py] = [xy[i - 2]!, xy[i - 1]!]
+            const steps = Math.min(200, Math.ceil(Math.hypot(x - px, y - py) / SHAPE_STEP))
+            for (let k = 1; k < steps; k++)
+              pts.push([px + ((x - px) * k) / steps, py + ((y - py) * k) / steps, 0.5])
+          }
+          pts.push([x, y, 0.5])
+        }
+        return subpath(
+          getStroke(pts, {
+            size: stroke.size,
+            thinning: 0,
+            smoothing: 0,
+            streamline: 0,
+            simulatePressure: false,
+            last: true,
+          }),
+        )
+      })
+      .join(' ')
+  }
   const pts: [number, number, number][] = []
   for (let i = 0; i + 2 < stroke.points.length; i += 3)
     pts.push([stroke.points[i]!, stroke.points[i + 1]!, stroke.points[i + 2]!])
   if (!pts.length) return ''
   const highlighter = stroke.tool === 'highlighter'
-  const shape = getStroke(pts, {
-    size: strokeWidth(stroke),
-    thinning: highlighter ? 0 : 0.6,
-    smoothing: 0.5,
-    streamline: 0.4,
-    simulatePressure: !highlighter && !stroke.pressure,
-    last: true,
-  })
-  if (!shape.length) return ''
-  const d = ['M', num(shape[0]![0]), num(shape[0]![1]), 'Q']
-  for (let i = 0; i < shape.length; i++) {
-    const [x0, y0] = shape[i]!
-    const [x1, y1] = shape[(i + 1) % shape.length]!
-    d.push(num(x0), num(y0), num((x0 + x1) / 2), num((y0 + y1) / 2))
-  }
-  d.push('Z')
-  return d.join(' ')
+  return subpath(
+    getStroke(pts, {
+      size: strokeWidth(stroke),
+      thinning: highlighter ? 0 : 0.6,
+      smoothing: 0.5,
+      streamline: 0.4,
+      simulatePressure: !highlighter && !stroke.pressure,
+      last: true,
+    }),
+  )
 }
 
 /** A stroke as it is stored: numbers rounded, so reading and writing give the same bytes. */
@@ -122,6 +214,8 @@ function cleanStroke(value: unknown): Stroke | null {
     points.push(i % 3 === 2 ? round(Math.min(1, Math.max(0, v)), 2) : round(v, 1))
   }
   if (!points.length) return null
+  // A shape is its two points: the corners of its box, or an arrow's ends.
+  if (isShape(tool) && points.length !== 6) return null
   return {
     id: s.id,
     tool,
@@ -150,12 +244,23 @@ export function cleanInk(value: unknown): Ink | null {
     typeof v.height === 'number' && Number.isFinite(v.height)
       ? Math.round(Math.min(MAX_HEIGHT, Math.max(50, v.height)))
       : INK_HEIGHT
-  return { width: INK_WIDTH, height, strokes }
+  // Markup's original: a file of the Family's own, never an address elsewhere.
+  const image =
+    typeof v.image === 'string' && /^assets\/[^\0\\]+$/.test(v.image) && !v.image.includes('..')
+      ? v.image
+      : undefined
+  return { width: INK_WIDTH, height, strokes, ...(image && { image }) }
 }
 
 /** The strokes as JSON that can sit inside XML: `<`, `>` and `&` escaped. */
 export function inkJson(ink: Ink): string {
-  return JSON.stringify({ v: 1, width: ink.width, height: ink.height, strokes: ink.strokes })
+  return JSON.stringify({
+    v: 1,
+    width: ink.width,
+    height: ink.height,
+    ...(ink.image && { image: ink.image }),
+    strokes: ink.strokes,
+  })
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
     .replace(/&/g, '\\u0026')
@@ -270,13 +375,14 @@ export function bounds(strokes: readonly Stroke[]): Box | null {
   let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]
   for (const s of strokes) {
     const r = strokeWidth(s) / 2
-    for (let i = 0; i + 1 < s.points.length; i += 3) {
-      const [x, y] = [s.points[i]!, s.points[i + 1]!]
-      x0 = Math.min(x0, x - r)
-      y0 = Math.min(y0, y - r)
-      x1 = Math.max(x1, x + r)
-      y1 = Math.max(y1, y + r)
-    }
+    for (const xy of [s.points.filter((_, i) => i % 3 !== 2), ...lines(s)])
+      for (let i = 0; i + 1 < xy.length; i += 2) {
+        const [x, y] = [xy[i]!, xy[i + 1]!]
+        x0 = Math.min(x0, x - r)
+        y0 = Math.min(y0, y - r)
+        x1 = Math.max(x1, x + r)
+        y1 = Math.max(y1, y + r)
+      }
   }
   return x0 === Infinity ? null : { x: x0, y: y0, width: x1 - x0, height: y1 - y0 }
 }
@@ -306,10 +412,12 @@ const distanceToSegment = (
 /** Whether the point (x, y) is within `radius` of the stroke's line. */
 export function touches(stroke: Stroke, x: number, y: number, radius: number): boolean {
   const reach = radius + strokeWidth(stroke) / 2
-  const p = stroke.points
-  if (p.length === 3) return Math.hypot(x - p[0]!, y - p[1]!) <= reach
-  for (let i = 0; i + 5 < p.length; i += 3)
-    if (distanceToSegment(x, y, p[i]!, p[i + 1]!, p[i + 3]!, p[i + 4]!) <= reach) return true
+  // Along the lines it draws: a rectangle is touched on its sides, not across its middle.
+  for (const p of lines(stroke)) {
+    if (p.length === 2 && Math.hypot(x - p[0]!, y - p[1]!) <= reach) return true
+    for (let i = 0; i + 3 < p.length; i += 2)
+      if (distanceToSegment(x, y, p[i]!, p[i + 1]!, p[i + 2]!, p[i + 3]!) <= reach) return true
+  }
   return false
 }
 
@@ -328,10 +436,10 @@ export function lassoed(strokes: readonly Stroke[], polygon: readonly number[]):
   if (polygon.length < 6) return []
   return strokes
     .filter((s) => {
+      const xy = lines(s).flat()
       let count = 0
-      for (let i = 0; i + 1 < s.points.length; i += 3)
-        if (inside(polygon, s.points[i]!, s.points[i + 1]!)) count++
-      return count * 2 >= s.points.length / 3
+      for (let i = 0; i + 1 < xy.length; i += 2) if (inside(polygon, xy[i]!, xy[i + 1]!)) count++
+      return count * 2 >= xy.length / 2
     })
     .map((s) => s.id)
 }

@@ -11,6 +11,7 @@ import {
   inkToSvg,
   isInkPath,
   lassoed,
+  lines,
   mergeInk,
   mergeInkFiles,
   moved,
@@ -193,5 +194,37 @@ describe('shown in the app', () => {
 
   it('copies to other apps in the light colours only', () => {
     expect(inkToSvg(ink(line), { lightOnly: true })).not.toContain('prefers-color-scheme')
+  })
+})
+
+describe('shapes and markup (M6)', () => {
+  const rect = stroke('r1', [100, 100, 0.5, 300, 200, 0.5], { tool: 'rect', pressure: false })
+  const arrow = stroke('w1', [0, 0, 0.5, 200, 0, 0.5], { tool: 'arrow', pressure: false })
+
+  it('draws a rectangle’s sides, an ellipse in its box and an arrow with a head', () => {
+    expect(lines(rect)).toEqual([[100, 100, 300, 100, 300, 200, 100, 200, 100, 100]])
+    const ellipse = lines({ ...rect, tool: 'ellipse' })[0]!
+    expect(Math.min(...ellipse.filter((_, i) => i % 2 === 0))).toBeCloseTo(100)
+    expect(Math.max(...ellipse.filter((_, i) => i % 2 === 1))).toBeCloseTo(200)
+    expect(lines(arrow)).toHaveLength(2)
+    expect(outline(arrow).match(/M /g)).toHaveLength(2)
+  })
+
+  it('erases a shape on its lines, not across its middle', () => {
+    expect(touches(rect, 200, 101, 3)).toBe(true)
+    expect(touches(rect, 200, 150, 3)).toBe(false)
+  })
+
+  it('keeps a shape of exactly two points, and round-trips with its original image', () => {
+    const marked: Ink = { ...ink(rect, arrow), image: 'assets/realm.png' }
+    const file = inkToSvg(marked)
+    expect(inkFromSvg(file)).toEqual(marked)
+    expect(inkToSvg(inkFromSvg(file)!)).toBe(file)
+    expect(cleanInk({ strokes: [{ ...rect, points: [1, 1, 1] }] })!.strokes).toEqual([])
+  })
+
+  it('takes an original only from the Family’s own assets', () => {
+    for (const image of ['https://example.com/x.png', '/assets/x.png', 'assets/../x.png'])
+      expect(cleanInk({ strokes: [], image })!.image).toBeUndefined()
   })
 })

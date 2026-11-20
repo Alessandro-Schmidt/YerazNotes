@@ -1252,8 +1252,19 @@ function ReadText({
       onClick={(event) => {
         footnoteJump(event)
         playYouTube(event)
+        expandImage(event)
       }}
     />
+  )
+}
+
+/** An image (not a link's) opens on the whole screen, to look at closely (M6). */
+function expandImage(event: MouseEvent<HTMLElement>) {
+  const target = event.target as HTMLElement
+  const img = target.closest?.<HTMLImageElement>('img')
+  if (!img || img.closest('a') || !img.src) return
+  void import('../editor/imageViewer').then(({ openViewer }) =>
+    openViewer({ label: img.alt || 'Image', url: img.src }),
   )
 }
 

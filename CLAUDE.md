@@ -3,7 +3,7 @@
 Notes as Markdown in the user's own GitHub repositories; the main screen is a map of them.
 Read `ideas.txt` (why), `ARCHITECTURE.md` (how), `development-plan.md` (what, in what order).
 Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (private reports, what is trusted), `CODE_OF_CONDUCT.md`.
-**Current milestone: M5** (ink: Apple Pencil and any pen) built; drawing over the text is for later. Left for the owner: the visual review, the manual checklist (development-plan.md §7.6), the contract-test secret, and a `v*` tag for the first installers.
+**Current milestone: M6** (images: viewer and markup) built; drawing over the text is for later. Left for the owner: the visual review, the manual checklist (development-plan.md §7.6), the contract-test secret, and a `v*` tag for the first installers.
 
 ## Commands
 
@@ -37,7 +37,9 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
 - `src/local/folder.ts` folders on this device (issue #64, ARCHITECTURE.md §5.6): File System Access API, or the desktop's
   commands (`src-tauri/src/folder.rs`), or on phones, Safari and Firefox the browser's own storage (`deviceFolders`); a folder Family's id is `~/<slug>`. Tests use `test/memoryFolder.ts`
 - Ink (M5): `src/model/ink.ts` (format, shapes via `perfect-freehand`, merge, geometry) · `src/editor/ink.ts` (host facet, insert,
-  copy and paste) · `src/editor/inkPad.ts` (drawing: pen, highlighter, eraser, lasso; lazy) · `InkWidget` in `livePreview.ts` · `src/read/ink.ts` (read view)
+  copy and paste) · `src/editor/inkPad.ts` (drawing: pen, highlighter, shapes, eraser, lasso; lazy) · `InkWidget` in `livePreview.ts` · `src/read/ink.ts` (read view)
+- Image viewer (M6): `src/editor/imageViewer.ts` (whole screen, zoom, turn, markup; lazy) · `src/editor/imageEdit.ts` (saving: lossless turns, the marked-up copy) ·
+  `src/model/orient.ts` (orientations, EXIF) · `src/model/markup.ts` (names, strokes turned with their picture)
 - `src/editor/` CodeMirror 6 (lazy chunk): `Editor.tsx`, `livePreview.ts` (+ `metaLine.ts`: line 2 hidden, kept whole), `LeafEditor.tsx` (the leaf, edited in the Peek), `mentions.ts`, `insertMenu.ts`, `format.ts` (shortcuts, marks typed over a selection), `toolbar.ts` (touch: a bar above the keyboard), `steady.ts` (touch: the caret stays at eye level), `images.ts`, `emoji.ts`,
   `elements.ts` (an element's ⋯ menu, Markdown shown on request), `tables.ts` (tables as grids; `src/model/table.ts`)
 - `src/map/` `layout.ts` (pure, d3; `seed` for the map's Rearrange, memory only) · `family.ts` (a Family's Trees, placed) · `families.ts` (every Family merged, ids
@@ -97,6 +99,8 @@ Open source: `CONTRIBUTING.md` (setup, rules, pull requests), `SECURITY.md` (pri
 - [ ] A template for new leaves is a `.md` in `.yeraz/templates/` (hidden from the map): line 1 its name (its emoji → the leaf's icon), line 2 the leaf's look, the rest the leaf's start with `{{title}}`, `{{date}}`, `{{tree}}` filled in
 - [ ] A drawing is an image of a `.ink.svg` in `/assets/` (M5, `model/ink.ts`): an SVG GitHub shows, its strokes JSON in `<metadata id="yeraz-ink">`
   (1000 units wide, colour names, pressure); edited stroke by stroke, merged by stroke `id`, a pasted copy is a new file
+- [ ] Markup on an image (M6, `model/markup.ts`): the note links to `name.marked.png|jpg` (marks drawn in), strokes in `name.marked.ink.svg` with `image` the untouched original;
+  shapes are strokes with `tool` `rect`, `ellipse`, `arrow` (two points); turning a JPEG changes only its EXIF orientation
 - [ ] Embeds: a paragraph of one link to YouTube or `/assets/*.pdf|mp4|webm` (subtitles `name.<lang>.vtt`); math `$…$`, `$$…$$`
 
 ## Budgets (ARCHITECTURE.md §11)

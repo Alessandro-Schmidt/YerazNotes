@@ -132,6 +132,9 @@ export default function Editor({
                   read: (path) => inkRef.current?.read(path) ?? Promise.resolve(null),
                   save: (path, text) => inkRef.current?.save(path, text),
                   create: () => inkRef.current!.create(),
+                  bytes: async (path) => (await inkRef.current?.bytes?.(path)) ?? null,
+                  write: async (path, bytes) => inkRef.current?.write?.(path, bytes),
+                  taken: (path) => inkRef.current?.taken?.(path) ?? false,
                 }),
                 inkClipboard,
               ]

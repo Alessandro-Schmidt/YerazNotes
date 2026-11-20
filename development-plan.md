@@ -382,6 +382,30 @@ words. Drawing over the text, tied to a paragraph, is left for later (owner's de
 - Manual (§7.6): on an iPad with an Apple Pencil, drawing keeps up with the pen and the palm is
   ignored.
 
+### M6 — Images: viewer and markup
+
+**Built.** Owner's request: any image expanded to the whole screen, turned and flipped, and marked
+up with a pen, a highlighter and shapes, on a computer, a tablet or a phone. Owner's decision: the
+marks are drawn into a copy the note shows, so GitHub, other apps and PDFs show them too.
+
+1. **Viewer** (`editor/imageViewer.ts`, a lazy chunk): an expand button on the image (hover), a
+   tap on touch screens; zoom (buttons, Ctrl/⌘ and the wheel, two fingers), Cancel and Done. The
+   read view opens images to look at only.
+2. **Turn and flip** (`model/orient.ts`): a JPEG by its EXIF orientation alone, its pixels kept
+   byte for byte; any other picture redrawn losslessly (PNG). The note links to the same file.
+3. **Markup** (`model/markup.ts`, `editor/imageEdit.ts`): the original is kept; the note shows
+   `x.marked.png` (`.jpg` for a photo) with the strokes drawn in, and the strokes are kept in
+   `x.marked.ink.svg` (`image` names the original), to be changed again. All marks deleted: the
+   note shows the original again and both files go.
+4. **Shapes** (rectangle, ellipse, arrow) in the pad, for images and drawings alike: two points,
+   the corners or the ends. An older Yeraz draws a shape as a line between its points.
+
+**Done when:** unit tests for orientation (EXIF read and written, both byte orders, composing
+turns), markup names and strokes turned with their picture, shapes' lines and the `image` field;
+end-to-end: a PNG turned in one commit, markup committed as copy and strokes with the original
+untouched and removed again, Cancel, a JPEG turned with its scan data unchanged, the read view's
+viewer, and a tap and a finger on a phone. Manual (§7.6): marking up a photo with an Apple Pencil.
+
 ### After launch
 
 Not part of the first release:
@@ -455,6 +479,7 @@ Not part of the first release:
 - **Icons:** the dock, taskbar, desktop shortcut and phone home screen icons are sharp on standard and high-density screens (compare with `design/screens/08-app-icon.png`).
 - **Unsigned desktop app:** check that it launches on macOS through right-click → Open.
 - **Ink:** on an iPad with an Apple Pencil, drawing keeps up with the pen, the palm is ignored and a finger scrolls (M5).
+- **Images:** on an iPad, a tap opens a photo, two fingers zoom it, the Pencil marks it up, and the copy in the note matches what was drawn (M6).
 
 ## 8. CI pipeline (GitHub Actions)
 
